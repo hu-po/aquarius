@@ -1,0 +1,14 @@
+version: '3'
+services:
+  backend:
+    build: ./backend
+    ports:
+      - '8000:8000'
+  frontend-dashboard:
+    build: ./frontend-dashboard
+    ports:
+      - '3000:3000'
+  frontend-vr:
+    build: ./frontend-vr
+    ports:
+      - '8080:80'
