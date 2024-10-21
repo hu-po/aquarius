@@ -4,8 +4,8 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
-  frontend-dashboard:
-    build: ./frontend-dashboard
+  frontend-pc:
+    build: ./frontend-pc
     ports:
       - "3000:3000"
   frontend-vr:
