@@ -12,9 +12,9 @@ This project is an aquarium monitor application with the following components:
 2. Install dependencies: `pip install -r requirements.txt`
 3. Run the backend: `uvicorn app.main:app --reload`
 
-### Frontend Dashboard
+### Frontend PC
 1. Navigate to `frontend-dashboard` directory.
 2. Install dependencies: `npm install`
 3. Start the frontend: `npm start`
 
-### Frontend
+### Frontend VR
