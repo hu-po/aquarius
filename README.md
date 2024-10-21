@@ -1,10 +1,20 @@
 # Aquarius 🐟
 
-This project is an aquarium monitor application with the following components:
+aquarium monitoring system
 
-- **Backend**: FastAPI for handling API requests, using OpenCV to capture images from a camera, and sending these images to an LLM/VLM for processing.
-- **Frontend Dashboard**: React-based dashboard for displaying real-time fish positions, system status, and recent images.
-- **VR Frontend**: Aframe-based VR frontend showing a 3D cube aquarium with dynamic fish positions.
+backend: fastapi + python
+- uses openai, gemini, claude, and mistral vision language models via api. async sends an image to each api and gets back text descriptions of the image.
+- stores images and descriptions in a local database
+- serves images and descriptions to the frontend
+
+frontend-pc: react
+- dashboard intended for a browser on local aquarium pc screen
+- displays text based summary of tank
+- interactive widget to displays images and descriptions, selectable via a timeline
+
+frontend-vr: aframe
+- vr box representing aquarium with points representing fish location
+- mixed reality view of aquarium and fish
 
 ## Setup
 
