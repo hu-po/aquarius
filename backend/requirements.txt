@@ -3,3 +3,8 @@ uvicorn[standard]
 opencv-python
 requests
 pydantic
+google-generativeai
+openai
+anthropic
+pillow
+replicate

@@ -1,13 +1,25 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset='utf-8'>
-    <title>Aquarium VR</title>
-    <script src='https://aframe.io/releases/1.2.0/aframe.min.js'></script>
-  </head>
-  <body>
-    <a-scene>
-      <!-- Your A-Frame content will go here -->
-    </a-scene>
-  </body>
+
+<head>
+  <meta charset="utf-8">
+  <title> A-Frame Aquarium </title>
+  <meta name="description" content="Aquarium • A-Frame">
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+</head>
+
+<body>
+  <a-scene
+  obb-collider="showColliders: false"
+  renderer="colorManagement: true;"
+  button
+  xr-mode-ui="XRMode: ar"
+  info-message="htmlSrc: #messageText">
+    <a-entity id="fish" position="0 1 0" rotation="-90 0 0" scale="0.5 0.5 0.5" gltf-model=""></a-entity>
+    <a-entity id="camera" camera position="0 1.5 0" look-controls wasd-controls></a-entity>
+    <a-entity id="rightHand" hand-tracking-grab-controls="hand: right"></a-entity>
+    <a-entity id="leftHand" hand-tracking-grab-controls="hand: left"></a-entity>
+  </a-scene>
+</body>
+
 </html>
