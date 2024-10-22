@@ -24,6 +24,17 @@ frontend-vr: aframe
 uvicorn pyaquarius.main:app --reload
 ```
 
+Access the API at http://localhost:8000 with the following endpoints:
+
+```
+GET /status - Current aquarium status
+POST /capture - Capture new image
+POST /readings - Add sensor readings
+GET /images - List recent images
+GET /readings/history - Get reading history
+GET /devices - List camera devices
+```
+
 ### Frontend PC
 
 ```bash

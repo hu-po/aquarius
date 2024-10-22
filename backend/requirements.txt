@@ -2,9 +2,11 @@ fastapi
 uvicorn[standard]
 opencv-python
 requests
+sqlalchemy
 pydantic
+python-multipart
+pillow
 google-generativeai
 openai
 anthropic
-pillow
 replicate
