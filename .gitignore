@@ -1,4 +1,21 @@
-.env
-node_modules/
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+
+# Docker
+.env
+
+# dont store persistent data in the repo
+/data/
+
+# Node.js
+node_modules/
+
+# System
+.DS_Store
+Thumbs.db

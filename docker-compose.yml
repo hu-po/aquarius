@@ -4,6 +4,8 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./data/aquarium_images:/tmp/aquarium_images  # Ensure images persist outside the container
   frontend-pc:
     build: ./frontend-pc
     ports:

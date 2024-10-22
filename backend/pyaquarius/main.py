@@ -29,7 +29,9 @@ app.add_middleware(
 
 # Setup static file serving for images
 IMAGES_DIR = os.getenv("IMAGES_DIR", "/tmp/aquarium_images")
-os.makedirs(IMAGES_DIR, exist_ok=True)
+if not os.path.exists(IMAGES_DIR):
+    os.makedirs(IMAGES_DIR, exist_ok=True)  # Ensure directory exists and is created if missing
+    os.chmod(IMAGES_DIR, 0o777)  # Set full permissions for all users
 app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 # Background Tasks
