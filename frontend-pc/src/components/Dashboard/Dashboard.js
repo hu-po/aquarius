@@ -1,5 +1,6 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getStatus } from '../../services/api';
+import { API } from '../../config';
 import LatestImage from '../LatestImage';
 import LLMReply from '../LLMReply';
 import Stats from '../Stats';
@@ -27,7 +28,6 @@ const Dashboard = () => {
         if (mounted) {
           console.error('Error fetching status:', error);
           setError(error.message || 'Failed to load aquarium data.');
-          // Don't clear previous status on error to maintain stale-while-revalidate pattern
         }
       } finally {
         if (mounted) {
@@ -37,7 +37,7 @@ const Dashboard = () => {
     };
   
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, API.POLL_INTERVAL);
     
     return () => {
       mounted = false;

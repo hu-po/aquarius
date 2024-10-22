@@ -8,8 +8,9 @@ from fastapi.middleware.throttling import ThrottlingMiddleware
 from sqlalchemy.orm import Session
 import asyncio
 from contextlib import contextmanager
-from . import camera, vlms
-from .models import (
+from pyaquarius.camera import save_frame, RESOLUTION
+from pyaquarius.vlms import caption
+from pyaquarius.models import (
     get_db, Image, Reading, VLMDescription, AquariumStatus,
     DBImage, DBReading, DBVLMDescription
 )
@@ -71,10 +72,7 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
         start_time = datetime.utcnow()
         
         try:
-            descriptions = await asyncio.wait_for(
-                vlms.caption(image_path, prompt),
-                timeout=60.0
-            )
+            descriptions = await asyncio.wait_for(caption(image_path, prompt), timeout=60.0)
         except asyncio.TimeoutError:
             descriptions = {"error": "Analysis timeout"}
         except Exception as e:
@@ -92,11 +90,9 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
                         latency=(datetime.utcnow() - start_time).total_seconds()
                     )
                     session.add(vlm_desc)
-
                     concerns = extract_concerns(description)
                     if concerns:
                         vlm_desc.concerns_detected = concerns
-
     except Exception as e:
         print(f"Failed to analyze image: {e}")
         with get_db_session() as session:
@@ -113,49 +109,33 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
 def extract_concerns(description: str) -> Optional[str]:
     if not description:
         return None
-    
     concerns = []
-    lower_desc = description.lower()
-    
-    keywords = [
-        "concern", "warning", "alert", "problem", "issue",
-        "high", "low", "unsafe", "dangerous", "unhealthy"
-    ]
-    
+    keywords = ["concern", "warning", "alert", "problem", "issue", "high", "low", "unsafe", "dangerous", "unhealthy"]
     for line in description.split('\n'):
         if any(keyword in line.lower() for keyword in keywords):
             concerns.append(line.strip())
-    
     return "; ".join(concerns) if concerns else None
 
 @app.post("/capture")
-async def capture_image(
-    background_tasks: BackgroundTasks,
-    device_id: int = 0,
-    db: Session = Depends(get_db)
-) -> Image:
+async def capture_image(background_tasks: BackgroundTasks, device_id: int = 0, db: Session = Depends(get_db)) -> Image:
     timestamp = datetime.utcnow()
     filename = f"{timestamp.isoformat()}.jpg"
     filepath = os.path.join(IMAGES_DIR, filename)
-    
-    if not camera.save_frame(device_id, filepath):
+    if not save_frame(device_id, filename):
         raise HTTPException(status_code=500, detail="Failed to capture image")
-    
     try:
         db_image = DBImage(
             id=timestamp.isoformat(),
             filepath=filepath,
-            width=camera.RESOLUTION[0],
-            height=camera.RESOLUTION[1],
+            width=RESOLUTION[0],
+            height=RESOLUTION[1],
             device_id=device_id,
             file_size=os.path.getsize(filepath)
         )
         db.add(db_image)
         db.commit()
-        
         background_tasks.add_task(analyze_image, db_image.id, filepath, db)
         return Image.from_orm(db_image)
-        
     except Exception as e:
         db.rollback()
         if os.path.exists(filepath):
@@ -168,18 +148,15 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
     latest_reading = db.query(DBReading).order_by(DBReading.timestamp.desc()).first()
     latest_descriptions = {}
     alerts = []
-    
     if latest_image:
         descriptions = db.query(DBVLMDescription).filter(
             DBVLMDescription.image_id == latest_image.id
         ).all()
-        
         for desc in descriptions:
             if desc.model_name != "system":
                 latest_descriptions[desc.model_name] = desc.description
             if desc.concerns_detected:
                 alerts.extend(desc.concerns_detected.split('; '))
-    
     if latest_reading:
         if latest_reading.temperature > 82 or latest_reading.temperature < 74:
             alerts.append(f"Temperature outside ideal range: {latest_reading.temperature}°F")
@@ -191,39 +168,25 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
             alerts.append(f"High nitrite level: {latest_reading.nitrite} ppm")
         if latest_reading.nitrate and latest_reading.nitrate > 40:
             alerts.append(f"High nitrate level: {latest_reading.nitrate} ppm")
-    
     return AquariumStatus(
         latest_image=Image.from_orm(latest_image) if latest_image else None,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
         latest_descriptions=latest_descriptions,
-        alerts=list(set(alerts))  # Remove duplicates
+        alerts=list(set(alerts))
     )
 
 @app.get("/images")
-async def list_images(
-    limit: int = 10,
-    offset: int = 0,
-    db: Session = Depends(get_db)
-) -> List[Image]:
-    images = db.query(DBImage)\
-        .order_by(DBImage.timestamp.desc())\
-        .offset(offset)\
-        .limit(limit)\
-        .all()
+async def list_images(limit: int = 10, offset: int = 0, db: Session = Depends(get_db)) -> List[Image]:
+    images = db.query(DBImage).order_by(DBImage.timestamp.desc()).offset(offset).limit(limit).all()
     return [Image.from_orm(img) for img in images]
 
 @app.get("/readings/history")
-async def get_readings_history(
-    hours: int = 24,
-    db: Session = Depends(get_db)
-) -> List[Reading]:
+async def get_readings_history(hours: int = 24, db: Session = Depends(get_db)) -> List[Reading]:
     since = datetime.utcnow() - timedelta(hours=hours)
-    readings = db.query(DBReading)\
-        .filter(DBReading.timestamp >= since)\
-        .order_by(DBReading.timestamp.asc())\
-        .all()
+    readings = db.query(DBReading).filter(DBReading.timestamp >= since).order_by(DBReading.timestamp.asc()).all()
     return [Reading.from_orm(r) for r in readings]
 
 @app.get("/devices")
 async def list_devices() -> List[int]:
-    return camera.list_devices()
+    from pyaquarius.camera import list_devices
+    return list_devices()

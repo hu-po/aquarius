@@ -11,7 +11,21 @@ services:
       - OPENAI_API_KEY
       - DATABASE_URL
       - IMAGES_DIR=/data/images
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+      - CORS_ORIGINS
+      - CAMERA_FPS
+      - CAMERA_FRAME_BUFFER
+      - CAMERA_MAX_WIDTH
+      - CAMERA_MAX_HEIGHT
+      - CAMERA_MAX_IMAGES
+      - CAMERA_MIN_FREE_SPACE_MB
+      - TANK_TEMP_MIN
+      - TANK_TEMP_MAX
+      - TANK_PH_MIN
+      - TANK_PH_MAX
+      - TANK_AMMONIA_MAX
+      - TANK_NITRITE_MAX
+      - TANK_NITRATE_MAX
+      - API_RATE_LIMIT
     volumes:
       - ./data/images:/data/images
       - ./data/db:/app/db
@@ -32,6 +46,14 @@ services:
       - "${FRONTEND_PC_PORT:-3000}:3000"
     environment:
       - REACT_APP_API_URL=http://localhost:${BACKEND_PORT:-8000}
+      - REACT_APP_POLL_INTERVAL
+      - REACT_APP_IMAGE_MAX_WIDTH
+      - REACT_APP_IMAGE_MAX_HEIGHT
+      - REACT_APP_TEMP_WARNING_MIN
+      - REACT_APP_TEMP_WARNING_MAX
+      - REACT_APP_PH_WARNING_MIN
+      - REACT_APP_PH_WARNING_MAX
+      - REACT_APP_STAT_DECIMAL_PLACES
     depends_on:
       backend:
         condition: service_healthy

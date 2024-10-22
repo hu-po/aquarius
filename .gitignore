@@ -9,13 +9,26 @@ venv/
 
 # Docker
 .env
-
-# dont store persistent data in the repo
-/data/
+**/.env
 
 # Node.js
 node_modules/
 
-# System
+# Development
 .DS_Store
 Thumbs.db
+
+# Data directories
+/data/
+**/data/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/

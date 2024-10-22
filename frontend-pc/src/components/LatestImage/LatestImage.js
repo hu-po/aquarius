@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API, DASHBOARD } from '../../config';
 import './LatestImage.css';
 
 const LatestImage = ({ image }) => {
@@ -16,8 +17,7 @@ const LatestImage = ({ image }) => {
   const getImageUrl = (filepath) => {
     if (!filepath) return null;
     const filename = filepath.split('/').pop();
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-    return `${baseUrl}/images/${encodeURIComponent(filename)}`;
+    return `${API.BASE_URL}/images/${encodeURIComponent(filename)}`;
   };
 
   const handleImageError = () => {
@@ -33,6 +33,10 @@ const LatestImage = ({ image }) => {
           alt="Latest aquarium capture"
           className="aquarium-image"
           onError={handleImageError}
+          style={{
+            maxWidth: DASHBOARD.IMAGE_MAX_WIDTH,
+            maxHeight: DASHBOARD.IMAGE_MAX_HEIGHT
+          }}
         />
       ) : (
         <div className="image-error">Failed to load image</div>
