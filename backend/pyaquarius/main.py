@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
@@ -44,19 +44,9 @@ def get_db_session():
 
 async def analyze_image(image_id: str, image_path: str, db: Session):
     try:
-        with open("prompts/tank-info.txt") as f:
-            base_prompt = f.read().strip()
-
-        prompt = f"""Given this aquarium setup: {base_prompt}
-        Please analyze this image and:
-        1. Describe what you see
-        2. Note any changes from ideal conditions
-        3. List any concerns that need attention
-        4. Estimate the number of fish visible
-        5. Assess plant health
-        """
-        
-        start_time = datetime.utcnow()
+        prompt = open("prompts/vlm.txt").read().strip()
+        prompt += open("prompts/tank-info.txt").read().strip()        
+        start_time = datetime.now(timezone.utc)
         
         try:
             descriptions = await asyncio.wait_for(caption(image_path, prompt), timeout=60.0)
@@ -69,12 +59,12 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
             for model_name, description in descriptions.items():
                 if model_name != "error":
                     vlm_desc = DBVLMDescription(
-                        id=f"{datetime.utcnow().isoformat()}_{model_name}",
+                        id=f"{datetime.now(timezone.utc).isoformat()}_{model_name}",
                         image_id=image_id,
                         model_name=model_name,
                         description=description,
                         prompt=prompt,
-                        latency=(datetime.utcnow() - start_time).total_seconds()
+                        latency=(datetime.now(timezone.utc) - start_time).total_seconds()
                     )
                     session.add(vlm_desc)
                     concerns = extract_concerns(description)
@@ -84,7 +74,7 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
         print(f"Failed to analyze image: {e}")
         with get_db_session() as session:
             error_desc = DBVLMDescription(
-                id=f"{datetime.utcnow().isoformat()}_error",
+                id=f"{datetime.now(timezone.utc).isoformat()}_error",
                 image_id=image_id,
                 model_name="system",
                 description=f"Analysis failed: {str(e)}",
@@ -105,7 +95,7 @@ def extract_concerns(description: str) -> Optional[str]:
 
 @app.post("/capture")
 async def capture_image(background_tasks: BackgroundTasks, device_id: int = 0, db: Session = Depends(get_db)) -> Image:
-    timestamp = datetime.utcnow()
+    timestamp = datetime.now(timezone.utc)
     filename = f"{timestamp.isoformat()}.jpg"
     filepath = os.path.join(config.IMAGES_DIR, filename)
     if not save_frame(device_id, filename):
@@ -169,7 +159,7 @@ async def list_images(limit: int = 10, offset: int = 0, db: Session = Depends(ge
 
 @app.get("/readings/history")
 async def get_readings_history(hours: int = 24, db: Session = Depends(get_db)) -> List[Reading]:
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
     readings = db.query(DBReading).filter(DBReading.timestamp >= since).order_by(DBReading.timestamp.asc()).all()
     return [Reading.from_orm(r) for r in readings]
 

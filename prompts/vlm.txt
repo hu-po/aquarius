@@ -1,0 +1,4 @@
+Please analyze this image and:
+4. Estimate the number and type of fish, crustaceans, invertebrates, plants
+1. Compare with the current inventory of aquarium life
+3. List any concerns that need attention
