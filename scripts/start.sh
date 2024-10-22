@@ -13,7 +13,7 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "Multiple components can be specified, separated by spaces."
     echo ""
     echo "Examples:"
-    echo "  $0                   # Start all components"
+    echo "  $0                   # Start all components with logs"
     echo "  $0 backend          # Start only the backend"
     echo "  $0 frontend-pc      # Start only the PC frontend"
     echo "  $0 backend frontend-pc  # Start backend and PC frontend"
@@ -29,11 +29,19 @@ fi
 # Create data directories
 mkdir -p data/images data/db
 
-# Start specified components or all if none specified
-if [ $# -eq 0 ]; then
-    echo "Starting all components..."
-    docker compose up --build -d
-else
-    echo "Starting components: $@"
-    docker compose up --build -d "$@"
-fi
+# Function to start components and show logs
+start_components() {
+    local components=("$@")
+    
+    # If no specific components, start all
+    if [ ${#components[@]} -eq 0 ]; then
+        echo "Starting all components..."
+        docker compose up --build
+    else
+        echo "Starting components: ${components[*]}"
+        docker compose up --build "${components[@]}"
+    fi
+}
+
+# Start components and show logs
+start_components "$@"

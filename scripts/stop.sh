@@ -20,11 +20,18 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     exit 0
 fi
 
-# Stop specified components or all if none specified
-if [ $# -eq 0 ]; then
-    echo "Stopping all components..."
-    docker compose down
-else
-    echo "Stopping components: $@"
-    docker compose stop "$@"
-fi
+# Function to stop components
+stop_components() {
+    local components=("$@")
+    
+    if [ ${#components[@]} -eq 0 ]; then
+        echo "Stopping all components..."
+        docker compose down
+    else
+        echo "Stopping components: ${components[*]}"
+        docker compose stop "${components[@]}"
+    fi
+}
+
+# Stop the specified components
+stop_components "$@"
