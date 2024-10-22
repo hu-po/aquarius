@@ -21,6 +21,15 @@ Aquarium monitoring system with both a PC dashboard and a VR interface for visua
 
 The backend uses FastAPI to capture images from a connected camera, analyze them using vision-language models, and serve sensor data.
 
+Endpoints from `/backend/pyaquarius/main.py`:
+
+```
+1. GET /status
+2. POST /capture
+3. GET /images
+4. GET /readings/history
+5. GET /devices
+```
 #### Setup
 
 1. **Install Python dependencies (for local development)**:
@@ -45,11 +54,6 @@ The backend uses FastAPI to capture images from a connected camera, analyze them
 
 4. **Access the backend API**:
     - The API will be accessible at: `http://localhost:8000`
-    - Endpoints:
-      - `GET /status`: Current aquarium status (sensor readings, latest image, etc.)
-      - `POST /capture`: Capture a new image.
-      - `GET /images`: List recent images.
-      - `GET /readings/history`: Get sensor readings history.
 
 #### Running with Docker Compose
 
@@ -72,6 +76,13 @@ This will build and run all services (backend, frontend-pc, frontend-vr) in one 
 ### Frontend (PC Dashboard)
 
 The frontend for PC is a React app that displays a dashboard with real-time updates on the aquarium status, including the latest image, sensor data, and AI analysis.
+
+`/frontend-pc/src/services/api.js`
+```
+1. getStatus() -> GET /status
+2. getImages() -> GET /images
+3. getReadingsHistory() -> GET /readings/history
+```
 
 #### Setup
 
@@ -111,6 +122,13 @@ The PC dashboard will be accessible at `http://localhost:3000`.
 ### Frontend (VR)
 
 The VR frontend is built using A-Frame, allowing you to visualize the aquarium in mixed reality with fish positions.
+
+`/frontend-vr/api.js`:
+```
+1. getStatus() -> GET /status
+2. getReadingsHistory() -> GET /readings/history
+3. getImageUrl() -> Uses /images endpoint indirectly
+```
 
 #### Setup
 

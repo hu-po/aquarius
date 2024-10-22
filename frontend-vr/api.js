@@ -28,3 +28,10 @@ export function getImageUrl(filepath) {
     if (!filename) return null;
     return `${API_BASE_URL}/images/${encodeURIComponent(filename)}`;
 }
+
+export const handleApiError = (error) => {
+    const errorDiv = document.getElementById('loading');
+    errorDiv.style.display = 'block';
+    errorDiv.textContent = error.message || 'An error occurred';
+    throw error;
+  };
