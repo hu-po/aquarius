@@ -19,12 +19,16 @@ async def caption(
         # Replicate is slow, hence why it's commented out
         # asyncio.create_task(api_mistral.async_image(prompt, image_path), name="Mistral"),
     ]
-    results = await asyncio.gather(*tasks)
-    results_dict = {} 
-    for task, result in zip(tasks, results):
-        results_dict[task.get_name()] = result
-    log.debug(results_dict)
-    return results_dict
+    results = {}
+    for task in tasks:
+        try:
+            result = await asyncio.wait_for(task, timeout=30.0)
+            results[task.get_name()] = result
+        except asyncio.TimeoutError:
+            results[task.get_name()] = "API timeout"
+        except Exception as e:
+            results[task.get_name()] = f"API error: {str(e)}"
+    return results
 
 if __name__ == "__main__":
     log.setLevel(logging.DEBUG)

@@ -22,4 +22,9 @@ const LatestImage = ({ image }) => {
   );
 };
 
+const getSecureImagePath = (filepath) => {
+  const filename = filepath.split('/').pop(); // Get just filename
+  return encodeURIComponent(filename); // URL encode for safety
+};
+
 export default LatestImage;

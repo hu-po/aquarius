@@ -5,7 +5,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, Column, String, Integer, Float, DateTime, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import QueuePool
+from sqlalchemy import Index
 import os
 
 # Initialize SQLite database
@@ -13,7 +14,9 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///aquarium.db")
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False},
-    poolclass=StaticPool
+    poolclass=QueuePool,
+    pool_size=5,
+    max_overflow=10
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -74,11 +77,11 @@ class Image(ImageBase):
         orm_mode = True
 
 class ReadingBase(BaseModel):
-    temperature: float
-    ph: Optional[float] = None
-    ammonia: Optional[float] = None
-    nitrite: Optional[float] = None
-    nitrate: Optional[float] = None
+    temperature: float = Field(ge=32, le=120)  # Valid temperature range
+    ph: Optional[float] = Field(None, ge=0, le=14)
+    ammonia: Optional[float] = Field(None, ge=0)
+    nitrite: Optional[float] = Field(None, ge=0)
+    nitrate: Optional[float] = Field(None, ge=0)
     image_id: Optional[str] = None
 
 class Reading(ReadingBase):
@@ -112,6 +115,8 @@ class AquariumStatus(BaseModel):
 
 # Create all tables
 Base.metadata.create_all(bind=engine)
+Index('idx_readings_timestamp', DBReading.timestamp)
+Index('idx_images_timestamp', DBImage.timestamp)
 
 # Database dependency
 def get_db():

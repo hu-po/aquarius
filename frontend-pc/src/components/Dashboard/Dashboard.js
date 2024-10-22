@@ -9,6 +9,7 @@ import './Dashboard.css';
 const Dashboard = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -17,18 +18,23 @@ const Dashboard = () => {
         setStatus(data);
       } catch (error) {
         console.error('Error fetching status:', error);
+        setError('Failed to load aquarium data.');
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchData();
     const interval = setInterval(fetchData, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
   }, []);
-
+  
   if (loading) {
     return <div className="dashboard loading">Loading...</div>;
+  }
+  
+  if (error) {
+    return <div className="dashboard error">{error}</div>;
   }
 
   return (

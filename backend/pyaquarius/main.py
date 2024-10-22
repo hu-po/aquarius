@@ -5,6 +5,9 @@ from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.throttling import ThrottlingMiddleware
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
 from sqlalchemy.orm import Session
 import cv2
 
@@ -18,16 +21,25 @@ from .models import (
 # Load environment variables
 load_dotenv()
 
+# Add to main.py at startup
+required_env_vars = ['ANTHROPIC_API_KEY', 'GOOGLE_SDK_API_KEY', 'OPENAI_API_KEY']
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+if missing_vars:
+    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
 # Initialize FastAPI app
 app = FastAPI(title="Aquarius Monitoring System")
-
-# Update CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(","),
+    allow_origins=os.getenv("CORS_ORIGINS", "").split(","),
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
+    max_age=3600
+)
+app.add_middleware(
+    ThrottlingMiddleware,
+    rate_limit="100/minute"
 )
 
 # Setup static file serving for images
@@ -39,39 +51,46 @@ app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 # Background Tasks
 async def analyze_image(image_id: str, image_path: str, db: Session):
-    """Background task to get VLM descriptions"""
-    # Load prompt template
-    with open("prompts/tank-info.txt") as f:
-        base_prompt = f.read().strip()
+    try:
+        # Prompt setup and image processing
+        with open("prompts/tank-info.txt") as f:
+            base_prompt = f.read().strip()
     
-    prompt = f"""Given this aquarium setup: {base_prompt}
+        prompt = f"""Given this aquarium setup: {base_prompt}
 
-    Please analyze this image and:
-    1. Describe what you see
-    2. Note any changes from ideal conditions
-    3. List any concerns that need attention
-    4. Estimate the number of fish visible
-    5. Assess plant health
-    """
-    
-    # Get descriptions from all VLMs
-    start_time = datetime.utcnow()
-    descriptions = await vlms.caption(image_path, prompt)
-    
-    # Store descriptions
-    for model_name, description in descriptions.items():
-        vlm_desc = DBVLMDescription(
-            id=f"{datetime.utcnow().isoformat()}_{model_name}",
-            image_id=image_id,
-            model_name=model_name,
-            description=description,
-            prompt=prompt,
-            latency=(datetime.utcnow() - start_time).total_seconds()
-        )
-        db.add(vlm_desc)
-    
-    db.commit()
+        Please analyze this image and:
+        1. Describe what you see
+        2. Note any changes from ideal conditions
+        3. List any concerns that need attention
+        4. Estimate the number of fish visible
+        5. Assess plant health
+        """
+        
+        # Get descriptions from VLMs
+        start_time = datetime.utcnow()
+        descriptions = await vlms.caption(image_path, prompt)
 
+        # Store descriptions in the database
+        for model_name, description in descriptions.items():
+            vlm_desc = DBVLMDescription(
+                id=f"{datetime.utcnow().isoformat()}_{model_name}",
+                image_id=image_id,
+                model_name=model_name,
+                description=description,
+                prompt=prompt,
+                latency=(datetime.utcnow() - start_time).total_seconds()
+            )
+            db.add(vlm_desc)
+
+        db.commit()
+    except Exception as e:
+        print(f"Failed to analyze image: {e}")
+
+@app.on_event("startup")
+async def startup():
+    redis = aioredis.from_url("redis://localhost")
+    FastAPICache.init(RedisBackend(redis), prefix="aquarius-cache:")
+    
 # API Routes
 @app.get("/")
 async def root():

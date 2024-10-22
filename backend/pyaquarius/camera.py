@@ -26,44 +26,61 @@ def list_devices():
     return arr
 
 def save_frame(device_index, filename):
-    # This function saves a single frame from the specified device.
-    cap = cv2.VideoCapture(device_index, cv2.CAP_V4L2)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION[0])
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION[1])
-    if not cap.isOpened():
-        print(f"Failed to open device /dev/video{device_index}")
-        return False
-    ret, frame = cap.read()
-    if ret:
+    try:
+        cap = cv2.VideoCapture(device_index, cv2.CAP_V4L2)
+        if not cap.isOpened():
+            raise RuntimeError(f"Failed to open device /dev/video{device_index}")
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION[0])
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION[1])
+        ret, frame = cap.read()
+        if not ret:
+            raise RuntimeError("Failed to capture frame")
         cv2.imwrite(filename, frame)
-        print(f"Saved frame to {filename}")
-    else:
-        print("Failed to capture frame")
-    cap.release()
-    return ret
+        return True
+    except Exception as e:
+        print(f"Camera error: {str(e)}")
+        return False
+    finally:
+        if 'cap' in locals():
+            cap.release()
 
 def record_video(device_index, filename, duration=5):
     cap = cv2.VideoCapture(device_index, cv2.CAP_V4L2)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION[1])
     cap.set(cv2.CAP_PROP_BUFFERSIZE, FRAME_BUFFERSIZE)
+    cap.set(cv2.CAP_PROP_FPS, FPS)  # Ensure FPS setting
+
     if not cap.isOpened():
         print(f"Failed to open device /dev/video{device_index}")
         return False
+
+    actual_fps = cap.get(cv2.CAP_PROP_FPS)
+    frames_to_record = int(actual_fps * duration)
+    print(f"Recording {frames_to_record} frames at {actual_fps} FPS to {filename}")
+
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     out = cv2.VideoWriter(filename, fourcc, FPS, RESOLUTION)
-    frames_to_record = int(cap.get(cv2.CAP_PROP_FPS) * duration)
-    print(f"Recording {frames_to_record} frames to {filename}")
     for _ in range(frames_to_record):
         ret, frame = cap.read()
         if ret:
             out.write(frame)
         else:
             break
+
     cap.release()
     out.release()
     print("Recording finished")
     return True
+
+def optimize_image(frame, max_dimension=1920):
+    height, width = frame.shape[:2]
+    if width > max_dimension or height > max_dimension:
+        scale = max_dimension / max(width, height)
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        frame = cv2.resize(frame, (new_width, new_height))
+    return frame
 
 if __name__ == "__main__":
     devices = list_devices()

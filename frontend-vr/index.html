@@ -72,24 +72,19 @@
         // Main app logic
         const API_BASE_URL = 'http://localhost:8000';
         
+        let lastImagePath = '';
+
         async function fetchAquariumData() {
             try {
                 const response = await axios.get(`${API_BASE_URL}/status`);
                 const data = response.data;
-                
-                // Update sensor readings panel
-                const sensorPanel = document.querySelector('#sensorPanel');
-                sensorPanel.setAttribute('sensor-panel', {
-                    reading: JSON.stringify(data.latest_reading || {})
-                });
 
-                // Update latest image as environment map
-                if (data.latest_image) {
-                    const imageUrl = `${API_BASE_URL}/images/${data.latest_image.filepath.split('/').pop()}`;
+                if (data.latest_image && data.latest_image.filepath !== lastImagePath) {
+                    lastImagePath = data.latest_image.filepath;
+                    const imageUrl = `${API_BASE_URL}/images/${lastImagePath.split('/').pop()}`;
                     document.querySelector('#tankImage').setAttribute('src', imageUrl);
                 }
 
-                // Hide loading screen
                 document.getElementById('loading').style.display = 'none';
             } catch (error) {
                 console.error('Error fetching aquarium data:', error);
