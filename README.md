@@ -1,181 +1,60 @@
-
 # Aquarius 🐟
 
 Aquarium monitoring system with both a PC dashboard and a VR interface for visualizing fish positions, sensor data, and tank images.
 
-## Components
-
-- **Backend**: Python (FastAPI) that processes camera captures and integrates with multiple vision-language models (VLMs).
-- **Frontend (PC)**: React-based dashboard for real-time monitoring of tank status.
-- **Frontend (VR)**: A-Frame VR application for visualizing the aquarium in mixed reality.
-
 ## Prerequisites
 
-- Docker and Docker Compose installed.
-- Node.js and npm for local development of the frontends.
-- A valid API key for each of the vision-language models (OpenAI, Gemini, Claude, Mistral).
-  
-### 1. Building and Running the Project
+- Docker and Docker Compose
+- Node.js and npm (for local development)
+- API keys: OpenAI, Gemini, Claude, Mistral
 
-### Backend
+## Components
 
-The backend uses FastAPI to capture images from a connected camera, analyze them using vision-language models, and serve sensor data.
+- `backend`: Python (FastAPI) that processes camera captures and integrates with multiple vision-language models (VLMs).
+- `frontend-pc`: React-based dashboard for real-time monitoring of tank status.
+- `frontend-vr`: A-Frame VR application for visualizing the aquarium in mixed reality.
 
-Endpoints from `/backend/pyaquarius/main.py`:
+## Setup & Running
 
-```
-1. GET /status
-2. POST /capture
-3. GET /images
-4. GET /readings/history
-5. GET /devices
-```
-#### Setup
-
-1. **Install Python dependencies (for local development)**:
-    ```bash
-    cd backend
-    python -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    ```
-
-2. **Run the backend**:
-    ```bash
-    uvicorn pyaquarius.main:app --reload
-    ```
-
-3. **Using Docker** (recommended):
-    ```bash
-    cd backend
-    docker build -t aquarius-backend .
-    docker run -p 8000:8000 aquarius-backend
-    ```
-
-4. **Access the backend API**:
-    - The API will be accessible at: `http://localhost:8000`
-
-#### Running with Docker Compose
-
-To run all components together (backend and frontends) using Docker Compose:
-
-1. **Start the whole system**:
-    ```bash
-    ./scripts/start.sh
-    ```
-
-2. **Stop the system**:
-    ```bash
-    ./scripts/stop.sh
-    ```
-
-This will build and run all services (backend, frontend-pc, frontend-vr) in one command.
-
----
-
-### Frontend (PC Dashboard)
-
-The frontend for PC is a React app that displays a dashboard with real-time updates on the aquarium status, including the latest image, sensor data, and AI analysis.
-
-`/frontend-pc/src/services/api.js`
-```
-1. getStatus() -> GET /status
-2. getImages() -> GET /images
-3. getReadingsHistory() -> GET /readings/history
+1. Set up environment variables:
+```bash
+cp .env.example .env  # Edit with your API keys
 ```
 
-#### Setup
-
-1. **Install dependencies**:
-    ```bash
-    cd frontend-pc
-    npm install
-    ```
-
-2. **Run the development server**:
-    ```bash
-    npm start
-    ```
-
-3. **Build for production**:
-    ```bash
-    npm run build
-    ```
-
-#### Running with Docker
-
-1. **Build the Docker image**:
-    ```bash
-    cd frontend-pc
-    docker build -t aquarius-frontend-pc .
-    ```
-
-2. **Run the container**:
-    ```bash
-    docker run -p 3000:3000 aquarius-frontend-pc
-    ```
-
-The PC dashboard will be accessible at `http://localhost:3000`.
-
----
-
-### Frontend (VR)
-
-The VR frontend is built using A-Frame, allowing you to visualize the aquarium in mixed reality with fish positions.
-
-`/frontend-vr/api.js`:
-```
-1. getStatus() -> GET /status
-2. getReadingsHistory() -> GET /readings/history
-3. getImageUrl() -> Uses /images endpoint indirectly
+2. Start components individually:
+```bash
+./scripts/start.sh backend        # Start only backend
+./scripts/start.sh frontend-pc    # Start only PC dashboard
+./scripts/start.sh frontend-vr    # Start only VR interface
 ```
 
-#### Setup
+Or start everything:
+```bash
+./scripts/start.sh  # Starts all components
+```
 
-1. **Run the VR app**:
+3. Access interfaces:
+- Backend API: http://localhost:8000
+- PC Dashboard: http://localhost:3000 
+- VR Interface: http://localhost:3001
 
-    ```bash
-    cd frontend-vr
-    npm start
-    ```
+4. Stop components:
+```bash
+./scripts/stop.sh backend         # Stop backend
+./scripts/stop.sh frontend-pc     # Stop PC dashboard
+./scripts/stop.sh frontend-vr     # Stop VR interface
+./scripts/stop.sh                 # Stop everything
+```
 
-2. **Run the VR frontend with Docker**:
+## API Endpoints
 
-    ```bash
-    cd frontend-vr
-    docker build -t aquarius-frontend-vr .
-    docker run -p 3001:3001 aquarius-frontend-vr
-    ```
-
-Access the VR frontend at `http://localhost:3001`.
-
----
-
-### 2. Testing
-
-#### Backend
-
-You can test the backend's API using curl or any API client like Postman:
-
-- **Capture an image**:
-    ```bash
-    curl -X POST http://localhost:8000/capture -d '{"device_id": 0}'
-    ```
-
-- **Get aquarium status**:
-    ```bash
-    curl http://localhost:8000/status
-    ```
-
-#### Frontend (PC Dashboard)
-
-You can test the React app by running the development server (`npm start`) and ensuring the dashboard updates based on real-time data from the backend.
-
-#### Frontend (VR)
-
-Test the VR frontend by opening the `index.html` in a browser and interacting with the A-Frame scene.
-
----
+```
+GET /status             - Get current aquarium status
+POST /capture           - Capture new image
+GET /images             - List captured images
+GET /readings/history   - Get sensor reading history
+GET /devices            - List available camera devices
+```
 
 <!-- ## Video
 
