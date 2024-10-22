@@ -3,7 +3,7 @@ import base64
 import logging
 import asyncio
 import imghdr
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, Optional, Any, Callable
 from abc import ABC, abstractmethod
 import PIL.Image
 from openai import OpenAI
@@ -20,10 +20,10 @@ class VLMError(Exception):
 
 class BaseVLM(ABC):
     def __init__(self):
-        self.max_retries = config.get('API.max_retries')
-        self.timeout = config.get('API.timeout')
+        self.max_retries = config.API_MAX_RETRIES
+        self.timeout = config.API_TIMEOUT
         self.supported_formats = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
-        self.max_image_size = 20 * 1024 * 1024  # 20MB
+        self.retry_delay = config.CAMERA_DEVICE_RETRY_DELAY
         self._setup()
     
     @abstractmethod
@@ -41,11 +41,7 @@ class BaseVLM(ABC):
     def validate_image(self, image_path: str) -> None:
         if not os.path.exists(image_path):
             raise VLMError(f"Image file not found: {image_path}")
-        
-        file_size = os.path.getsize(image_path)
-        if file_size > self.max_image_size:
-            raise VLMError(f"Image size ({file_size/1024/1024:.1f}MB) exceeds maximum allowed (20MB)")
-        
+                
         image_type = imghdr.what(image_path)
         if not image_type:
             raise VLMError(f"Could not determine image type for: {image_path}")
@@ -329,7 +325,7 @@ _manager: Optional[VLMManager] = None
 
 def get_manager() -> VLMManager:
     global _manager
-    if _manager is None:
+    if (_manager is None):
         _manager = VLMManager()
     return _manager
 

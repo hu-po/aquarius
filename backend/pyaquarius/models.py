@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, Column, String, Integer, Float, DateTime, JSON, Index
+from sqlalchemy import create_engine, Column, String, Integer, Float, DateTime, Index
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 import os
 

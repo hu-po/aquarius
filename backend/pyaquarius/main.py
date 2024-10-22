@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import asyncio
 from contextlib import contextmanager
-from pyaquarius.camera import save_frame, RESOLUTION
+from pyaquarius.camera import save_frame
 from pyaquarius.vlms import caption
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
@@ -20,12 +20,12 @@ from .config import config
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.get("API.allowed_origins"),
+    allow_origins=config.API_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["Content-Type", "Authorization"],
-    max_age=config.get("API.cors_max_age")
+    max_age=config.API_CORS_MAX_AGE
 )
 app.mount("/images", StaticFiles(directory=str(config.IMAGES_DIR)), name="images")
 
@@ -114,8 +114,8 @@ async def capture_image(background_tasks: BackgroundTasks, device_id: int = 0, d
         db_image = DBImage(
             id=timestamp.isoformat(),
             filepath=filepath,
-            width=RESOLUTION[0],
-            height=RESOLUTION[1],
+            width=config.CAMERA_MAX_DIM,
+            height=config.CAMERA_MAX_DIM,
             device_id=device_id,
             file_size=os.path.getsize(filepath)
         )
@@ -145,15 +145,15 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
             if desc.concerns_detected:
                 alerts.extend(desc.concerns_detected.split('; '))
     if latest_reading:
-        if latest_reading.temperature > 82 or latest_reading.temperature < 74:
+        if latest_reading.temperature > config.TANK_TEMP_MAX or latest_reading.temperature < config.TANK_TEMP_MIN:
             alerts.append(f"Temperature outside ideal range: {latest_reading.temperature}°F")
-        if latest_reading.ph and (latest_reading.ph < 6.5 or latest_reading.ph > 7.5):
+        if latest_reading.ph and (latest_reading.ph < config.TANK_PH_MIN or latest_reading.ph > config.TANK_PH_MAX):
             alerts.append(f"pH outside ideal range: {latest_reading.ph}")
-        if latest_reading.ammonia and latest_reading.ammonia > 0.25:
+        if latest_reading.ammonia and latest_reading.ammonia > config.TANK_AMMONIA_MAX:
             alerts.append(f"High ammonia level: {latest_reading.ammonia} ppm")
-        if latest_reading.nitrite and latest_reading.nitrite > 0.25:
+        if latest_reading.nitrite and latest_reading.nitrite > config.TANK_NITRITE_MAX:
             alerts.append(f"High nitrite level: {latest_reading.nitrite} ppm")
-        if latest_reading.nitrate and latest_reading.nitrate > 40:
+        if latest_reading.nitrate and latest_reading.nitrate > config.TANK_NITRATE_MAX:
             alerts.append(f"High nitrate level: {latest_reading.nitrate} ppm")
     return AquariumStatus(
         latest_image=Image.from_orm(latest_image) if latest_image else None,

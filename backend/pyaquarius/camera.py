@@ -1,18 +1,10 @@
 import cv2
 import os
-from datetime import datetime, timedelta
-from typing import List, Optional
+from datetime import datetime
+from typing import List
 
 from .config import config
 
-IMAGES_DIR = os.getenv("IMAGES_DIR", "/tmp/aquarium_images")
-os.makedirs(IMAGES_DIR, exist_ok=True)
-
-FPS = config.get('CAMERA.fps')
-FRAME_BUFFERSIZE = config.get('CAMERA.frame_buffer')
-RESOLUTION = (config.get('CAMERA.max_width'), config.get('CAMERA.max_height'))
-MAX_IMAGES = config.get('CAMERA.max_images')
-MIN_FREE_SPACE_MB = config.get('CAMERA.min_free_space_mb')
 
 def list_devices() -> List[int]:
     index = 0
@@ -33,17 +25,22 @@ def save_frame(device_index: int, filename: str) -> bool:
         if not cap.isOpened():
             raise RuntimeError(f"Failed to open device /dev/video{device_index}")
         
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION[0])
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION[1])
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, FRAME_BUFFERSIZE)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.CAMERA_CAM_WIDTH)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.CAMERA_CAM_HEIGHT)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, config.CAMERA_FRAME_BUFFER)
         
         ret, frame = cap.read()
         if not ret:
             raise RuntimeError("Failed to capture frame")
         
-        frame = optimize_image(frame)
+        height, width = frame.shape[:2]
+        if width > config.CAMERA_MAX_DIM or height > config.CAMERA_MAX_DIM:
+            scale = config.CAMERA_MAX_DIM / max(width, height)
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            frame = cv2.resize(frame, (new_width, new_height))
         
-        filepath = os.path.join(IMAGES_DIR, filename)
+        filepath = os.path.join(config.IMAGES_DIR, filename)
         cv2.imwrite(filepath, frame)
         
         cleanup_images()
@@ -54,15 +51,6 @@ def save_frame(device_index: int, filename: str) -> bool:
     finally:
         if 'cap' in locals():
             cap.release()
-
-def optimize_image(frame, max_dimension: int = 1920):
-    height, width = frame.shape[:2]
-    if width > max_dimension or height > max_dimension:
-        scale = max_dimension / max(width, height)
-        new_width = int(width * scale)
-        new_height = int(height * scale)
-        frame = cv2.resize(frame, (new_width, new_height))
-    return frame
 
 def get_directory_size_mb(directory: str) -> float:
     total_size = 0
@@ -75,26 +63,26 @@ def get_directory_size_mb(directory: str) -> float:
 def cleanup_images():
     try:
         all_images = []
-        for filename in os.listdir(IMAGES_DIR):
+        for filename in os.listdir(config.IMAGES_DIR):
             if not filename.endswith(('.jpg', '.png')):
                 continue
             
-            filepath = os.path.join(IMAGES_DIR, filename)
+            filepath = os.path.join(config.IMAGES_DIR, filename)
             timestamp = datetime.fromtimestamp(os.path.getmtime(filepath))
             all_images.append((filepath, timestamp))
 
-        if len(all_images) <= MAX_IMAGES:
+        if len(all_images) <= config.CAMERA_MAX_IMAGES:
             return
 
         all_images.sort(key=lambda x: x[1], reverse=True)
         
-        for filepath, _ in all_images[MAX_IMAGES:]:
+        for filepath, _ in all_images[config.CAMERA_MAX_IMAGES:]:
             if os.path.exists(filepath):
                 os.remove(filepath)
                 
-        dir_size_mb = get_directory_size_mb(IMAGES_DIR)
-        if dir_size_mb > (MAX_IMAGES * 2):  # Assuming average 2MB per image
-            for filepath, _ in all_images[MAX_IMAGES // 2:]:
+        dir_size_mb = get_directory_size_mb(config.IMAGES_DIR)
+        if dir_size_mb > (config.CAMERA_MIN_FREE_SPACE_MB * 2):  # Assuming average 2MB per image
+            for filepath, _ in all_images[config.CAMERA_MAX_IMAGES // 2:]:
                 if os.path.exists(filepath):
                     os.remove(filepath)
                     

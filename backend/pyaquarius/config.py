@@ -1,52 +1,38 @@
-# backend/pyaquarius/config.py
-from typing import Dict, Any
+from dataclasses import dataclass
+from typing import List
 import os
 from pathlib import Path
 
+@dataclass
 class Config:
-    DATA_DIR = Path(os.getenv('DATA_DIR', '/data'))
-    IMAGES_DIR = DATA_DIR / 'images'
-    DB_PATH = DATA_DIR / 'aquarium.db'
+    DATA_DIR: Path = Path(os.get_env('DATA_DIR'))
+    IMAGES_DIR: Path = DATA_DIR / 'images'
+    DB_PATH: Path = DATA_DIR / 'aquarium.db'
     
-    CAMERA = {
-        'fps': int(os.getenv('CAMERA_FPS', '30')),
-        'frame_buffer': int(os.getenv('CAMERA_FRAME_BUFFER', '2')),
-        'max_width': int(os.getenv('CAMERA_MAX_WIDTH', '1920')),
-        'max_height': int(os.getenv('CAMERA_MAX_HEIGHT', '1080')),
-        'max_images': int(os.getenv('CAMERA_MAX_IMAGES', '1000')),
-        'min_free_space_mb': int(os.getenv('CAMERA_MIN_FREE_SPACE_MB', '500')),
-        'device': {'read_attempts': 3, 'retry_delay': 1},
-    }
+    CAMERA_FPS: int = int(os.get_env('CAMERA_FPS'))
+    CAMERA_FRAME_BUFFER: int = int(os.get_env('CAMERA_FRAME_BUFFER'))
+    CAMERA_MAX_DIM: int = int(os.get_env('CAMERA_MAX_DIM'))
+    CAMERA_CAM_WIDTH: int = int(os.get_env('CAMERA_CAM_WIDTH'))
+    CAMERA_CAM_HEIGHT: int = int(os.get_env('CAMERA_CAM_HEIGHT'))
+    CAMERA_MAX_IMAGES: int = int(os.get_env('CAMERA_MAX_IMAGES'))
+    CAMERA_MIN_FREE_SPACE_MB: int = int(os.get_env('CAMERA_MIN_FREE_SPACE_MB'))
+    CAMERA_DEVICE_READ_ATTEMPTS: int = 3
+    CAMERA_DEVICE_RETRY_DELAY: int = 1
     
-    TANK = {
-        'temp_min': float(os.getenv('TANK_TEMP_MIN', '74')),
-        'temp_max': float(os.getenv('TANK_TEMP_MAX', '82')),
-        'ph_min': float(os.getenv('TANK_PH_MIN', '6.5')),
-        'ph_max': float(os.getenv('TANK_PH_MAX', '7.5')),
-        'ammonia_max': float(os.getenv('TANK_AMMONIA_MAX', '0.25')),
-        'nitrite_max': float(os.getenv('TANK_NITRITE_MAX', '0.25')),
-        'nitrate_max': float(os.getenv('TANK_NITRATE_MAX', '40'))
-    }
+    TANK_TEMP_MIN: float = float(os.get_env('TANK_TEMP_MIN'))
+    TANK_TEMP_MAX: float = float(os.get_env('TANK_TEMP_MAX'))
+    TANK_PH_MIN: float = float(os.get_env('TANK_PH_MIN'))
+    TANK_PH_MAX: float = float(os.get_env('TANK_PH_MAX'))
+    TANK_AMMONIA_MAX: float = float(os.get_env('TANK_AMMONIA_MAX'))
+    TANK_NITRITE_MAX: float = float(os.get_env('TANK_NITRITE_MAX'))
+    TANK_NITRATE_MAX: float = float(os.get_env('TANK_NITRATE_MAX'))
     
-    API = {
-        'timeout': int(os.getenv('API_TIMEOUT', 60)),
-        'max_retries': int(os.getenv('API_MAX_RETRIES', 3)),
-        'allowed_origins': [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",") if origin.strip()],
-        'cors_max_age': int(os.getenv('API_CORS_MAX_AGE', 600)),
-    }
-    
-    def __init__(self):
-        self.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-        os.chmod(self.IMAGES_DIR, 0o775)
-    
-    @classmethod
-    def get(cls, key: str, default: Any = None) -> Any:
-        keys = key.split('.')
-        value = cls.__dict__
-        for k in keys:
-            value = value.get(k, default)
-            if value is None:
-                return default
-        return value
+    API_TIMEOUT: int = int(os.get_env('API_TIMEOUT'))
+    API_MAX_RETRIES: int = int(os.get_env('API_MAX_RETRIES'))
+    API_ALLOWED_ORIGINS: List[str] = [origin.strip() for origin in os.get_env("CORS_ORIGINS").split(",") if origin.strip()]
+    API_CORS_MAX_AGE: int = int(os.get_env('API_CORS_MAX_AGE'))
 
-config = Config()
+try:
+    config = Config()
+except Exception as e:
+    raise RuntimeError(f"Failed to load configuration: {str(e)}")
