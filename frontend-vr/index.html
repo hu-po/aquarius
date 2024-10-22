@@ -6,6 +6,9 @@
     <meta name="description" content="VR interface for Aquarius monitoring system">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
+    <script type="module">
+        import { getStatus, getReadingsHistory, getImageUrl } from './api.js';
+    </script>
     <style>
         .loading {
             position: fixed;

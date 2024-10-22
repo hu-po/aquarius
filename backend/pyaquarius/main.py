@@ -29,24 +29,34 @@ if missing_vars:
 
 # Initialize FastAPI app
 app = FastAPI(title="Aquarius Monitoring System")
+
+# Parse CORS origins from environment variable with fallback
+allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
+allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
+
+# Configure CORS with more specific settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "").split(","),
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["Content-Type", "Authorization"],
     max_age=3600
 )
+
+# Configure rate limiting
 app.add_middleware(
     ThrottlingMiddleware,
     rate_limit="100/minute"
 )
 
-# Setup static file serving for images
+# Ensure IMAGES_DIR exists with proper permissions
 IMAGES_DIR = os.getenv("IMAGES_DIR", "/tmp/aquarium_images")
-if not os.path.exists(IMAGES_DIR):
-    os.makedirs(IMAGES_DIR, exist_ok=True)  # Ensure directory exists and is created if missing
-    os.chmod(IMAGES_DIR, 0o777)  # Set full permissions for all users
+os.makedirs(IMAGES_DIR, exist_ok=True)
+os.chmod(IMAGES_DIR, 0o775)  # Changed from 777 to more secure 775
+
+# Mount static files after CORS configuration
 app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 # Background Tasks
