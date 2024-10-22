@@ -1,5 +1,5 @@
-# main.py
 import os
+from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
@@ -14,6 +14,9 @@ from .models import (
     get_db, Image, Reading, VLMDescription, AquariumStatus,
     DBImage, DBReading, DBVLMDescription
 )
+
+# Load environment variables
+load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(title="Aquarius Monitoring System")

@@ -10,3 +10,4 @@ google-generativeai
 openai
 anthropic
 replicate
+python-dotenv
