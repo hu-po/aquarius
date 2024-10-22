@@ -21,8 +21,14 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+# Add version tracking column to all tables
+class BaseMixin:
+    version = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 # SQLAlchemy Models (for database)
-class DBImage(Base):
+class DBImage(BaseMixin, Base):
     __tablename__ = "images"
     
     id = Column(String, primary_key=True)
@@ -35,7 +41,7 @@ class DBImage(Base):
     water_level = Column(Float, nullable=True)
     fish_count = Column(Integer, nullable=True)
 
-class DBReading(Base):
+class DBReading(BaseMixin, Base):
     __tablename__ = "readings"
     
     id = Column(String, primary_key=True)
@@ -47,7 +53,7 @@ class DBReading(Base):
     nitrate = Column(Float, nullable=True)
     image_id = Column(String, nullable=True)
 
-class DBVLMDescription(Base):
+class DBVLMDescription(BaseMixin, Base):
     __tablename__ = "vlm_descriptions"
     
     id = Column(String, primary_key=True)

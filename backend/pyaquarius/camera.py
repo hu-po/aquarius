@@ -1,5 +1,6 @@
 import cv2
 import os
+from datetime import datetime, timedelta
 
 OUTPUT_DIR = "/tmp"
 FPS = 30
@@ -36,6 +37,8 @@ def save_frame(device_index, filename):
         if not ret:
             raise RuntimeError("Failed to capture frame")
         cv2.imwrite(filename, frame)
+        # Add cleanup call after successful save
+        cleanup_old_images(os.path.dirname(filename))
         return True
     except Exception as e:
         print(f"Camera error: {str(e)}")
@@ -81,6 +84,30 @@ def optimize_image(frame, max_dimension=1920):
         new_height = int(height * scale)
         frame = cv2.resize(frame, (new_width, new_height))
     return frame
+
+def cleanup_old_images(directory: str, max_age_days: int = 7):
+    """Remove images older than max_age_days from the specified directory."""
+    try:
+        now = datetime.now()
+        cleanup_before = now - timedelta(days=max_age_days)
+        
+        count_removed = 0
+        for filename in os.listdir(directory):
+            if not (filename.endswith('.jpg') or filename.endswith('.png')):
+                continue
+                
+            filepath = os.path.join(directory, filename)
+            file_modified = datetime.fromtimestamp(os.path.getmtime(filepath))
+            
+            if file_modified < cleanup_before:
+                os.remove(filepath)
+                count_removed += 1
+                
+        print(f"Cleaned up {count_removed} old images")
+        return count_removed
+    except Exception as e:
+        print(f"Error during image cleanup: {str(e)}")
+        return 0
 
 if __name__ == "__main__":
     devices = list_devices()

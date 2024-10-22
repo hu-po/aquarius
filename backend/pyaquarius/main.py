@@ -6,8 +6,6 @@ from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.throttling import ThrottlingMiddleware
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
 from sqlalchemy.orm import Session
 import cv2
 
@@ -95,11 +93,6 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
         db.commit()
     except Exception as e:
         print(f"Failed to analyze image: {e}")
-
-@app.on_event("startup")
-async def startup():
-    redis = aioredis.from_url("redis://localhost")
-    FastAPICache.init(RedisBackend(redis), prefix="aquarius-cache:")
     
 # API Routes
 @app.get("/")
