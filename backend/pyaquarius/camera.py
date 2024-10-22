@@ -1,17 +1,18 @@
 import cv2
 import os
 from datetime import datetime, timedelta
+from typing import List, Optional
 
-OUTPUT_DIR = "/tmp"
+IMAGES_DIR = os.getenv("IMAGES_DIR", "/tmp/aquarium_images")
+os.makedirs(IMAGES_DIR, exist_ok=True)
+
 FPS = 30
 FRAME_BUFFERSIZE = 2
-# RESOLUTION = (3840, 2160)
-RESOLUTION = (1920, 1080)
-# RESOLUTION = (640, 480)
+RESOLUTION = (1920, 1080) # (3840, 2160) (640, 480)
+MAX_IMAGES = 1000
+MIN_FREE_SPACE_MB = 500
 
-def list_devices():
-    # This function attempts to open video capture devices in a range
-    # and lists them if they are available.
+def list_devices() -> List[int]:
     index = 0
     arr = []
     while True:
@@ -19,26 +20,31 @@ def list_devices():
         if not cap.read()[0]:
             cap.release()
             break
-        else:
-            print(f"Found video device: /dev/video{index}")
-            arr.append(index)
+        arr.append(index)
         cap.release()
         index += 1
     return arr
 
-def save_frame(device_index, filename):
+def save_frame(device_index: int, filename: str) -> bool:
     try:
         cap = cv2.VideoCapture(device_index, cv2.CAP_V4L2)
         if not cap.isOpened():
             raise RuntimeError(f"Failed to open device /dev/video{device_index}")
+        
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION[0])
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION[1])
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, FRAME_BUFFERSIZE)
+        
         ret, frame = cap.read()
         if not ret:
             raise RuntimeError("Failed to capture frame")
-        cv2.imwrite(filename, frame)
-        # Add cleanup call after successful save
-        cleanup_old_images(os.path.dirname(filename))
+        
+        frame = optimize_image(frame)
+        
+        filepath = os.path.join(IMAGES_DIR, filename)
+        cv2.imwrite(filepath, frame)
+        
+        cleanup_images()
         return True
     except Exception as e:
         print(f"Camera error: {str(e)}")
@@ -47,36 +53,7 @@ def save_frame(device_index, filename):
         if 'cap' in locals():
             cap.release()
 
-def record_video(device_index, filename, duration=5):
-    cap = cv2.VideoCapture(device_index, cv2.CAP_V4L2)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, RESOLUTION[0])
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, RESOLUTION[1])
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, FRAME_BUFFERSIZE)
-    cap.set(cv2.CAP_PROP_FPS, FPS)  # Ensure FPS setting
-
-    if not cap.isOpened():
-        print(f"Failed to open device /dev/video{device_index}")
-        return False
-
-    actual_fps = cap.get(cv2.CAP_PROP_FPS)
-    frames_to_record = int(actual_fps * duration)
-    print(f"Recording {frames_to_record} frames at {actual_fps} FPS to {filename}")
-
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-    out = cv2.VideoWriter(filename, fourcc, FPS, RESOLUTION)
-    for _ in range(frames_to_record):
-        ret, frame = cap.read()
-        if ret:
-            out.write(frame)
-        else:
-            break
-
-    cap.release()
-    out.release()
-    print("Recording finished")
-    return True
-
-def optimize_image(frame, max_dimension=1920):
+def optimize_image(frame, max_dimension: int = 1920):
     height, width = frame.shape[:2]
     if width > max_dimension or height > max_dimension:
         scale = max_dimension / max(width, height)
@@ -85,37 +62,50 @@ def optimize_image(frame, max_dimension=1920):
         frame = cv2.resize(frame, (new_width, new_height))
     return frame
 
-def cleanup_old_images(directory: str, max_age_days: int = 7):
-    """Remove images older than max_age_days from the specified directory."""
+def get_directory_size_mb(directory: str) -> float:
+    total_size = 0
+    for dirpath, _, filenames in os.walk(directory):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return total_size / (1024 * 1024)
+
+def cleanup_images():
     try:
-        now = datetime.now()
-        cleanup_before = now - timedelta(days=max_age_days)
-        
-        count_removed = 0
-        for filename in os.listdir(directory):
-            if not (filename.endswith('.jpg') or filename.endswith('.png')):
+        all_images = []
+        for filename in os.listdir(IMAGES_DIR):
+            if not filename.endswith(('.jpg', '.png')):
                 continue
-                
-            filepath = os.path.join(directory, filename)
-            file_modified = datetime.fromtimestamp(os.path.getmtime(filepath))
             
-            if file_modified < cleanup_before:
+            filepath = os.path.join(IMAGES_DIR, filename)
+            timestamp = datetime.fromtimestamp(os.path.getmtime(filepath))
+            all_images.append((filepath, timestamp))
+
+        if len(all_images) <= MAX_IMAGES:
+            return
+
+        all_images.sort(key=lambda x: x[1], reverse=True)
+        
+        for filepath, _ in all_images[MAX_IMAGES:]:
+            if os.path.exists(filepath):
                 os.remove(filepath)
-                count_removed += 1
                 
-        print(f"Cleaned up {count_removed} old images")
-        return count_removed
+        dir_size_mb = get_directory_size_mb(IMAGES_DIR)
+        if dir_size_mb > (MAX_IMAGES * 2):  # Assuming average 2MB per image
+            for filepath, _ in all_images[MAX_IMAGES // 2:]:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    
     except Exception as e:
         print(f"Error during image cleanup: {str(e)}")
-        return 0
 
 if __name__ == "__main__":
     devices = list_devices()
     if devices:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         for device in devices:
             try:
-                save_frame(device, os.path.join(OUTPUT_DIR, f"device_{device}.png"))
-                record_video(device, os.path.join(OUTPUT_DIR, f"device_{device}.mp4"), 5)
+                save_frame(device, f"test_device_{device}_{timestamp}.jpg")
             except Exception as e:
                 print(f"Failed to process device {device}: {str(e)}")
     else:
