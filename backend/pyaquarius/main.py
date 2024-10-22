@@ -11,9 +11,12 @@ from contextlib import contextmanager
 from pyaquarius.camera import save_frame, RESOLUTION
 from pyaquarius.vlms import caption
 from pyaquarius.models import (
-    get_db, Image, Reading, VLMDescription, AquariumStatus,
+    get_db, Image, Reading, AquariumStatus,
     DBImage, DBReading, DBVLMDescription
 )
+
+from .config import config
+
 
 required_env_vars = ['ANTHROPIC_API_KEY', 'GOOGLE_SDK_API_KEY', 'OPENAI_API_KEY']
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
@@ -36,11 +39,7 @@ app.add_middleware(
 
 app.add_middleware(ThrottlingMiddleware, rate_limit="100/minute")
 
-IMAGES_DIR = os.getenv("IMAGES_DIR", "/tmp/aquarium_images")
-os.makedirs(IMAGES_DIR, exist_ok=True)
-os.chmod(IMAGES_DIR, 0o775)
-
-app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
+app.mount("/images", StaticFiles(directory=str(config.IMAGES_DIR)), name="images")
 
 @contextmanager
 def get_db_session():

@@ -11,6 +11,8 @@ from anthropic import Anthropic
 import google.generativeai as genai
 import replicate
 
+from .config import config
+
 log = logging.getLogger(__name__)
 
 class VLMError(Exception):
@@ -18,8 +20,8 @@ class VLMError(Exception):
 
 class BaseVLM(ABC):
     def __init__(self):
-        self.max_retries = 3
-        self.retry_delay = 1
+        self.max_retries = config.get('API.max_retries')
+        self.timeout = config.get('API.timeout')
         self.supported_formats = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
         self.max_image_size = 20 * 1024 * 1024  # 20MB
         self._setup()

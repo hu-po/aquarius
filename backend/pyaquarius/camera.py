@@ -3,14 +3,16 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Optional
 
+from .config import config
+
 IMAGES_DIR = os.getenv("IMAGES_DIR", "/tmp/aquarium_images")
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
-FPS = 30
-FRAME_BUFFERSIZE = 2
-RESOLUTION = (1920, 1080) # (3840, 2160) (640, 480)
-MAX_IMAGES = 1000
-MIN_FREE_SPACE_MB = 500
+FPS = config.get('CAMERA.fps')
+FRAME_BUFFERSIZE = config.get('CAMERA.frame_buffer')
+RESOLUTION = (config.get('CAMERA.max_width'), config.get('CAMERA.max_height'))
+MAX_IMAGES = config.get('CAMERA.max_images')
+MIN_FREE_SPACE_MB = config.get('CAMERA.min_free_space_mb')
 
 def list_devices() -> List[int]:
     index = 0
