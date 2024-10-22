@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export async function getStatus() {
     try {
@@ -25,5 +25,6 @@ export async function getReadingsHistory(hours = 24) {
 export function getImageUrl(filepath) {
     if (!filepath) return null;
     const filename = filepath.split('/').pop();
-    return `${API_BASE_URL}/images/${filename}`;
+    if (!filename) return null;
+    return `${API_BASE_URL}/images/${encodeURIComponent(filename)}`;
 }

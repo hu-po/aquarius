@@ -6,32 +6,15 @@
     <meta name="description" content="VR interface for Aquarius monitoring system">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
-    <script type="module">
-        import { getStatus, getReadingsHistory, getImageUrl } from './api.js';
-    </script>
     <style>
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: Arial, sans-serif;
-            z-index: 9999;
-        }
+        .loading{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);color:white;display:flex;justify-content:center;align-items:center;font-family:Arial,sans-serif;z-index:9999}
     </style>
 </head>
-
 <body>
     <div id="loading" class="loading">Loading aquarium data...</div>
-    
-    <script>
-        // Custom A-Frame component for sensor readings display
+    <script type="module">
+        import { getStatus, getReadingsHistory, getImageUrl } from './api.js';
+
         AFRAME.registerComponent('sensor-panel', {
             schema: {
                 reading: {type: 'string', default: '{}'}
@@ -39,12 +22,12 @@
             update: function() {
                 try {
                     const data = JSON.parse(this.data.reading);
-                    const text = `Temperature: ${data.temperature}°F
-                        pH: ${data.ph || 'N/A'}
-                        Ammonia: ${data.ammonia || 'N/A'} ppm
-                        Nitrite: ${data.nitrite || 'N/A'} ppm
-                        Nitrate: ${data.nitrate || 'N/A'} ppm`;
-                    
+                    if (!data) return;
+                    const text = `Temperature: ${data.temperature?.toFixed(1) || 'N/A'}°F
+                        pH: ${data.ph?.toFixed(1) || 'N/A'}
+                        Ammonia: ${data.ammonia?.toFixed(2) || 'N/A'} ppm
+                        Nitrite: ${data.nitrite?.toFixed(2) || 'N/A'} ppm
+                        Nitrate: ${data.nitrate?.toFixed(1) || 'N/A'} ppm`;
                     this.el.setAttribute('text', {
                         value: text,
                         width: 2,
@@ -57,7 +40,6 @@
             }
         });
 
-        // Custom component for fish markers
         AFRAME.registerComponent('fish-marker', {
             schema: {
                 position: {type: 'vec3'},
@@ -72,72 +54,74 @@
             }
         });
 
-        // Main app logic
-        const API_BASE_URL = 'http://localhost:8000';
-        
         let lastImagePath = '';
+        let updateInterval;
 
-        async function fetchAquariumData() {
+        async function updateAquariumData() {
             try {
-                const response = await axios.get(`${API_BASE_URL}/status`);
-                const data = response.data;
+                const status = await getStatus();
+                if (!status) throw new Error('No status data received');
 
-                if (data.latest_image && data.latest_image.filepath !== lastImagePath) {
-                    lastImagePath = data.latest_image.filepath;
-                    const imageUrl = `${API_BASE_URL}/images/${lastImagePath.split('/').pop()}`;
-                    document.querySelector('#tankImage').setAttribute('src', imageUrl);
+                const sensorPanel = document.querySelector('#sensorPanel');
+                if (status.latest_reading) {
+                    sensorPanel.setAttribute('sensor-panel', {
+                        reading: JSON.stringify(status.latest_reading)
+                    });
+                }
+
+                if (status.latest_image && status.latest_image.filepath !== lastImagePath) {
+                    lastImagePath = status.latest_image.filepath;
+                    const imageUrl = getImageUrl(lastImagePath);
+                    if (imageUrl) {
+                        document.querySelector('#tankImage').setAttribute('src', imageUrl);
+                    }
                 }
 
                 document.getElementById('loading').style.display = 'none';
             } catch (error) {
-                console.error('Error fetching aquarium data:', error);
+                console.error('Error updating aquarium data:', error);
+                document.getElementById('loading').textContent = 'Error loading data. Retrying...';
             }
         }
 
-        // Fetch data periodically
-        setInterval(fetchAquariumData, 30000);
-        fetchAquariumData();
+        function startUpdates() {
+            updateAquariumData();
+            updateInterval = setInterval(updateAquariumData, 30000);
+        }
+
+        function stopUpdates() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopUpdates();
+            } else {
+                startUpdates();
+            }
+        });
+
+        startUpdates();
     </script>
 
     <a-scene>
-        <!-- Environment -->
         <a-sky color="#001133"></a-sky>
         <a-plane position="0 0 0" rotation="-90 0 0" width="4" height="4" color="#445566"></a-plane>
         
-        <!-- Aquarium tank -->
-        <a-box position="0 0.6 -2" 
-               width="1.5" height="1.2" depth="0.8" 
-               material="opacity: 0.3; transparent: true; color: #8899AA"
-               shadow>
-            <!-- Tank water -->
-            <a-box position="0 0 0" 
-                   width="1.4" height="1.1" depth="0.7" 
-                   material="opacity: 0.2; transparent: true; color: #004466">
-            </a-box>
-            
-            <!-- Latest tank image displayed on back wall -->
-            <a-plane id="tankImage" 
-                     position="0 0 -0.35"
-                     width="1.4" height="1.1"
-                     material="transparent: true; opacity: 0.8">
-            </a-plane>
+        <a-box position="0 0.6 -2" width="1.5" height="1.2" depth="0.8" material="opacity: 0.3; transparent: true; color: #8899AA" shadow>
+            <a-box position="0 0 0" width="1.4" height="1.1" depth="0.7" material="opacity: 0.2; transparent: true; color: #004466"></a-box>
+            <a-plane id="tankImage" position="0 0 -0.35" width="1.4" height="1.1" material="transparent: true; opacity: 0.8"></a-plane>
         </a-box>
 
-        <!-- Sensor readings panel -->
-        <a-plane id="sensorPanel"
-                 position="1.5 1.5 -2"
-                 width="1" height="0.8"
-                 material="color: #223344; opacity: 0.8"
-                 text="value: Loading sensor data...; color: white; align: center">
-        </a-plane>
+        <a-plane id="sensorPanel" position="1.5 1.5 -2" width="1" height="0.8" material="color: #223344; opacity: 0.8" text="value: Loading sensor data...; color: white; align: center"></a-plane>
 
-        <!-- Lighting -->
         <a-light type="ambient" color="#445566"></a-light>
         <a-light type="point" intensity="2" position="2 4 4"></a-light>
 
-        <!-- Camera -->
         <a-entity position="0 1.6 0">
-            <a-camera></a-camera>
+            <a-camera wasd-controls look-controls></a-camera>
             <a-cursor></a-cursor>
         </a-entity>
     </a-scene>

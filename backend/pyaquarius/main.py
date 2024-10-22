@@ -1,5 +1,4 @@
 import os
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
@@ -7,32 +6,23 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.throttling import ThrottlingMiddleware
 from sqlalchemy.orm import Session
-import cv2
-
-from . import camera
-from . import vlms
+import asyncio
+from contextlib import contextmanager
+from . import camera, vlms
 from .models import (
     get_db, Image, Reading, VLMDescription, AquariumStatus,
     DBImage, DBReading, DBVLMDescription
 )
 
-# Load environment variables
-load_dotenv()
-
-# Add to main.py at startup
 required_env_vars = ['ANTHROPIC_API_KEY', 'GOOGLE_SDK_API_KEY', 'OPENAI_API_KEY']
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-# Initialize FastAPI app
 app = FastAPI(title="Aquarius Monitoring System")
-
-# Parse CORS origins from environment variable with fallback
 allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
 allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
 
-# Configure CORS with more specific settings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -43,29 +33,33 @@ app.add_middleware(
     max_age=3600
 )
 
-# Configure rate limiting
-app.add_middleware(
-    ThrottlingMiddleware,
-    rate_limit="100/minute"
-)
+app.add_middleware(ThrottlingMiddleware, rate_limit="100/minute")
 
-# Ensure IMAGES_DIR exists with proper permissions
 IMAGES_DIR = os.getenv("IMAGES_DIR", "/tmp/aquarium_images")
 os.makedirs(IMAGES_DIR, exist_ok=True)
-os.chmod(IMAGES_DIR, 0o775)  # Changed from 777 to more secure 775
+os.chmod(IMAGES_DIR, 0o775)
 
-# Mount static files after CORS configuration
 app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
-# Background Tasks
+@contextmanager
+def get_db_session():
+    db = get_db()
+    session = next(db)
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
 async def analyze_image(image_id: str, image_path: str, db: Session):
     try:
-        # Prompt setup and image processing
         with open("prompts/tank-info.txt") as f:
             base_prompt = f.read().strip()
-    
-        prompt = f"""Given this aquarium setup: {base_prompt}
 
+        prompt = f"""Given this aquarium setup: {base_prompt}
         Please analyze this image and:
         1. Describe what you see
         2. Note any changes from ideal conditions
@@ -74,35 +68,65 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
         5. Assess plant health
         """
         
-        # Get descriptions from VLMs
         start_time = datetime.utcnow()
-        descriptions = await vlms.caption(image_path, prompt)
-
-        # Store descriptions in the database
-        for model_name, description in descriptions.items():
-            vlm_desc = DBVLMDescription(
-                id=f"{datetime.utcnow().isoformat()}_{model_name}",
-                image_id=image_id,
-                model_name=model_name,
-                description=description,
-                prompt=prompt,
-                latency=(datetime.utcnow() - start_time).total_seconds()
+        
+        try:
+            descriptions = await asyncio.wait_for(
+                vlms.caption(image_path, prompt),
+                timeout=60.0
             )
-            db.add(vlm_desc)
+        except asyncio.TimeoutError:
+            descriptions = {"error": "Analysis timeout"}
+        except Exception as e:
+            descriptions = {"error": f"Analysis failed: {str(e)}"}
 
-        db.commit()
+        with get_db_session() as session:
+            for model_name, description in descriptions.items():
+                if model_name != "error":
+                    vlm_desc = DBVLMDescription(
+                        id=f"{datetime.utcnow().isoformat()}_{model_name}",
+                        image_id=image_id,
+                        model_name=model_name,
+                        description=description,
+                        prompt=prompt,
+                        latency=(datetime.utcnow() - start_time).total_seconds()
+                    )
+                    session.add(vlm_desc)
+
+                    concerns = extract_concerns(description)
+                    if concerns:
+                        vlm_desc.concerns_detected = concerns
+
     except Exception as e:
         print(f"Failed to analyze image: {e}")
+        with get_db_session() as session:
+            error_desc = DBVLMDescription(
+                id=f"{datetime.utcnow().isoformat()}_error",
+                image_id=image_id,
+                model_name="system",
+                description=f"Analysis failed: {str(e)}",
+                prompt=prompt,
+                latency=0
+            )
+            session.add(error_desc)
+
+def extract_concerns(description: str) -> Optional[str]:
+    if not description:
+        return None
     
-# API Routes
-@app.get("/")
-async def root():
-    """Health check endpoint"""
-    return {
-        "status": "ok",
-        "message": "Aquarium Monitor Backend is Running",
-        "version": "1.0.0"
-    }
+    concerns = []
+    lower_desc = description.lower()
+    
+    keywords = [
+        "concern", "warning", "alert", "problem", "issue",
+        "high", "low", "unsafe", "dangerous", "unhealthy"
+    ]
+    
+    for line in description.split('\n'):
+        if any(keyword in line.lower() for keyword in keywords):
+            concerns.append(line.strip())
+    
+    return "; ".join(concerns) if concerns else None
 
 @app.post("/capture")
 async def capture_image(
@@ -110,68 +134,38 @@ async def capture_image(
     device_id: int = 0,
     db: Session = Depends(get_db)
 ) -> Image:
-    """Capture new image and trigger analysis"""
-    # Generate filename with timestamp
     timestamp = datetime.utcnow()
     filename = f"{timestamp.isoformat()}.jpg"
     filepath = os.path.join(IMAGES_DIR, filename)
     
-    # Capture image
-    success = camera.save_frame(device_id, filepath)
-    if not success:
+    if not camera.save_frame(device_id, filepath):
         raise HTTPException(status_code=500, detail="Failed to capture image")
     
-    # Create database entry
-    db_image = DBImage(
-        id=timestamp.isoformat(),
-        filepath=filepath,
-        width=camera.RESOLUTION[0],
-        height=camera.RESOLUTION[1],
-        device_id=device_id,
-        file_size=os.path.getsize(filepath)
-    )
-    db.add(db_image)
-    db.commit()
-    
-    # Trigger background analysis
-    background_tasks.add_task(
-        analyze_image,
-        db_image.id,
-        filepath,
-        db
-    )
-    
-    return Image.from_orm(db_image)
-
-@app.post("/readings")
-async def add_reading(
-    reading: Reading,
-    db: Session = Depends(get_db)
-) -> Reading:
-    """Add new sensor readings"""
-    db_reading = DBReading(
-        id=datetime.utcnow().isoformat(),
-        temperature=reading.temperature,
-        ph=reading.ph,
-        ammonia=reading.ammonia,
-        nitrite=reading.nitrite,
-        nitrate=reading.nitrate,
-        image_id=reading.image_id
-    )
-    db.add(db_reading)
-    db.commit()
-    return Reading.from_orm(db_reading)
+    try:
+        db_image = DBImage(
+            id=timestamp.isoformat(),
+            filepath=filepath,
+            width=camera.RESOLUTION[0],
+            height=camera.RESOLUTION[1],
+            device_id=device_id,
+            file_size=os.path.getsize(filepath)
+        )
+        db.add(db_image)
+        db.commit()
+        
+        background_tasks.add_task(analyze_image, db_image.id, filepath, db)
+        return Image.from_orm(db_image)
+        
+    except Exception as e:
+        db.rollback()
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/status")
 async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
-    """Get current aquarium status"""
-    # Get latest image
     latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
-    
-    # Get latest reading
     latest_reading = db.query(DBReading).order_by(DBReading.timestamp.desc()).first()
-    
-    # Get latest VLM descriptions if we have an image
     latest_descriptions = {}
     alerts = []
     
@@ -181,11 +175,11 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
         ).all()
         
         for desc in descriptions:
-            latest_descriptions[desc.model_name] = desc.description
+            if desc.model_name != "system":
+                latest_descriptions[desc.model_name] = desc.description
             if desc.concerns_detected:
-                alerts.append(desc.concerns_detected)
+                alerts.extend(desc.concerns_detected.split('; '))
     
-    # Add alerts for concerning readings
     if latest_reading:
         if latest_reading.temperature > 82 or latest_reading.temperature < 74:
             alerts.append(f"Temperature outside ideal range: {latest_reading.temperature}°F")
@@ -202,7 +196,7 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
         latest_image=Image.from_orm(latest_image) if latest_image else None,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
         latest_descriptions=latest_descriptions,
-        alerts=alerts
+        alerts=list(set(alerts))  # Remove duplicates
     )
 
 @app.get("/images")
@@ -211,7 +205,6 @@ async def list_images(
     offset: int = 0,
     db: Session = Depends(get_db)
 ) -> List[Image]:
-    """Get recent images"""
     images = db.query(DBImage)\
         .order_by(DBImage.timestamp.desc())\
         .offset(offset)\
@@ -224,7 +217,6 @@ async def get_readings_history(
     hours: int = 24,
     db: Session = Depends(get_db)
 ) -> List[Reading]:
-    """Get sensor reading history"""
     since = datetime.utcnow() - timedelta(hours=hours)
     readings = db.query(DBReading)\
         .filter(DBReading.timestamp >= since)\
@@ -234,5 +226,4 @@ async def get_readings_history(
 
 @app.get("/devices")
 async def list_devices() -> List[int]:
-    """List available camera devices"""
     return camera.list_devices()
