@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from dotenv import load_dotenv
 from typing import List
 import os
 from pathlib import Path
@@ -34,11 +33,6 @@ class Config:
     API_CORS_MAX_AGE: int = int(os.getenv('API_CORS_MAX_AGE'))
 
 try:
-    env_path = Path(__file__).parent.parent / '.env'
-    if not env_path.exists():
-        print(f"Failed to load configuration: {env_path} does not exist")
-        env_path = Path(__file__).parent.parent / '.env.example'
-    load_dotenv(env_path)
     config = Config()
 except Exception as e:
     raise RuntimeError(f"Failed to load configuration: {str(e)}")
