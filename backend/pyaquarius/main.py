@@ -4,7 +4,6 @@ from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.throttling import ThrottlingMiddleware
 from sqlalchemy.orm import Session
 import asyncio
 from contextlib import contextmanager
@@ -18,27 +17,16 @@ from pyaquarius.models import (
 from .config import config
 
 
-required_env_vars = ['ANTHROPIC_API_KEY', 'GOOGLE_SDK_API_KEY', 'OPENAI_API_KEY']
-missing_vars = [var for var in required_env_vars if not os.getenv(var)]
-if missing_vars:
-    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
-
 app = FastAPI(title="Aquarius Monitoring System")
-allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
-allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=config.get("API.allowed_origins"),
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["Content-Type", "Authorization"],
-    max_age=3600
+    max_age=config.get("API.cors_max_age")
 )
-
-app.add_middleware(ThrottlingMiddleware, rate_limit="100/minute")
-
 app.mount("/images", StaticFiles(directory=str(config.IMAGES_DIR)), name="images")
 
 @contextmanager
@@ -119,7 +107,7 @@ def extract_concerns(description: str) -> Optional[str]:
 async def capture_image(background_tasks: BackgroundTasks, device_id: int = 0, db: Session = Depends(get_db)) -> Image:
     timestamp = datetime.utcnow()
     filename = f"{timestamp.isoformat()}.jpg"
-    filepath = os.path.join(IMAGES_DIR, filename)
+    filepath = os.path.join(config.IMAGES_DIR, filename)
     if not save_frame(device_id, filename):
         raise HTTPException(status_code=500, detail="Failed to capture image")
     try:

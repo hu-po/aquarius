@@ -29,9 +29,10 @@ class Config:
     }
     
     API = {
-        'rate_limit': os.getenv('API_RATE_LIMIT', '100/minute'),
-        'timeout': int(os.getenv('API_TIMEOUT', '60')),
-        'max_retries': int(os.getenv('API_MAX_RETRIES', '3'))
+        'timeout': int(os.getenv('API_TIMEOUT', 60)),
+        'max_retries': int(os.getenv('API_MAX_RETRIES', 3)),
+        'allowed_origins': [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",") if origin.strip()],
+        'cors_max_age': int(os.getenv('API_CORS_MAX_AGE', 600)),
     }
     
     def __init__(self):
