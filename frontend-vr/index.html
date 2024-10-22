@@ -1,25 +1,147 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-  <meta charset="utf-8">
-  <title> A-Frame Aquarium </title>
-  <meta name="description" content="Aquarium • A-Frame">
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <meta charset="utf-8">
+    <title>Aquarius VR</title>
+    <meta name="description" content="VR interface for Aquarius monitoring system">
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
+    <style>
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            z-index: 9999;
+        }
+    </style>
 </head>
 
 <body>
-  <a-scene
-  obb-collider="showColliders: false"
-  renderer="colorManagement: true;"
-  button
-  xr-mode-ui="XRMode: ar"
-  info-message="htmlSrc: #messageText">
-    <a-entity id="fish" position="0 1 0" rotation="-90 0 0" scale="0.5 0.5 0.5" gltf-model=""></a-entity>
-    <a-entity id="camera" camera position="0 1.5 0" look-controls wasd-controls></a-entity>
-    <a-entity id="rightHand" hand-tracking-grab-controls="hand: right"></a-entity>
-    <a-entity id="leftHand" hand-tracking-grab-controls="hand: left"></a-entity>
-  </a-scene>
-</body>
+    <div id="loading" class="loading">Loading aquarium data...</div>
+    
+    <script>
+        // Custom A-Frame component for sensor readings display
+        AFRAME.registerComponent('sensor-panel', {
+            schema: {
+                reading: {type: 'string', default: '{}'}
+            },
+            update: function() {
+                try {
+                    const data = JSON.parse(this.data.reading);
+                    const text = `Temperature: ${data.temperature}°F
+                        pH: ${data.ph || 'N/A'}
+                        Ammonia: ${data.ammonia || 'N/A'} ppm
+                        Nitrite: ${data.nitrite || 'N/A'} ppm
+                        Nitrate: ${data.nitrate || 'N/A'} ppm`;
+                    
+                    this.el.setAttribute('text', {
+                        value: text,
+                        width: 2,
+                        color: 'white',
+                        align: 'left'
+                    });
+                } catch (e) {
+                    console.error('Error updating sensor panel:', e);
+                }
+            }
+        });
 
+        // Custom component for fish markers
+        AFRAME.registerComponent('fish-marker', {
+            schema: {
+                position: {type: 'vec3'},
+                color: {type: 'color', default: '#00ff00'}
+            },
+            init: function() {
+                const sphere = document.createElement('a-sphere');
+                sphere.setAttribute('radius', '0.05');
+                sphere.setAttribute('color', this.data.color);
+                sphere.setAttribute('position', this.data.position);
+                this.el.appendChild(sphere);
+            }
+        });
+
+        // Main app logic
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        async function fetchAquariumData() {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/status`);
+                const data = response.data;
+                
+                // Update sensor readings panel
+                const sensorPanel = document.querySelector('#sensorPanel');
+                sensorPanel.setAttribute('sensor-panel', {
+                    reading: JSON.stringify(data.latest_reading || {})
+                });
+
+                // Update latest image as environment map
+                if (data.latest_image) {
+                    const imageUrl = `${API_BASE_URL}/images/${data.latest_image.filepath.split('/').pop()}`;
+                    document.querySelector('#tankImage').setAttribute('src', imageUrl);
+                }
+
+                // Hide loading screen
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error('Error fetching aquarium data:', error);
+            }
+        }
+
+        // Fetch data periodically
+        setInterval(fetchAquariumData, 30000);
+        fetchAquariumData();
+    </script>
+
+    <a-scene>
+        <!-- Environment -->
+        <a-sky color="#001133"></a-sky>
+        <a-plane position="0 0 0" rotation="-90 0 0" width="4" height="4" color="#445566"></a-plane>
+        
+        <!-- Aquarium tank -->
+        <a-box position="0 0.6 -2" 
+               width="1.5" height="1.2" depth="0.8" 
+               material="opacity: 0.3; transparent: true; color: #8899AA"
+               shadow>
+            <!-- Tank water -->
+            <a-box position="0 0 0" 
+                   width="1.4" height="1.1" depth="0.7" 
+                   material="opacity: 0.2; transparent: true; color: #004466">
+            </a-box>
+            
+            <!-- Latest tank image displayed on back wall -->
+            <a-plane id="tankImage" 
+                     position="0 0 -0.35"
+                     width="1.4" height="1.1"
+                     material="transparent: true; opacity: 0.8">
+            </a-plane>
+        </a-box>
+
+        <!-- Sensor readings panel -->
+        <a-plane id="sensorPanel"
+                 position="1.5 1.5 -2"
+                 width="1" height="0.8"
+                 material="color: #223344; opacity: 0.8"
+                 text="value: Loading sensor data...; color: white; align: center">
+        </a-plane>
+
+        <!-- Lighting -->
+        <a-light type="ambient" color="#445566"></a-light>
+        <a-light type="point" intensity="2" position="2 4 4"></a-light>
+
+        <!-- Camera -->
+        <a-entity position="0 1.6 0">
+            <a-camera></a-camera>
+            <a-cursor></a-cursor>
+        </a-entity>
+    </a-scene>
+</body>
 </html>

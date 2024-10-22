@@ -115,13 +115,14 @@ The VR frontend is built using A-Frame, allowing you to visualize the aquarium i
 #### Setup
 
 1. **Run the VR app**:
-    Open the `index.html` in any web server or load it using a simple development server:
+
     ```bash
     cd frontend-vr
-    python3 -m http.server
+    npm start
     ```
 
 2. **Run the VR frontend with Docker**:
+
     ```bash
     cd frontend-vr
     docker build -t aquarius-frontend-vr .

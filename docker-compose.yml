@@ -11,6 +11,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
       - IMAGES_DIR=${IMAGES_DIR}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
     volumes:
       - ./data/aquarium_images:${IMAGES_DIR}
       - ./data/db:/app/db  # For SQLite database persistence
@@ -38,3 +39,8 @@ services:
       - "${FRONTEND_VR_PORT}:3001"
     depends_on:
       - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend-vr:/app
+      - /app/node_modules
