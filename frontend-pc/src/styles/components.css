@@ -1,0 +1,159 @@
+/* Base layout */
+.dashboard {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+.dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2d3748;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.dashboard-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Alerts */
+.alerts {
+    margin-top: 1rem;
+}
+
+.alert {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #ffeeba;
+}
+
+/* Latest Image */
+.latest-image {
+    width: 100%;
+}
+
+.latest-image h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #2d3748;
+}
+
+.aquarium-image {
+    width: 100%;
+    height: auto;
+    border-radius: 0.375rem;
+}
+
+.image-info {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: #4a5568;
+}
+
+/* Stats */
+.stats {
+    width: 100%;
+}
+
+.stats h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #2d3748;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.stat-item {
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 0.375rem;
+}
+
+.stat-item label {
+    display: block;
+    font-size: 0.875rem;
+    color: #4a5568;
+    margin-bottom: 0.25rem;
+}
+
+.stat-item span {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+/* LLM Reply */
+.llm-reply {
+    width: 100%;
+}
+
+.llm-reply h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #2d3748;
+}
+
+.model-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.model-button {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    background: #e2e8f0;
+    border: none;
+    cursor: pointer;
+}
+
+.model-button.active {
+    background: #4a5568;
+    color: white;
+}
+
+.description {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #4a5568;
+    white-space: pre-wrap;
+}
+
+/* Loading & Error States */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    font-size: 1.125rem;
+    color: #4a5568;
+}
+
+.error {
+    padding: 1rem;
+    background-color: #fed7d7;
+    color: #c53030;
+    border-radius: 0.375rem;
+    margin: 1rem;
+}

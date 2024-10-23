@@ -1,4 +1,3 @@
-// frontend-pc/src/App.js
 import React from 'react';
 import { Dashboard } from './components';
 import './styles/components.css';
