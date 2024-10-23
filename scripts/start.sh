@@ -46,5 +46,9 @@ start_components() {
     fi
 }
 
+# Export host IP for use in containers
+HOST_IP=$(hostname -I | awk '{print $1}')
+export HOST_IP
+
 # Start components and show logs
 start_components "$@"
