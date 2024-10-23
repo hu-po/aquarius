@@ -20,6 +20,14 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
+    },
+    resolve: {
+      extensions: ['.js', '.jsx']
+    },
+    esbuild: {
+      loader: 'jsx',
+      include: /src\/.*\.jsx?$/,
+      exclude: []
     }
   }
 })
