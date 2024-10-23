@@ -19,7 +19,7 @@ def list_devices() -> List[int]:
         index += 1
     return arr
 
-def save_frame(device_index: int, filename: str) -> bool:
+def save_frame(filename: str, device_index: int = 0) -> bool:
     try:
         cap = cv2.VideoCapture(device_index, cv2.CAP_V4L2)
         if not cap.isOpened():
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         for device in devices:
             try:
-                save_frame(device, f"test_device_{device}_{timestamp}.jpg")
+                save_frame(f"test_device_{device}_{timestamp}.jpg", device)
             except Exception as e:
                 print(f"Failed to process device {device}: {str(e)}")
     else:

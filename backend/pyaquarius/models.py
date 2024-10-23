@@ -31,7 +31,6 @@ class DBImage(BaseMixin, Base):
     filepath = Column(String)
     width = Column(Integer)
     height = Column(Integer)
-    device_id = Column(Integer)
     file_size = Column(Integer)
     water_level = Column(Float, nullable=True)
     fish_count = Column(Integer, nullable=True)
@@ -62,7 +61,6 @@ class ImageBase(BaseModel):
     filepath: str
     width: int
     height: int
-    device_id: int
     file_size: int
     water_level: Optional[float] = None
     fish_count: Optional[int] = None

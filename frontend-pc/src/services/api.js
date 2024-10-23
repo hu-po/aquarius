@@ -20,6 +20,17 @@ export const getStatus = async () => {
   }
 };
 
+export const captureImage = async (deviceId = 0) => {
+  try {
+    const response = await axios.post(`${API.BASE_URL}/capture`, null, {
+      params: { device_id: deviceId }
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
 export const getImages = async (limit = 10, offset = 0) => {
   try {
     const response = await axios.get(`${API.BASE_URL}/images?limit=${limit}&offset=${offset}`);

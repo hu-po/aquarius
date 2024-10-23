@@ -95,25 +95,27 @@ def extract_concerns(description: str) -> Optional[str]:
     return "; ".join(concerns) if concerns else None
 
 @app.post("/capture")
-async def capture_image(background_tasks: BackgroundTasks, device_id: int = 0, db: Session = Depends(get_db)) -> Image:
+async def capture_image(background_tasks: BackgroundTasks, db: Session = Depends(get_db)) -> Image:
+    """Capture image endpoint - now handles both capture and analysis"""
     timestamp = datetime.now(timezone.utc)
     filename = f"{timestamp.isoformat()}.jpg"
     filepath = os.path.join(config.IMAGES_DIR, filename)
-    if not save_frame(device_id, filename):
+    if not save_frame(filename):
         raise HTTPException(status_code=500, detail="Failed to capture image")
+    
     try:
         db_image = DBImage(
             id=timestamp.isoformat(),
             filepath=filepath,
             width=config.CAMERA_MAX_DIM,
             height=config.CAMERA_MAX_DIM,
-            device_id=device_id,
             file_size=os.path.getsize(filepath)
         )
         db.add(db_image)
         db.commit()
         background_tasks.add_task(analyze_image, db_image.id, filepath, db)
         return Image.from_orm(db_image)
+    
     except Exception as e:
         db.rollback()
         if os.path.exists(filepath):
@@ -167,8 +169,3 @@ async def get_readings_history(hours: int = 24, db: Session = Depends(get_db)) -
     since = datetime.now(timezone.utc) - timedelta(hours=hours)
     readings = db.query(DBReading).filter(DBReading.timestamp >= since).order_by(DBReading.timestamp.asc()).all()
     return [Reading.from_orm(r) for r in readings]
-
-@app.get("/devices")
-async def list_devices() -> List[int]:
-    from pyaquarius.camera import list_devices
-    return list_devices()
