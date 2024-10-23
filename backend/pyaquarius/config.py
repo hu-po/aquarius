@@ -33,7 +33,7 @@ class Config:
     VLM_API_TIMEOUT: int = int(os.getenv('VLM_API_TIMEOUT'))
     VLM_API_MAX_RETRIES: int = int(os.getenv('VLM_API_MAX_RETRIES'))
 
-    CORS_ORIGINS: List[str] = [origin.strip() for origin in os.getenv("CORS_ORIGINS").split(",") if origin.strip()]
+    CORS_ORIGINS: str = os.getenv('CORS_ORIGINS')
     CORS_MAX_AGE: int = int(os.getenv('CORS_MAX_AGE'))
 
     def __post_init__(self):

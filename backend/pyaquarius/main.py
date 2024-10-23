@@ -20,7 +20,7 @@ from .config import config
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.CORS_ORIGINS,
+    allow_origins=[origin.strip() for origin in config.CORS_ORIGINS.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
