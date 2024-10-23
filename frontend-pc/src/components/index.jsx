@@ -1,28 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { API, DASHBOARD, STATS } from '../config';
 import { getStatus } from '../services/api';
 
-// ErrorBoundary Component
-export const ErrorBoundary = ({ children, fallback }) => {
-  const [hasError, setHasError] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const handleError = (error, errorInfo) => {
-      console.error('Component Error:', error, errorInfo);
-      setError(error);
-      setHasError(true);
-    };
-
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
-  }, []);
-
-  if (hasError) {
-    return fallback || <div>Something went wrong.</div>;
-  }
-  return children;
-};
+const POLL_INTERVAL = 30000; // 30 seconds default
 
 // Dashboard Component
 export const Dashboard = () => {
@@ -52,7 +31,7 @@ export const Dashboard = () => {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, API.POLL_INTERVAL);
+    const interval = setInterval(fetchData, POLL_INTERVAL);
     return () => {
       mounted = false;
       clearInterval(interval);
@@ -89,9 +68,6 @@ export const Dashboard = () => {
         <div className="dashboard-section">
           <LLMReply descriptions={status?.latest_descriptions} />
         </div>
-        <div className="dashboard-section">
-          <FishPositionPlot image={status?.latest_image} />
-        </div>
       </div>
     </div>
   );
@@ -100,20 +76,16 @@ export const Dashboard = () => {
 // LatestImage Component
 export const LatestImage = ({ image }) => {
   const [imageError, setImageError] = useState(false);
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
   if (!image) {
-    return (
-      <div className="latest-image">
-        <h2>Latest Image</h2>
-        <div className="no-image-placeholder">No image available</div>
-      </div>
-    );
+    return <div className="latest-image">No image available</div>;
   }
 
   const getImageUrl = (filepath) => {
     if (!filepath) return null;
     const filename = filepath.split('/').pop();
-    return `${API.BASE_URL}/images/${encodeURIComponent(filename)}`;
+    return `${BACKEND_URL}/images/${encodeURIComponent(filename)}`;
   };
 
   return (
@@ -125,18 +97,12 @@ export const LatestImage = ({ image }) => {
           alt="Latest aquarium capture"
           className="aquarium-image"
           onError={() => setImageError(true)}
-          style={{
-            maxWidth: DASHBOARD.IMAGE_MAX_WIDTH,
-            maxHeight: DASHBOARD.IMAGE_MAX_HEIGHT
-          }}
         />
       ) : (
         <div className="image-error">Failed to load image</div>
       )}
       <div className="image-info">
-        <div>Resolution: {image.width} x {image.height}</div>
         <div>Captured: {new Date(image.timestamp).toLocaleString()}</div>
-        <div>Device ID: {image.device_id}</div>
       </div>
     </div>
   );
@@ -178,7 +144,7 @@ export const Stats = ({ reading }) => {
   }
 
   const formatValue = (value, unit) => {
-    return value ? `${value.toFixed(STATS.DECIMAL_PLACES)} ${unit}` : 'N/A';
+    return value ? `${value.toFixed(1)} ${unit}` : 'N/A';
   };
 
   return (
@@ -208,18 +174,6 @@ export const Stats = ({ reading }) => {
       </div>
       <div className="timestamp">
         Last updated: {new Date(reading.timestamp).toLocaleString()}
-      </div>
-    </div>
-  );
-};
-
-// FishPositionPlot Component
-export const FishPositionPlot = ({ image }) => {
-  return (
-    <div className="fish-position-plot">
-      <h2>Fish Movement</h2>
-      <div className="placeholder">
-        Fish position tracking functionality coming soon
       </div>
     </div>
   );

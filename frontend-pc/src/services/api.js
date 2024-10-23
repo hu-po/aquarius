@@ -1,50 +1,27 @@
 import axios from 'axios';
-import { API } from '../config';
 
-const handleApiError = (error) => {
-  if (error.response) {
-    throw new Error(`Server error: ${error.response.data.detail || 'Unknown error'}`);
-  } else if (error.request) {
-    throw new Error('No response from server. Please check your connection.');
-  } else {
-    throw new Error(`Request failed: ${error.message}`);
-  }
-};
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+const api = axios.create({
+  baseURL: BASE_URL
+});
 
 export const getStatus = async () => {
   try {
-    const response = await axios.get(`${API.BASE_URL}/status`);
+    const response = await api.get('/status');
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    console.error('API Error:', error);
+    throw new Error(error.response?.data?.detail || 'Failed to fetch data');
   }
 };
 
-export const captureImage = async (deviceId = 0) => {
+export const captureImage = async () => {
   try {
-    const response = await axios.post(`${API.BASE_URL}/capture`, null, {
-      params: { device_id: deviceId }
-    });
+    const response = await api.post('/capture');
     return response.data;
   } catch (error) {
-    handleApiError(error);
-  }
-};
-
-export const getImages = async (limit = 10, offset = 0) => {
-  try {
-    const response = await axios.get(`${API.BASE_URL}/images?limit=${limit}&offset=${offset}`);
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
-  }
-};
-
-export const getReadingsHistory = async (hours = 24) => {
-  try {
-    const response = await axios.get(`${API.BASE_URL}/readings/history?hours=${hours}`);
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
+    console.error('API Error:', error);
+    throw new Error(error.response?.data?.detail || 'Failed to capture image');
   }
 };
