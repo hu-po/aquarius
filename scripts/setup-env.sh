@@ -4,20 +4,19 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Function to check if a variable is set
 check_variable() {
     local var_name=$1
     local var_value=${!var_name}
-    
     if [ -z "$var_value" ]; then
         echo -e "${RED}Warning: $var_name is not set in your shell environment${NC}"
         return 1
     else
         echo -e "${GREEN}Found $var_name${NC}"
         return 0
-    }
+    fi
 }
 
 # Function to create backup of existing .env
