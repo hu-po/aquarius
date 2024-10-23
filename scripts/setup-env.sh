@@ -40,7 +40,6 @@ fi
 # Required API keys
 required_vars=(
     "ANTHROPIC_API_KEY"
-    "GOOGLE_SDK_API_KEY"
     "OPENAI_API_KEY"
 )
 
