@@ -1,6 +1,7 @@
 {
   "name": "frontend-dashboard",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^6.1.4",
