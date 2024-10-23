@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStatus } from '../services/api';
+import { getStatus, captureImage } from '../services/api';
 
 const POLL_INTERVAL = 30000; // 30 seconds default
 
@@ -8,25 +8,40 @@ export const Dashboard = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [capturing, setCapturing] = useState(false);
+
+  const fetchStatus = async () => {
+    try {
+      const data = await getStatus();
+      setStatus(data);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching status:', error);
+      setError(error.message || 'Failed to load aquarium data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCapture = async () => {
+    setCapturing(true);
+    try {
+      await captureImage();
+      // Fetch updated status immediately after capture
+      await fetchStatus();
+    } catch (error) {
+      console.error('Error capturing image:', error);
+      setError(error.message || 'Failed to capture image.');
+    } finally {
+      setCapturing(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
     const fetchData = async () => {
-      try {
-        const data = await getStatus();
-        if (mounted) {
-          setStatus(data);
-          setError(null);
-        }
-      } catch (error) {
-        if (mounted) {
-          console.error('Error fetching status:', error);
-          setError(error.message || 'Failed to load aquarium data.');
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+      if (mounted) {
+        await fetchStatus();
       }
     };
 
@@ -49,7 +64,16 @@ export const Dashboard = () => {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>🐟</h1>
+        <div className="header-content">
+          <h1>🐟</h1>
+          <button 
+            className={`capture-button ${capturing ? 'capturing' : ''}`}
+            onClick={handleCapture}
+            disabled={capturing}
+          >
+            {capturing ? 'Capturing...' : 'Capture Image'}
+          </button>
+        </div>
         {status?.alerts?.length > 0 && (
           <div className="alerts">
             {status.alerts.map((alert, index) => (
