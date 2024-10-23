@@ -70,7 +70,7 @@ export const Dashboard = () => {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>Aquarius Dashboard</h1>
+        <h1>🐟</h1>
         {status?.alerts?.length > 0 && (
           <div className="alerts">
             {status.alerts.map((alert, index) => (
