@@ -20,8 +20,8 @@ class VLMError(Exception):
 
 class BaseVLM(ABC):
     def __init__(self):
-        self.max_retries = config.API_MAX_RETRIES
-        self.timeout = config.API_TIMEOUT
+        self.max_retries = config.VLM_API_MAX_RETRIES
+        self.timeout = config.VLM_API_TIMEOUT
         self.supported_formats = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
         self.retry_delay = config.CAMERA_DEVICE_RETRY_DELAY
         self._setup()

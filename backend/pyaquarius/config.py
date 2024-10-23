@@ -30,10 +30,11 @@ class Config:
     TANK_NITRITE_MAX: float = float(os.getenv('TANK_NITRITE_MAX'))
     TANK_NITRATE_MAX: float = float(os.getenv('TANK_NITRATE_MAX'))
     
-    API_TIMEOUT: int = int(os.getenv('API_TIMEOUT'))
-    API_MAX_RETRIES: int = int(os.getenv('API_MAX_RETRIES'))
-    API_ALLOWED_ORIGINS: List[str] = [origin.strip() for origin in os.getenv("CORS_ORIGINS").split(",") if origin.strip()]
-    API_CORS_MAX_AGE: int = int(os.getenv('API_CORS_MAX_AGE'))
+    VLM_API_TIMEOUT: int = int(os.getenv('VLM_API_TIMEOUT'))
+    VLM_API_MAX_RETRIES: int = int(os.getenv('VLM_API_MAX_RETRIES'))
+
+    CORS_ORIGINS: List[str] = [origin.strip() for origin in os.getenv("CORS_ORIGINS").split(",") if origin.strip()]
+    CORS_MAX_AGE: int = int(os.getenv('CORS_MAX_AGE'))
 
     def __post_init__(self):
         for dir in [self.DATA_DIR, self.IMAGES_DIR, self.DATABASE_DIR]:

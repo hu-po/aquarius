@@ -20,12 +20,12 @@ from .config import config
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.API_ALLOWED_ORIGINS,
+    allow_origins=config.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["Content-Type", "Authorization"],
-    max_age=config.API_CORS_MAX_AGE
+    max_age=config.CORS_MAX_AGE,
 )
 app.mount("/images", StaticFiles(directory=config.IMAGES_DIR), name="images")
 
