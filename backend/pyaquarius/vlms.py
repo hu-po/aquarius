@@ -101,13 +101,10 @@ async def call_gpt4v(prompt: str, image_path: str) -> str:
 async def caption(image_path: str, prompt: str) -> Dict[str, str]:
     """Call both VLM APIs concurrently and return their responses."""
     try:
-        tasks = [
+        responses = await asyncio.gather(*[
             asyncio.create_task(call_claude(prompt, image_path)),
             asyncio.create_task(call_gpt4v(prompt, image_path))
-        ]
-        
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
-        
+        ], return_exceptions=True)
         return {
             "Claude": responses[0] if not isinstance(responses[0], Exception) else str(responses[0]),
             "GPT-4V": responses[1] if not isinstance(responses[1], Exception) else str(responses[1])

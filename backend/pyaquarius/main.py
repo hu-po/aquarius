@@ -50,7 +50,7 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
         start_time = datetime.now(timezone.utc)
         
         try:
-            descriptions = await asyncio.wait_for(caption(image_path, prompt), timeout=60.0)
+            descriptions = await asyncio.wait_for(caption(image_path, prompt), timeout=config.VLM_API_TIMEOUT)
         except asyncio.TimeoutError:
             descriptions = {"error": "Analysis timeout"}
         except Exception as e:
