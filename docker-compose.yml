@@ -4,7 +4,7 @@ services:
     networks:
       - aquarius-net
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
       - DATA_DIR=${DATA_DIR}
       - IMAGES_DIR=${IMAGES_DIR}
@@ -52,13 +52,13 @@ services:
     build: 
       context: ./frontend-pc
       args:
-        - REACT_APP_API_URL=http://localhost:${BACKEND_PORT}
+        - BACKEND_URL=http://${HOST_IP}:${BACKEND_PORT}
     networks:
       - aquarius-net
     ports:
-      - "${FRONTEND_PC_PORT}:3000"
+      - "${FRONTEND_PC_PORT}:${FRONTEND_PC_PORT}"
     environment:
-      - REACT_APP_API_URL=http://backend:${BACKEND_PORT}
+      - BACKEND_URL=http://${HOST_IP}:${BACKEND_PORT}
       - REACT_APP_POLL_INTERVAL=${REACT_APP_POLL_INTERVAL}
       - REACT_APP_IMAGE_MAX_WIDTH=${REACT_APP_IMAGE_MAX_WIDTH}
       - REACT_APP_IMAGE_MAX_HEIGHT=${REACT_APP_IMAGE_MAX_HEIGHT}
@@ -72,7 +72,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:${FRONTEND_PC_PORT}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -82,15 +82,15 @@ services:
     networks:
       - aquarius-net
     ports:
-      - "${FRONTEND_VR_PORT:-3001}:3001"
+      - "${FRONTEND_VR_PORT}:${FRONTEND_VR_PORT}"
     environment:
-      - VITE_API_URL=http://localhost:${BACKEND_PORT:-8000}
+      - BACKEND_URL=http://${HOST_IP}:${BACKEND_PORT}
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      test: ["CMD", "curl", "-f", "http://localhost:${FRONTEND_VR_PORT}"]
       interval: 30s
       timeout: 10s
       retries: 3
