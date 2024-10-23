@@ -60,6 +60,16 @@ GET /devices            - List available camera devices
 
 [![YouTube Video](https://img.youtube.com/vi/TBD/0.jpg)](https://www.youtube.com/watch?v=TBD) -->
 
+## Architecture
+
+```mermaid
+  graph TD;
+      A-->B;
+      A-->C;
+      B-->D;
+      C-->D;
+```
+
 ## Citation
 
 ```
