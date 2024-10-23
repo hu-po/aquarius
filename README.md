@@ -63,11 +63,39 @@ GET /devices            - List available camera devices
 ## Architecture
 
 ```mermaid
-  graph TD;
-      A-->B;
-      A-->C;
-      B-->D;
-      C-->D;
+flowchart LR
+    aquarium["🐟 Aquarium"]
+    camera["📷 USB Camera"]
+    
+    subgraph AGX Orin["AGX Orin (192.168.x.x)"]
+        backend["Backend\nFastAPI\n:8000"]
+        fe_pc["Frontend-PC\nReact\n:3000"]
+        fe_vr["Frontend-VR\nA-Frame\n:3001"]
+        backend --> fe_pc
+        backend --> fe_vr
+    end
+    
+    subgraph Remote Devices
+        pc["💻 PC Browser\nSame Network"]
+        vr["🥽 VR Browser\nSame Network"]
+        phone["📱 Mobile Browser\nSame Network"]
+    end
+    
+    aquarium --> camera
+    camera --> backend
+    fe_pc -- "HTTP:3000" --> pc
+    fe_pc -- "HTTP:3000" --> phone
+    fe_vr -- "HTTP:3001" --> vr
+
+    style aquarium fill:#e2f5ff,stroke:#0088cc
+    style AGX Orin fill:#f5f5f5,stroke:#666666
+    style camera fill:#f9f9f9,stroke:#999999
+    style backend fill:#ddfbe7,stroke:#28a745
+    style fe_pc fill:#fff3cd,stroke:#ffc107
+    style fe_vr fill:#f8d7da,stroke:#dc3545
+    style pc fill:#cce5ff,stroke:#0056b3
+    style vr fill:#d7d8f8,stroke:#6610f2
+    style phone fill:#cce5ff,stroke:#0056b3
 ```
 
 ## Citation
