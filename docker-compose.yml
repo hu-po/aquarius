@@ -31,9 +31,9 @@ services:
     volumes:
       - ./data/images:/data/images
       - ./data/db:/app/db
-      - /dev/video0:/dev/video0
+      - ${CAMERA_DEVICE}:/dev/video0
     devices:
-      - "/dev/video0:/dev/video0"
+      - ${CAMERA_DEVICE}:/dev/video0
     group_add:
       - video
     healthcheck:

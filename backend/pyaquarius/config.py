@@ -32,7 +32,13 @@ class Config:
     API_ALLOWED_ORIGINS: List[str] = [origin.strip() for origin in os.getenv("CORS_ORIGINS").split(",") if origin.strip()]
     API_CORS_MAX_AGE: int = int(os.getenv('API_CORS_MAX_AGE'))
 
+    def __post_init__(self):
+        """Ensure required directories exist."""
+        self.DATA_DIR.mkdir(parents=True, exist_ok=True)
+        self.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+        self.DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 try:
     config = Config()
 except Exception as e:
-    raise RuntimeError(f"Failed to load configuration: {str(e)}")
+    raise ValueError(f"One or more config values not set (check your .env): {str(e)}")
