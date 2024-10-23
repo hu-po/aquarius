@@ -27,7 +27,7 @@ app.add_middleware(
     expose_headers=["Content-Type", "Authorization"],
     max_age=config.API_CORS_MAX_AGE
 )
-app.mount("/images", StaticFiles(directory=str(config.IMAGES_DIR)), name="images")
+app.mount("/images", StaticFiles(directory=config.IMAGES_DIR), name="images")
 
 @contextmanager
 def get_db_session():

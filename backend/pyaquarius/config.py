@@ -1,13 +1,16 @@
 from dataclasses import dataclass
 from typing import List
+import logging
 import os
-from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 @dataclass
 class Config:
-    DATA_DIR: Path = Path(os.getenv('DATA_DIR'))
-    IMAGES_DIR: Path = DATA_DIR / 'images'
-    DB_PATH: Path = DATA_DIR / 'aquarium.db'
+    DATA_DIR: str = os.getenv('DATA_DIR')
+    IMAGES_DIR: str = os.getenv('IMAGES_DIR')
+    DATABASE_DIR: str = os.getenv('DATABASE_DIR')
+    DATABASE_URL: str = os.getenv('DATABASE_URL')
     
     CAMERA_FPS: int = int(os.getenv('CAMERA_FPS'))
     CAMERA_FRAME_BUFFER: int = int(os.getenv('CAMERA_FRAME_BUFFER'))
@@ -33,10 +36,12 @@ class Config:
     API_CORS_MAX_AGE: int = int(os.getenv('API_CORS_MAX_AGE'))
 
     def __post_init__(self):
-        """Ensure required directories exist."""
-        self.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        self.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-        self.DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        for dir in [self.DATA_DIR, self.IMAGES_DIR, self.DATABASE_DIR]:
+            if os.path.exists(dir):
+                log.info(f"found existing directory: {dir}")
+            else:
+                log.info(f"creating directory: {dir}")
+                os.makedirs(dir, parents=True, exist_ok=True)
 
 try:
     config = Config()

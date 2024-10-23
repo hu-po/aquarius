@@ -8,11 +8,13 @@ services:
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
+      - DATA_DIR=${DATA_DIR}
+      - IMAGES_DIR=${IMAGES_DIR}
+      - DATABASE_DIR=${DATABASE_DIR}
+      - DATABASE_URL=${DATABASE_URL}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GOOGLE_SDK_API_KEY=${GOOGLE_SDK_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - DATABASE_URL=${DATABASE_URL}
-      - IMAGES_DIR=${IMAGES_DIR}
       - CORS_ORIGINS=${CORS_ORIGINS}
       - CAMERA_FPS=${CAMERA_FPS}
       - CAMERA_FRAME_BUFFER=${CAMERA_FRAME_BUFFER}
@@ -29,32 +31,33 @@ services:
       - TANK_NITRATE_MAX=${TANK_NITRATE_MAX}
       - API_RATE_LIMIT=${API_RATE_LIMIT}
     volumes:
-      - ./data/images:/data/images
-      - ./data/db:/app/db
+      - ./data:/data
       - ${CAMERA_DEVICE}:/dev/video0
     devices:
-      - ${CAMERA_DEVICE}:/dev/video0
+      - "${CAMERA_DEVICE}:/dev/video0"
     group_add:
       - video
+    privileged: true
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    user: "${UID:-1000}:${GID:-1000}"
+    user: "${UID}:${GID}"
 
+  # Rest of the services remain the same...
   frontend-pc:
     build: 
       context: ./frontend-pc
       args:
-        - REACT_APP_API_URL=http://localhost:${BACKEND_PORT:-8000}
+        - REACT_APP_API_URL=http://localhost:${BACKEND_PORT}
     networks:
       - aquarius-net
     ports:
       - "${FRONTEND_PC_PORT:-3000}:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:${BACKEND_PORT:-8000}
+      - REACT_APP_API_URL=http://localhost:${BACKEND_PORT}
       - REACT_APP_POLL_INTERVAL=${REACT_APP_POLL_INTERVAL}
       - REACT_APP_IMAGE_MAX_WIDTH=${REACT_APP_IMAGE_MAX_WIDTH}
       - REACT_APP_IMAGE_MAX_HEIGHT=${REACT_APP_IMAGE_MAX_HEIGHT}

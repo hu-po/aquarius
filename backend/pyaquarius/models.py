@@ -10,7 +10,7 @@ import os
 from .config import config
 
 engine = create_engine(
-    os.getenv("DATABASE_URL", f"sqlite:///{config.DB_PATH}"),
+    config.DATABASE_URL,
     connect_args={"check_same_thread": False},
     poolclass=QueuePool,
     pool_size=5,
