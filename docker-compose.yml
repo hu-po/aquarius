@@ -29,7 +29,6 @@ services:
       - TANK_AMMONIA_MAX=${TANK_AMMONIA_MAX}
       - TANK_NITRITE_MAX=${TANK_NITRITE_MAX}
       - TANK_NITRATE_MAX=${TANK_NITRATE_MAX}
-      - API_RATE_LIMIT=${API_RATE_LIMIT}
     volumes:
       - ./data:/data
       - ${CAMERA_DEVICE}:/dev/video0
