@@ -57,7 +57,7 @@ print_access_urls() {
     echo "PC Dashboard: \033[1;34mhttp://${HOST_IP}:3000\033[0m"
     echo "VR Interface: \033[1;34mhttp://${HOST_IP}:3001\033[0m"
 }
+print_access_urls
 
 # Start components and show logs
 start_components "$@"
-print_access_urls
