@@ -119,6 +119,10 @@ async def capture_image(background_tasks: BackgroundTasks, device_id: int = 0, d
             os.remove(filepath)
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/healthcheck")
+async def health_check():
+    return {"status": "ok"}
+
 @app.get("/status")
 async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
     latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()

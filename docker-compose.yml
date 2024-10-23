@@ -40,7 +40,7 @@ services:
       - video
     privileged: true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -56,9 +56,9 @@ services:
     networks:
       - aquarius-net
     ports:
-      - "${FRONTEND_PC_PORT:-3000}:3000"
+      - "${FRONTEND_PC_PORT}:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:${BACKEND_PORT}
+      - REACT_APP_API_URL=http://backend:${BACKEND_PORT}
       - REACT_APP_POLL_INTERVAL=${REACT_APP_POLL_INTERVAL}
       - REACT_APP_IMAGE_MAX_WIDTH=${REACT_APP_IMAGE_MAX_WIDTH}
       - REACT_APP_IMAGE_MAX_HEIGHT=${REACT_APP_IMAGE_MAX_HEIGHT}
