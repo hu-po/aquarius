@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     libv4l-dev \
     v4l-utils \
     udev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 RUN useradd -m -u 1000 appuser && \
     usermod -a -G video appuser
