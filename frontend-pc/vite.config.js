@@ -4,12 +4,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0',
+    host: true,
     port: 3000,
     strictPort: true,
     hmr: {
+      protocol: 'ws',
       clientPort: 3000,
-      host: '0.0.0.0',
     },
     watch: {
       usePolling: true,
@@ -20,14 +20,9 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
-    },
-    resolve: {
-      extensions: ['.js', '.jsx']
-    },
-    esbuild: {
-      loader: 'jsx',
-      include: /src\/.*\.jsx?$/,
-      exclude: []
     }
+  },
+  resolve: {
+    extensions: ['.js', '.jsx']
   }
 })
