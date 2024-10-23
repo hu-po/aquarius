@@ -52,10 +52,9 @@ export HOST_IP
 
 # Add this to start.sh after the start_components function
 print_access_urls() {
-    echo -e "\nAccess URLs:"
-    echo "Backend API:   http://${HOST_IP}:8000"
-    echo "PC Dashboard: \033[1;34mhttp://${HOST_IP}:3000\033[0m"
-    echo "VR Interface: \033[1;34mhttp://${HOST_IP}:3001\033[0m"
+    echo "backend:  <http://${HOST_IP}:8000>"
+    echo "frontend-pc: <http://${HOST_IP}:3000>"
+    echo "frontend-vr: <http://${HOST_IP}:3001>"
 }
 print_access_urls
 
