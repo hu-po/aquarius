@@ -20,6 +20,10 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     exit 0
 fi
 
+# Set the HOST_IP environment variable
+HOST_IP=$(hostname -I | awk '{print $1}')
+export HOST_IP
+
 # Function to stop components
 stop_components() {
     local components=("$@")
