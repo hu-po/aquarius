@@ -44,8 +44,9 @@ def get_db_session():
 
 async def analyze_image(image_id: str, image_path: str, db: Session):
     try:
-        prompt = open("prompts/vlm.txt").read().strip()
-        prompt += open("prompts/tank-info.txt").read().strip()        
+        this_dir = os.path.dirname(os.path.realpath(__file__))
+        prompt = open(os.path.join(this_dir, "prompts/vlm.txt")).read().strip()
+        prompt += open(os.path.join(this_dir, "prompts/tank-info.txt")).read().strip()        
         start_time = datetime.now(timezone.utc)
         
         try:
