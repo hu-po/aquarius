@@ -56,12 +56,12 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
             descriptions = {"error": f"Analysis failed: {str(e)}"}
 
         with get_db_session() as session:
-            for model_name, description in descriptions.items():
-                if model_name != "error":
+            for vlm_name, description in descriptions.items():
+                if vlm_name != "error":
                     vlm_desc = DBVLMDescription(
-                        id=f"{datetime.now(timezone.utc).isoformat()}_{model_name}",
+                        id=f"{datetime.now(timezone.utc).isoformat()}_{vlm_name}",
                         image_id=image_id,
-                        model_name=model_name,
+                        vlm_name=vlm_name,
                         description=description,
                         prompt=prompt,
                         latency=(datetime.now(timezone.utc) - start_time).total_seconds()
@@ -76,7 +76,7 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
             error_desc = DBVLMDescription(
                 id=f"{datetime.now(timezone.utc).isoformat()}_error",
                 image_id=image_id,
-                model_name="system",
+                vlm_name="system",
                 description=f"Analysis failed: {str(e)}",
                 prompt=prompt,
                 latency=0
@@ -130,8 +130,8 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
             DBVLMDescription.image_id == latest_image.id
         ).all()
         for desc in descriptions:
-            if desc.model_name != "system":
-                latest_descriptions[desc.model_name] = desc.description
+            if desc.vlm_name != "system":
+                latest_descriptions[desc.vlm_name] = desc.description
             if desc.concerns_detected:
                 alerts.extend(desc.concerns_detected.split('; '))
     if latest_reading:

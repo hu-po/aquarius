@@ -52,7 +52,7 @@ class DBVLMDescription(BaseMixin, Base):
     id = Column(String, primary_key=True)
     image_id = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    model_name = Column(String)
+    vlm_name = Column(String)
     description = Column(String)
     prompt = Column(String)
     latency = Column(Float)
@@ -71,7 +71,7 @@ class Image(ImageBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ReadingBase(BaseModel):
     temperature: float = Field(ge=32, le=120)
@@ -85,11 +85,11 @@ class Reading(ReadingBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class VLMDescriptionBase(BaseModel):
     image_id: str
-    model_name: str
+    vlm_name: str
     description: str
     prompt: str
     latency: float
@@ -99,7 +99,7 @@ class VLMDescription(VLMDescriptionBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class AquariumStatus(BaseModel):
     latest_image: Optional[Image] = None
