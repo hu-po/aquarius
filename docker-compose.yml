@@ -34,7 +34,7 @@ services:
       - TANK_NITRITE_MAX=${TANK_NITRITE_MAX}
       - TANK_NITRATE_MAX=${TANK_NITRATE_MAX}
     volumes:
-      - ./data:/data
+      - ./data:/app/data:rw
       - ${CAMERA_DEVICE}:/dev/video0
     devices:
       - "${CAMERA_DEVICE}:/dev/video0"

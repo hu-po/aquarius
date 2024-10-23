@@ -29,6 +29,9 @@ fi
 # Create data directories
 mkdir -p data/images data/db
 
+# Allow read/write for all users
+chmod -R 777 data
+
 # Function to start components and show logs
 start_components() {
     local components=("$@")
