@@ -42,7 +42,7 @@ class Config:
                 log.info(f"found existing directory: {dir}")
             else:
                 log.info(f"creating directory: {dir}")
-                os.makedirs(dir, parents=True, exist_ok=True)
+                os.makedirs(dir, exist_ok=True)
 
 try:
     config = Config()
