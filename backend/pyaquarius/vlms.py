@@ -26,10 +26,8 @@ async def claude(prompt: str, image_path: str) -> str:
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY not set")
-
         base64_image = encode_image(image_path)
         client = Anthropic(api_key=api_key)
-        
         log.info("Calling Claude API")
         log.debug(f"Prompt: {prompt}")
         response = await client.messages.create(
@@ -64,13 +62,10 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY not set")
-
         client = OpenAI(api_key=api_key)
         base64_image = encode_image(image_path)
-
         log.info("Calling GPT-4o-mini API")
         log.debug(f"Prompt: {prompt}")
-
         response = await asyncio.to_thread(
             client.chat.completions.create,
             model="gpt-4o-mini",
@@ -98,27 +93,22 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
 
 
 async def gemini(prompt: str, image_path: str) -> str:
-    """Call Google Gemini API with image."""
+    """Call Google Gemini API with image using the File API."""
     try:
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY not set")
-
-        text.configure(api_key=api_key)
-        base64_image = encode_image(image_path)
-
-        log.info("Calling Gemini API")
-        log.debug(f"Prompt: {prompt}")
-
-        response = await text.generate_content(
-            model="models/gemini-pro", # or the specific gemini model you want to use.
-            prompt=prompt,
-            image=f"data:image/jpeg;base64,{base64_image}",  # Gemini expects data URL
-            temperature=0, # Play with these parameters to get the results you desire.
-            top_p=0.95,
-            max_output_tokens=1024
+        with open(image_path, "rb") as image_file:
+            uploaded_file = genai.upload_file(
+                file=image_file,
+                mime_type="image/jpeg",
+            )
+        log.info(f"Uploaded file to Gemini: {uploaded_file.uri}")
+        model = genai.GenerativeModel("models/gemini-pro")
+        response = await model.generate_content_async(
+            [uploaded_file, "\n\n", prompt],
+            request_options={"timeout": 600},
         )
-
         reply = response.text
         log.info("Gemini API responded")
         log.debug(f"Response: {reply}")

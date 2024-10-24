@@ -13,6 +13,7 @@ class Config:
     
     CAMERA_FPS: int = int(os.getenv('CAMERA_FPS'))
     CAMERA_FRAME_BUFFER: int = int(os.getenv('CAMERA_FRAME_BUFFER'))
+    CAMERA_IMG_TYPE: str = os.getenv('CAMERA_IMG_TYPE')
     CAMERA_MAX_DIM: int = int(os.getenv('CAMERA_MAX_DIM'))
     CAMERA_CAM_WIDTH: int = int(os.getenv('CAMERA_CAM_WIDTH'))
     CAMERA_CAM_HEIGHT: int = int(os.getenv('CAMERA_CAM_HEIGHT'))

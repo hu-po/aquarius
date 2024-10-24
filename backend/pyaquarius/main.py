@@ -108,7 +108,7 @@ async def list_camera_devices():
 async def capture_image(device_index: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)) -> Image:
     """Capture image endpoint - now handles both capture and analysis"""
     timestamp = datetime.now(timezone.utc)
-    filename = f"{timestamp.isoformat()}.jpg"
+    filename = f"{timestamp.isoformat()}.{config.CAMERA_IMG_TYPE}"
     filepath = os.path.join(config.IMAGES_DIR, filename)
     if not save_frame(filename, device_index):
         raise HTTPException(

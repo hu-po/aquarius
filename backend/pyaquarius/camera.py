@@ -93,7 +93,7 @@ def cleanup_images():
     try:
         all_images = []
         for filename in os.listdir(config.IMAGES_DIR):
-            if not filename.endswith(('.jpg', '.png')):
+            if not filename.endswith(config.CAMERA_IMG_TYPE):
                 continue
             
             filepath = os.path.join(config.IMAGES_DIR, filename)
