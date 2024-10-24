@@ -3,7 +3,6 @@ import { getStatus, captureImage, getDevices } from '../services/api';
 
 const POLL_INTERVAL = 30000; // 30 seconds default
 
-// Dashboard Component
 export const Dashboard = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -145,7 +144,6 @@ export const Dashboard = () => {
   );
 };
 
-// LatestImage Component
 export const LatestImage = ({ image }) => {
   const [imageError, setImageError] = useState(false);
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
@@ -179,10 +177,7 @@ export const LatestImage = ({ image }) => {
   );
 };
 
-// LLMReply Component with Gemini Support
 export const LLMReply = ({ descriptions }) => {
-  const [selectedModel, setSelectedModel] = useState(Object.keys(descriptions || {})[0]);
-
   if (!descriptions || Object.keys(descriptions).length === 0) {
     return <div className="llm-reply">No AI descriptions available</div>;
   }
@@ -195,26 +190,21 @@ export const LLMReply = ({ descriptions }) => {
 
   return (
     <div className="llm-reply">
-      <div className="model-selector">
-        {Object.keys(descriptions).map((model) => (
-          <button
-            key={model}
-            className={`model-button ${selectedModel === model ? 'active' : ''}`}
-            onClick={() => setSelectedModel(model)}
-            title={`Switch to ${model} analysis`}
-          >
-            {modelIcons[model] || '🔍'} {model}
-          </button>
-        ))}
-      </div>
-      <div className="description">
-        {descriptions[selectedModel]}
-      </div>
+      {Object.entries(descriptions).map(([model, description]) => (
+        <div key={model} className="model-output">
+          <div className="model-header">
+            <span className="model-icon">{modelIcons[model] || '🔍'}</span>
+            <span className="model-name">{model}</span>
+          </div>
+          <div className="description">
+            {description}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };
 
-// Stats Component
 export const Stats = ({ reading }) => {
   if (!reading) {
     return <div className="stats">No sensor readings available</div>;
