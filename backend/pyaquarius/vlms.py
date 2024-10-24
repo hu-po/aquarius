@@ -19,7 +19,7 @@ def encode_image(image_path: str) -> str:
     except Exception as e:
         raise ValueError(f"Failed to encode image: {str(e)}")
 
-async def call_claude(prompt: str, image_path: str) -> str:
+async def claude(prompt: str, image_path: str) -> str:
     """Call Claude 3.5 Sonnet API with image."""
     try:
         api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -57,8 +57,8 @@ async def call_claude(prompt: str, image_path: str) -> str:
         log.error(f"Claude API error: {str(e)}")
         return f"Claude API error: {str(e)}"
 
-async def call_gpt4v(prompt: str, image_path: str) -> str:
-    """Call GPT-4 Vision API with image."""
+async def gpt4o_mini(prompt: str, image_path: str) -> str:
+    """Call GPT-4o-mini API with image and prompt."""
     try:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
@@ -66,11 +66,14 @@ async def call_gpt4v(prompt: str, image_path: str) -> str:
 
         client = OpenAI(api_key=api_key)
         base64_image = encode_image(image_path)
-        
-        log.info("Calling GPT-4 Vision API")
+
+        log.info("Calling GPT-4o-mini API")
         log.debug(f"Prompt: {prompt}")
-        response = await client.chat.completions.create(
-            model="gpt-4-vision-preview",
+
+        # Make the API call to OpenAI
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model="gpt-4o-mini",
             messages=[
                 {
                     "role": "user",
@@ -88,26 +91,27 @@ async def call_gpt4v(prompt: str, image_path: str) -> str:
                     ],
                 }
             ],
-            max_tokens=1024,
         )
         reply = response.choices[0].message.content
-        log.info("GPT-4 Vision API responded")
+        log.info("GPT-4o-mini API responded")
         log.debug(f"Response: {reply}")
         return reply
+
     except Exception as e:
-        log.error(f"GPT-4V API error: {str(e)}")
-        return f"GPT-4V API error: {str(e)}"
+        log.error(f"GPT-4o-mini API error: {str(e)}")
+        return f"GPT-4o-mini API error: {str(e)}"
 
 async def caption(image_path: str, prompt: str) -> Dict[str, str]:
-    """Call both VLM APIs concurrently and return their responses."""
+    """Generate captions for an image using multiple models."""
     try:
-        responses = await asyncio.gather(*[
-            asyncio.create_task(call_claude(prompt, image_path)),
-            asyncio.create_task(call_gpt4v(prompt, image_path))
-        ], return_exceptions=True)
+        responses = await asyncio.gather(
+            claude(prompt, image_path),
+            gpt4o_mini(prompt, image_path),
+            return_exceptions=True
+        )
         return {
-            "Claude": responses[0] if not isinstance(responses[0], Exception) else str(responses[0]),
-            "GPT-4V": responses[1] if not isinstance(responses[1], Exception) else str(responses[1])
+            "claude": responses[0] if not isinstance(responses[0], Exception) else str(responses[0]),
+            "gpt4o-mini": responses[1] if not isinstance(responses[1], Exception) else str(responses[1])
         }
     except Exception as e:
         log.error(f"Caption error: {str(e)}")
