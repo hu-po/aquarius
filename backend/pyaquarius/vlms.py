@@ -7,7 +7,7 @@ from openai import OpenAI
 from anthropic import Anthropic
 import google.generativeai as genai
 
-from pyaquarius import config
+from .config import config
 
 log = logging.getLogger(__name__)
 
