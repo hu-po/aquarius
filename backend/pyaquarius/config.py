@@ -45,7 +45,7 @@ class Config:
                 os.makedirs(dir, exist_ok=True)
         cv2_supported_formats = ['jpg', 'jpeg', 'png', 'bmp', 'tiff']
         if self.CAMERA_IMG_TYPE.lower() not in cv2_supported_formats:
-            raise ValueError(f"Unsupported image format: {config.CAMERA_IMG_TYPE}")
+            raise ValueError(f"Unsupported image format: {self.CAMERA_IMG_TYPE}")
 
 try:
     config = Config()
