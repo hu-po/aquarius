@@ -5,6 +5,7 @@ from typing import Dict
 import asyncio
 from openai import OpenAI
 from anthropic import Anthropic
+import google.generativeai as genai
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +71,6 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
         log.info("Calling GPT-4o-mini API")
         log.debug(f"Prompt: {prompt}")
 
-        # Make the API call to OpenAI
         response = await asyncio.to_thread(
             client.chat.completions.create,
             model="gpt-4o-mini",
@@ -78,15 +78,10 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "type": "text",
-                            "text": prompt,
-                        },
+                        {"type": "text", "text": prompt},
                         {
                             "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            },
+                            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
                         },
                     ],
                 }
@@ -101,17 +96,53 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
         log.error(f"GPT-4o-mini API error: {str(e)}")
         return f"GPT-4o-mini API error: {str(e)}"
 
+
+async def gemini(prompt: str, image_path: str) -> str:
+    """Call Google Gemini API with image."""
+    try:
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError("GOOGLE_API_KEY not set")
+
+        text.configure(api_key=api_key)
+        base64_image = encode_image(image_path)
+
+        log.info("Calling Gemini API")
+        log.debug(f"Prompt: {prompt}")
+
+        response = await text.generate_content(
+            model="models/gemini-pro", # or the specific gemini model you want to use.
+            prompt=prompt,
+            image=f"data:image/jpeg;base64,{base64_image}",  # Gemini expects data URL
+            temperature=0, # Play with these parameters to get the results you desire.
+            top_p=0.95,
+            max_output_tokens=1024
+        )
+
+        reply = response.text
+        log.info("Gemini API responded")
+        log.debug(f"Response: {reply}")
+        return reply
+
+    except Exception as e:
+        log.error(f"Gemini API error: {str(e)}")
+        return f"Gemini API error: {str(e)}"
+
+
+
 async def caption(image_path: str, prompt: str) -> Dict[str, str]:
-    """Generate captions for an image using multiple models."""
+    """Generate captions using multiple VLMs."""
     try:
         responses = await asyncio.gather(
             claude(prompt, image_path),
             gpt4o_mini(prompt, image_path),
-            return_exceptions=True
+            gemini(prompt, image_path),
+            return_exceptions=True  # Handle individual errors
         )
         return {
             "claude": responses[0] if not isinstance(responses[0], Exception) else str(responses[0]),
-            "gpt4o-mini": responses[1] if not isinstance(responses[1], Exception) else str(responses[1])
+            "gpt4o-mini": responses[1] if not isinstance(responses[1], Exception) else str(responses[1]),
+            "gemini": responses[2] if not isinstance(responses[2], Exception) else str(responses[2]),
         }
     except Exception as e:
         log.error(f"Caption error: {str(e)}")
