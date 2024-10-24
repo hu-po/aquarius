@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import asyncio
 from contextlib import contextmanager
-from pyaquarius.camera import save_frame
+from pyaquarius.camera import save_frame, list_devices_info
 from pyaquarius.vlms import caption
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
@@ -94,14 +94,27 @@ def extract_concerns(description: str) -> Optional[str]:
             concerns.append(line.strip())
     return "; ".join(concerns) if concerns else None
 
-@app.post("/capture")
-async def capture_image(background_tasks: BackgroundTasks, db: Session = Depends(get_db)) -> Image:
+@app.get("/devices")
+async def list_camera_devices():
+    """List all available camera devices."""
+    try:
+        devices = list_devices_info()
+        return devices
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    
+@app.post("/capture/{device_index}")
+async def capture_image(device_index: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)) -> Image:
     """Capture image endpoint - now handles both capture and analysis"""
     timestamp = datetime.now(timezone.utc)
     filename = f"{timestamp.isoformat()}.jpg"
     filepath = os.path.join(config.IMAGES_DIR, filename)
-    if not save_frame(filename):
-        raise HTTPException(status_code=500, detail="Failed to capture image")
+    if not save_frame(filename, device_index):
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to capture image from device {device_index}"
+        )
     
     try:
         db_image = DBImage(

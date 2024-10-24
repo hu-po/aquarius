@@ -16,9 +16,19 @@ export const getStatus = async () => {
   }
 };
 
-export const captureImage = async () => {
+export const getDevices = async () => {
   try {
-    const response = await api.post('/capture');
+    const response = await api.get('/devices');
+    return response.data;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw new Error(error.response?.data?.detail || 'Failed to fetch devices');
+  }
+};
+
+export const captureImage = async (deviceIndex = 0) => {
+  try {
+    const response = await api.post(`/capture/${deviceIndex}`);
     return response.data;
   } catch (error) {
     console.error('API Error:', error);

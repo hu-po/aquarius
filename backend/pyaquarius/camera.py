@@ -1,7 +1,7 @@
 import cv2
 import os
 from datetime import datetime
-from typing import List
+from typing import List, Dict, Optional
 
 from .config import config
 
@@ -18,6 +18,35 @@ def list_devices() -> List[int]:
         cap.release()
         index += 1
     return arr
+
+def get_device_info(index: int) -> Optional[Dict]:
+    """Get information about a camera device."""
+    try:
+        cap = cv2.VideoCapture(index, cv2.CAP_V4L2)
+        if not cap.isOpened():
+            return None
+        
+        info = {
+            "index": index,
+            "name": cap.getBackendName(),
+            "available": True,
+            "width": int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+            "height": int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        }
+        cap.release()
+        return info
+    except Exception as e:
+        print(f"Error getting device info for index {index}: {str(e)}")
+        return None
+
+def list_devices_info() -> List[Dict]:
+    """List all available camera devices with their information."""
+    devices = []
+    for index in range(10):  # Check first 10 possible indices
+        info = get_device_info(index)
+        if info:
+            devices.append(info)
+    return devices
 
 def save_frame(filename: str, device_index: int = 0) -> bool:
     try:
@@ -90,13 +119,16 @@ def cleanup_images():
         print(f"Error during image cleanup: {str(e)}")
 
 if __name__ == "__main__":
-    devices = list_devices()
-    if devices:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        for device in devices:
-            try:
-                save_frame(f"test_device_{device}_{timestamp}.jpg", device)
-            except Exception as e:
-                print(f"Failed to process device {device}: {str(e)}")
+    devices_info = list_devices_info()
+    if devices_info:
+        for device_info in devices_info:
+            print(f"Device {device_info['index']}: {device_info}")
     else:
         print("No video devices found")
+    devices = list_devices()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    for device in devices:
+        try:
+            save_frame(f"test_device_{device}_{timestamp}.jpg", device)
+        except Exception as e:
+            print(f"Failed to process device {device}: {str(e)}")
