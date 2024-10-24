@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 import os
 
-from .config import config
+from pyaquarius import config
 
 engine = create_engine(
     config.DATABASE_URL,

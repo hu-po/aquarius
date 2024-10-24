@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import List, Dict, Optional
 
-from .config import config
+from pyaquarius import config
 
 
 def list_devices() -> List[int]:

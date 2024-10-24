@@ -32,6 +32,7 @@ class Config:
     
     VLM_API_TIMEOUT: int = int(os.getenv('VLM_API_TIMEOUT'))
     VLM_API_MAX_RETRIES: int = int(os.getenv('VLM_API_MAX_RETRIES'))
+    VLM_MAX_TOKENS: int = int(os.getenv('VLM_MAX_TOKENS'))
 
     CORS_ORIGINS: str = os.getenv('CORS_ORIGINS')
     CORS_MAX_AGE: int = int(os.getenv('CORS_MAX_AGE'))

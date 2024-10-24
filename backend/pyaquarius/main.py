@@ -14,7 +14,7 @@ from pyaquarius.models import (
     DBImage, DBReading, DBVLMDescription
 )
 
-from .config import config
+from pyaquarius import config
 
 
 app = FastAPI(title="Aquarius Monitoring System")

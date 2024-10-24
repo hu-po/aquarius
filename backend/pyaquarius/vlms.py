@@ -7,6 +7,8 @@ from openai import OpenAI
 from anthropic import Anthropic
 import google.generativeai as genai
 
+from pyaquarius import config
+
 log = logging.getLogger(__name__)
 
 def encode_image(image_path: str) -> str:
@@ -32,7 +34,7 @@ async def claude(prompt: str, image_path: str) -> str:
         log.debug(f"Prompt: {prompt}")
         response = await client.messages.create(
             model="claude-3-sonnet-20240229",
-            max_tokens=1024,
+            max_tokens=config.VLM_MAX_TOKENS,
             messages=[{
                 "role": "user",
                 "content": [
@@ -69,6 +71,7 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
         response = await asyncio.to_thread(
             client.chat.completions.create,
             model="gpt-4o-mini",
+            max_tokens=config.VLM_MAX_TOKENS,
             messages=[
                 {
                     "role": "user",
@@ -98,16 +101,13 @@ async def gemini(prompt: str, image_path: str) -> str:
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY not set")
-        with open(image_path, "rb") as image_file:
-            uploaded_file = genai.upload_file(
-                file=image_file,
-                mime_type="image/jpeg",
-            )
+        uploaded_file = genai.upload_file(image_path)
         log.info(f"Uploaded file to Gemini: {uploaded_file.uri}")
         model = genai.GenerativeModel("models/gemini-pro")
         response = await model.generate_content_async(
             [uploaded_file, "\n\n", prompt],
             request_options={"timeout": 600},
+            generation_config={"max_tokens": config.VLM_MAX_TOKENS},
         )
         reply = response.text
         log.info("Gemini API responded")
