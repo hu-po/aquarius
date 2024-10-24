@@ -14,8 +14,8 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo ""
     echo "Examples:"
     echo "  $0                   # Stop all components"
-    echo "  $0 backend          # Stop only the backend"
-    echo "  $0 frontend-pc      # Stop only the PC frontend"
+    echo "  $0 backend           # Stop only the backend"
+    echo "  $0 frontend-pc       # Stop only the PC frontend"
     echo "  $0 backend frontend-pc  # Stop backend and PC frontend"
     exit 0
 fi
@@ -27,12 +27,12 @@ export HOST_IP
 # Function to stop components
 stop_components() {
     local components=("$@")
-    
+
     if [ ${#components[@]} -eq 0 ]; then
-        echo "Stopping all components..."
+        echo "⏹️  Stopping all components..."
         docker compose down
     else
-        echo "Stopping components: ${components[*]}"
+        echo "⏹️  Stopping components: ${components[*]}"
         docker compose stop "${components[@]}"
     fi
 }
