@@ -9,6 +9,24 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [capturing, setCapturing] = useState(false);
+  const [devices, setDevices] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState(0);
+  const [loadingDevices, setLoadingDevices] = useState(true);
+
+  const fetchDevices = async () => {
+    try {
+      const deviceList = await getDevices();
+      setDevices(deviceList);
+      if (deviceList.length > 0) {
+        setSelectedDevice(deviceList[0].index);
+      }
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+      setError('Failed to load camera devices.');
+    } finally {
+      setLoadingDevices(false);
+    }
+  };
 
   const fetchStatus = async () => {
     try {
@@ -26,8 +44,7 @@ export const Dashboard = () => {
   const handleCapture = async () => {
     setCapturing(true);
     try {
-      await captureImage();
-      // Fetch updated status immediately after capture
+      await captureImage(selectedDevice);
       await fetchStatus();
     } catch (error) {
       console.error('Error capturing image:', error);
@@ -36,6 +53,10 @@ export const Dashboard = () => {
       setCapturing(false);
     }
   };
+
+  useEffect(() => {
+    fetchDevices();
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -66,13 +87,34 @@ export const Dashboard = () => {
       <header className="dashboard-header">
         <div className="header-content">
           <h1>🐟</h1>
-          <button 
-            className={`capture-button ${capturing ? 'capturing' : ''}`}
-            onClick={handleCapture}
-            disabled={capturing}
-          >
-            {capturing ? 'Capturing...' : 'Capture Image'}
-          </button>
+          <div className="header-controls">
+            <div className="camera-selector">
+              {loadingDevices ? (
+                <span>Loading cameras...</span>
+              ) : devices.length === 0 ? (
+                <span className="error">No cameras found</span>
+              ) : (
+                <select
+                  value={selectedDevice}
+                  onChange={(e) => setSelectedDevice(Number(e.target.value))}
+                  className="camera-select"
+                >
+                  {devices.map((device) => (
+                    <option key={device.index} value={device.index}>
+                      Camera {device.index} ({device.width}x{device.height})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <button 
+              className={`capture-button ${capturing ? 'capturing' : ''}`}
+              onClick={handleCapture}
+              disabled={capturing || devices.length === 0}
+            >
+              {capturing ? 'Capturing...' : 'Capture Image'}
+            </button>
+          </div>
         </div>
         {status?.alerts?.length > 0 && (
           <div className="alerts">
@@ -96,6 +138,7 @@ export const Dashboard = () => {
     </div>
   );
 };
+
 
 // LatestImage Component
 export const LatestImage = ({ image }) => {
