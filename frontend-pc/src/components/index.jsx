@@ -179,13 +179,19 @@ export const LatestImage = ({ image }) => {
   );
 };
 
-// LLMReply Component
+// LLMReply Component with Gemini Support
 export const LLMReply = ({ descriptions }) => {
   const [selectedModel, setSelectedModel] = useState(Object.keys(descriptions || {})[0]);
 
   if (!descriptions || Object.keys(descriptions).length === 0) {
     return <div className="llm-reply">No AI descriptions available</div>;
   }
+
+  const modelIcons = {
+    'claude': '🔮',
+    'gpt4o-mini': '🤖',
+    'gemini': '💫'
+  };
 
   return (
     <div className="llm-reply">
@@ -195,8 +201,9 @@ export const LLMReply = ({ descriptions }) => {
             key={model}
             className={`model-button ${selectedModel === model ? 'active' : ''}`}
             onClick={() => setSelectedModel(model)}
+            title={`Switch to ${model} analysis`}
           >
-            {model}
+            {modelIcons[model] || '🔍'} {model}
           </button>
         ))}
       </div>
