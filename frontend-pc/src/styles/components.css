@@ -19,10 +19,9 @@ body {
 }
 
 .dashboard-header h1 {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #e2e8f0;
+    font-size: 2.5rem;
     margin: 0;
+    line-height: 1;
 }
 
 .dashboard-grid {
@@ -38,6 +37,13 @@ body {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
                 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     border: 1px solid #334155;
+}
+
+.dashboard-section h2 {
+    font-size: 2rem;
+    margin: 0 0 1rem 0;
+    line-height: 1;
+    text-align: center;
 }
 
 /* Header Controls */
@@ -58,6 +64,12 @@ body {
 .camera-selector {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
+}
+
+.selector-label {
+    font-size: 1.5rem;
+    line-height: 1;
 }
 
 .camera-select {
@@ -89,19 +101,26 @@ body {
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     border: none;
-    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
     height: 38px;
+    font-size: 1.5rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 50px;
 }
 
 .capture-button:hover:not(:disabled) {
     background-color: #1d4ed8;
+    transform: scale(1.05);
 }
 
 .capture-button:disabled {
     background-color: #475569;
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .capture-button.capturing {

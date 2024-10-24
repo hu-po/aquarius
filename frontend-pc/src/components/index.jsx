@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStatus, captureImage } from '../services/api';
+import { getStatus, captureImage, getDevices } from '../services/api';
 
 const POLL_INTERVAL = 30000; // 30 seconds default
 
@@ -94,17 +94,20 @@ export const Dashboard = () => {
               ) : devices.length === 0 ? (
                 <span className="error">No cameras found</span>
               ) : (
-                <select
-                  value={selectedDevice}
-                  onChange={(e) => setSelectedDevice(Number(e.target.value))}
-                  className="camera-select"
-                >
-                  {devices.map((device) => (
-                    <option key={device.index} value={device.index}>
-                      Camera {device.index} ({device.width}x{device.height})
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <span className="selector-label">📷</span>
+                  <select
+                    value={selectedDevice}
+                    onChange={(e) => setSelectedDevice(Number(e.target.value))}
+                    className="camera-select"
+                  >
+                    {devices.map((device) => (
+                      <option key={device.index} value={device.index}>
+                        Camera {device.index} ({device.width}x{device.height})
+                      </option>
+                    ))}
+                  </select>
+                </>
               )}
             </div>
             <button 
@@ -112,7 +115,7 @@ export const Dashboard = () => {
               onClick={handleCapture}
               disabled={capturing || devices.length === 0}
             >
-              {capturing ? 'Capturing...' : 'Capture Image'}
+              {capturing ? 'Capturing...' : '📸'}
             </button>
           </div>
         </div>
@@ -126,19 +129,21 @@ export const Dashboard = () => {
       </header>
       <div className="dashboard-grid">
         <div className="dashboard-section">
+          <h2>🖼️</h2>
           <LatestImage image={status?.latest_image} />
         </div>
         <div className="dashboard-section">
+          <h2>📈</h2>
           <Stats reading={status?.latest_reading} />
         </div>
         <div className="dashboard-section">
+          <h2>🧠</h2>
           <LLMReply descriptions={status?.latest_descriptions} />
         </div>
       </div>
     </div>
   );
 };
-
 
 // LatestImage Component
 export const LatestImage = ({ image }) => {
@@ -157,7 +162,6 @@ export const LatestImage = ({ image }) => {
 
   return (
     <div className="latest-image">
-      <h2>Latest Image</h2>
       {!imageError ? (
         <img 
           src={getImageUrl(image.filepath)}
@@ -185,7 +189,6 @@ export const LLMReply = ({ descriptions }) => {
 
   return (
     <div className="llm-reply">
-      <h2>AI Analysis</h2>
       <div className="model-selector">
         {Object.keys(descriptions).map((model) => (
           <button
@@ -216,7 +219,6 @@ export const Stats = ({ reading }) => {
 
   return (
     <div className="stats">
-      <h2>Sensor Readings</h2>
       <div className="stats-grid">
         <div className="stat-item">
           <label>Temperature</label>
