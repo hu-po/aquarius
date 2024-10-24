@@ -107,7 +107,7 @@ async def gemini(prompt: str, image_path: str) -> str:
         response = await model.generate_content_async(
             [uploaded_file, "\n\n", prompt],
             request_options={"timeout": 600},
-            generation_config={"max_tokens": config.VLM_MAX_TOKENS},
+            generation_config={"max_output_tokens": config.VLM_MAX_TOKENS},
         )
         reply = response.text
         log.info("Gemini API responded")
