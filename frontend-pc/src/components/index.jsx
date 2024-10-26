@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStatus, captureImage, getDevices } from '../services/api';
+import CameraStream from './CameraStream';
 
 const POLL_INTERVAL = 30000; // 30 seconds default
 
@@ -126,6 +127,16 @@ export const Dashboard = () => {
           </div>
         )}
       </header>
+      <div className="camera-streams">
+        <div className="stream-container">
+          <h2>Camera 0</h2>
+          <CameraStream deviceIndex={0} />
+        </div>
+        <div className="stream-container">
+          <h2>Camera 1</h2>
+          <CameraStream deviceIndex={1} />
+        </div>
+      </div>
       <div className="dashboard-grid">
         <div className="dashboard-section">
           <h2>🖼️</h2>

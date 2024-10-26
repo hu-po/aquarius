@@ -1,11 +1,12 @@
+import asyncio
 import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import WebSocket
 from sqlalchemy.orm import Session
-import asyncio
 from contextlib import contextmanager
 from pyaquarius.camera import save_frame, list_devices_info
 from pyaquarius.vlms import caption
@@ -14,6 +15,7 @@ from pyaquarius.models import (
     DBImage, DBReading, DBVLMDescription
 )
 
+from .camera_stream import CameraStreamManager
 from .config import config
 
 
@@ -41,6 +43,19 @@ def get_db_session():
         raise
     finally:
         session.close()
+
+stream_manager = CameraStreamManager()
+
+@app.websocket("/ws/camera/{device_index}")
+async def camera_websocket(websocket: WebSocket, device_index: int):
+    """WebSocket endpoint for camera streaming."""
+    stream = await stream_manager.get_stream(device_index)
+    await stream.connect(websocket)
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up camera streams on shutdown."""
+    await stream_manager.stop_all()
 
 async def analyze_image(image_id: str, image_path: str, db: Session):
     try:

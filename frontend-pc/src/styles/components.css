@@ -274,3 +274,39 @@ body {
         background-position: -200% 0;
     }
 }
+
+.camera-streams {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .stream-container {
+    background: #1e293b;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #334155;
+  }
+  
+  .stream-container h2 {
+    font-size: 1.5rem;
+    margin: 0 0 1rem 0;
+    text-align: center;
+  }
+  
+  .camera-stream {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #0f172a;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  
+  .stream-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
