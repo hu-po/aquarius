@@ -19,8 +19,8 @@ class Config:
     CAMERA_CAM_HEIGHT: int = int(os.getenv('CAMERA_CAM_HEIGHT'))
     CAMERA_MAX_IMAGES: int = int(os.getenv('CAMERA_MAX_IMAGES'))
     CAMERA_MIN_FREE_SPACE_MB: int = int(os.getenv('CAMERA_MIN_FREE_SPACE_MB'))
-    CAMERA_DEVICE_READ_ATTEMPTS: int = 3
-    CAMERA_DEVICE_RETRY_DELAY: int = 1
+    CAMERA_DEVICE_READ_ATTEMPTS: int = int(os.getenv('CAMERA_DEVICE_READ_ATTEMPTS'))
+    CAMERA_DEVICE_RETRY_DELAY: int = int(os.getenv('CAMERA_DEVICE_RETRY_DELAY'))
     
     TANK_TEMP_MIN: float = float(os.getenv('TANK_TEMP_MIN'))
     TANK_TEMP_MAX: float = float(os.getenv('TANK_TEMP_MAX'))
