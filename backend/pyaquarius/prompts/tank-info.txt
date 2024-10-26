@@ -1,3 +1,24 @@
-This vibrant freshwater aquarium features a 7-gallon ultra-clear rimless tank with low iron glass and a top glass canopy, providing excellent visibility and durability. The tank is inhabited by a mix of young adult Neocaridina shrimp, assorted fancy male guppies, and over nine Ramshorn snails, creating a dynamic and balanced ecosystem. The aquatic environment is lush with 8-inch lucky bamboo stalks, vibrant red stem plants, fast-growing Hornwort Coontail, and floating water lettuce, enhancing both aesthetics and oxygenation.
-Decorative elements include a set of colorful volcanic rocks and black plant holders with hooks and suction cups, complemented by a simulated bamboo tube water fountain that adds gentle movement and sound. The substrate consists of pea gravel with decorative river rocks and bio-active sugar white sand, supporting healthy plant growth and beneficial bacteria. Essential equipment such as a submersible heater preset to 78°F, a silent air pump, and a programmable LED light with full-spectrum and multiple color settings ensure optimal living conditions and visual appeal.
-Maintenance is streamlined with a siphon gravel vacuum for easy cleaning and a durable shrimp feeding set for efficient nourishment. The tank is further supported by freshwater plant fertilizers and nutritious fish pellets enriched with sword prawns and spirulina, promoting vibrant colors and clear water. This comprehensive setup is ideal for both novice and advanced aquarists, offering a thriving and visually stunning aquatic habitat.
+more information on freshwater aquarium:
+hardware:
+ - 7-gallon ultra-clear rimless tank with low iron glass and a top glass canopy.
+ - programmable LED light on an alternating daylight (6:30am to 6:30pm) and blue moonlight schedule.
+ - UV canister filter
+ - small silent air pump with bubble stone and clear tubing
+ - submersible heater preset to 78°F
+ - digital thermometer with LED digits
+substrate:
+ - 6 red lava rocks with two holes each
+ - bio-active sugar white sand substrate overtop a base of aq
+ - pea gravel river rocks 
+plant life:
+ - two clumps of ludwigia natans super red
+ - one clump of hornwort coontail
+ - floating water lettuce
+fishes:
+ - four fancy male guppies
+ - two kuhli loach
+ - three neon tetra
+ - one honey gourami
+invertebrates:
+ - one yellow neocaridina shrimp
+ - nine ramshorn snails
