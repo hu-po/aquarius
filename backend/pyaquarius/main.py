@@ -15,7 +15,7 @@ from pyaquarius.models import (
     DBImage, DBReading, DBVLMDescription
 )
 
-from .camera_stream import CameraStreamManager
+from .camera import CameraManager
 from .config import config
 
 
@@ -44,18 +44,68 @@ def get_db_session():
     finally:
         session.close()
 
-stream_manager = CameraStreamManager()
+camera_manager = CameraManager()
 
 @app.websocket("/ws/camera/{device_index}")
 async def camera_websocket(websocket: WebSocket, device_index: int):
     """WebSocket endpoint for camera streaming."""
-    stream = await stream_manager.get_stream(device_index)
+    stream = await camera_manager.get_stream(device_index)
     await stream.connect(websocket)
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Clean up camera streams on shutdown."""
-    await stream_manager.stop_all()
+    await camera_manager.stop_all()
+
+@app.websocket("/ws/camera/{device_index}")
+async def camera_websocket(websocket: WebSocket, device_index: int):
+    """WebSocket endpoint for camera streaming."""
+    stream = await camera_manager.get_stream(device_index)
+    if stream:
+        await stream.connect(websocket)
+    else:
+        await websocket.close(code=1008)  # Policy violation
+
+@app.post("/capture/{device_index}")
+async def capture_image(device_index: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)) -> Image:
+    """Capture image endpoint."""
+    timestamp = datetime.now(timezone.utc)
+    filename = f"{timestamp.isoformat()}.{config.CAMERA_IMG_TYPE}"
+    
+    if not await camera_manager.save_frame(filename, device_index):
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to capture image from device {device_index}"
+        )
+    
+    try:
+        filepath = os.path.join(config.IMAGES_DIR, filename)
+        db_image = DBImage(
+            id=timestamp.isoformat(),
+            filepath=filepath,
+            width=config.CAMERA_MAX_DIM,
+            height=config.CAMERA_MAX_DIM,
+            file_size=os.path.getsize(filepath)
+        )
+        db.add(db_image)
+        db.commit()
+        background_tasks.add_task(analyze_image, db_image.id, filepath, db)
+        return Image.from_orm(db_image)
+    
+    except Exception as e:
+        db.rollback()
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/devices")
+async def list_camera_devices():
+    """List all available camera devices."""
+    try:
+        devices = CameraManager.list_devices_info()
+        return devices
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def analyze_image(image_id: str, image_path: str, db: Session):
     try:
@@ -108,47 +158,6 @@ def extract_concerns(description: str) -> Optional[str]:
         if any(keyword in line.lower() for keyword in keywords):
             concerns.append(line.strip())
     return "; ".join(concerns) if concerns else None
-
-@app.get("/devices")
-async def list_camera_devices():
-    """List all available camera devices."""
-    try:
-        devices = list_devices_info()
-        return devices
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-    
-@app.post("/capture/{device_index}")
-async def capture_image(device_index: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)) -> Image:
-    """Capture image endpoint - now handles both capture and analysis"""
-    timestamp = datetime.now(timezone.utc)
-    filename = f"{timestamp.isoformat()}.{config.CAMERA_IMG_TYPE}"
-    filepath = os.path.join(config.IMAGES_DIR, filename)
-    if not save_frame(filename, device_index):
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to capture image from device {device_index}"
-        )
-    
-    try:
-        db_image = DBImage(
-            id=timestamp.isoformat(),
-            filepath=filepath,
-            width=config.CAMERA_MAX_DIM,
-            height=config.CAMERA_MAX_DIM,
-            file_size=os.path.getsize(filepath)
-        )
-        db.add(db_image)
-        db.commit()
-        background_tasks.add_task(analyze_image, db_image.id, filepath, db)
-        return Image.from_orm(db_image)
-    
-    except Exception as e:
-        db.rollback()
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/healthcheck")
 async def health_check():
