@@ -288,6 +288,3 @@ class CameraStream:
             if not self.connections:
                 await self.stop()
             log.info(f"Connection closed for camera {self.device_index}")
-
-# Global camera manager instance
-camera_manager = CameraManager()

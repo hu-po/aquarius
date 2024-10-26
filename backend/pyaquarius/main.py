@@ -8,7 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket
 from sqlalchemy.orm import Session
 from contextlib import contextmanager
-from pyaquarius.camera import save_frame, list_devices_info
 from pyaquarius.vlms import caption
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
