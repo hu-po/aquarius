@@ -4,6 +4,22 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import logging
 
+# CORS settings
+CORS_ORIGINS = os.getenv('CORS_ORIGINS', '')
+CORS_MAX_AGE = int(os.getenv('CORS_MAX_AGE', '3600'))
+
+# Tank parameters
+TANK_TEMP_MIN = float(os.getenv('TANK_TEMP_MIN', '75.0'))
+TANK_TEMP_MAX = float(os.getenv('TANK_TEMP_MAX', '82.0'))
+TANK_PH_MIN = float(os.getenv('TANK_PH_MIN', '6.5'))
+TANK_PH_MAX = float(os.getenv('TANK_PH_MAX', '7.5'))
+TANK_AMMONIA_MAX = float(os.getenv('TANK_AMMONIA_MAX', '0.25'))
+TANK_NITRITE_MAX = float(os.getenv('TANK_NITRITE_MAX', '0.25'))
+TANK_NITRATE_MAX = float(os.getenv('TANK_NITRATE_MAX', '20.0'))
+
+# Image settings
+IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
+
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,14 +41,14 @@ log = logging.getLogger(__name__)
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in config.CORS_ORIGINS.split(",") if origin.strip()],
+    allow_origins=[origin.strip() for origin in CORS_ORIGINS.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["Content-Type", "Authorization"],
-    max_age=config.CORS_MAX_AGE,
+    max_age=CORS_MAX_AGE,
 )
-app.mount("/images", StaticFiles(directory=config.IMAGES_DIR), name="images")
+app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 @contextmanager
 def get_db_session():
@@ -80,7 +96,7 @@ async def camera_websocket(websocket: WebSocket, device_index: int):
 async def capture_image(device_index: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)) -> Image:
     """Capture image endpoint."""
     timestamp = datetime.now(timezone.utc)
-    filename = f"{timestamp.isoformat()}.{config.CAMERA_IMG_TYPE}"
+    filename = f"{timestamp.isoformat()}.{CAMERA_IMG_TYPE}"
     
     if not await camera_manager.save_frame(filename, device_index):
         raise HTTPException(
@@ -89,12 +105,12 @@ async def capture_image(device_index: int, background_tasks: BackgroundTasks, db
         )
     
     try:
-        filepath = os.path.join(config.IMAGES_DIR, filename)
+        filepath = os.path.join(IMAGES_DIR, filename)
         db_image = DBImage(
             id=timestamp.isoformat(),
             filepath=filepath,
-            width=config.CAMERA_MAX_DIM,
-            height=config.CAMERA_MAX_DIM,
+            width=CAMERA_MAX_DIM,
+            height=CAMERA_MAX_DIM,
             file_size=os.path.getsize(filepath)
         )
         db.add(db_image)
@@ -131,7 +147,7 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
         start_time = datetime.now(timezone.utc)
         
         try:
-            descriptions = await asyncio.wait_for(caption(image_path, prompt), timeout=config.VLM_API_TIMEOUT)
+            descriptions = await asyncio.wait_for(caption(image_path, prompt), timeout=VLM_API_TIMEOUT)
         except asyncio.TimeoutError:
             descriptions = {"error": "Analysis timeout"}
         except Exception as e:
@@ -195,15 +211,15 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
             if desc.concerns_detected:
                 alerts.extend(desc.concerns_detected.split('; '))
     if latest_reading:
-        if latest_reading.temperature > config.TANK_TEMP_MAX or latest_reading.temperature < config.TANK_TEMP_MIN:
+        if latest_reading.temperature > TANK_TEMP_MAX or latest_reading.temperature < TANK_TEMP_MIN:
             alerts.append(f"Temperature outside ideal range: {latest_reading.temperature}°F")
-        if latest_reading.ph and (latest_reading.ph < config.TANK_PH_MIN or latest_reading.ph > config.TANK_PH_MAX):
+        if latest_reading.ph and (latest_reading.ph < TANK_PH_MIN or latest_reading.ph > TANK_PH_MAX):
             alerts.append(f"pH outside ideal range: {latest_reading.ph}")
-        if latest_reading.ammonia and latest_reading.ammonia > config.TANK_AMMONIA_MAX:
+        if latest_reading.ammonia and latest_reading.ammonia > TANK_AMMONIA_MAX:
             alerts.append(f"High ammonia level: {latest_reading.ammonia} ppm")
-        if latest_reading.nitrite and latest_reading.nitrite > config.TANK_NITRITE_MAX:
+        if latest_reading.nitrite and latest_reading.nitrite > TANK_NITRITE_MAX:
             alerts.append(f"High nitrite level: {latest_reading.nitrite} ppm")
-        if latest_reading.nitrate and latest_reading.nitrate > config.TANK_NITRATE_MAX:
+        if latest_reading.nitrate and latest_reading.nitrate > TANK_NITRATE_MAX:
             alerts.append(f"High nitrate level: {latest_reading.nitrate} ppm")
     return AquariumStatus(
         latest_image=Image.from_orm(latest_image) if latest_image else None,

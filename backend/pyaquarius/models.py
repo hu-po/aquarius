@@ -6,10 +6,24 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 
-from .config import config
+import os
+
+# Directory settings
+DATA_DIR = os.getenv('DATA_DIR', 'data')
+IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
+DATABASE_DIR = os.getenv('DATABASE_DIR', 'data/db')
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/db/aquarius.db')
+
+if not all([DATA_DIR, IMAGES_DIR, DATABASE_DIR, DATABASE_URL]):
+    raise ValueError("Required environment variables not set")
+
+# Create directories if they don't exist
+for dir in [DATA_DIR, IMAGES_DIR, DATABASE_DIR]:
+    if not os.path.exists(dir):
+        os.makedirs(dir, exist_ok=True)
 
 engine = create_engine(
-    config.DATABASE_URL,
+    DATABASE_URL,
     connect_args={"check_same_thread": False},
     poolclass=QueuePool,
     pool_size=5,
