@@ -8,6 +8,7 @@ from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket
+from fastapi.websockets import WebSocketState, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from contextlib import contextmanager
 from pyaquarius.vlms import caption
@@ -51,15 +52,24 @@ camera_manager = CameraManager()
 @app.websocket("/ws/camera/{device_index}")
 async def camera_websocket(websocket: WebSocket, device_index: int):
     """WebSocket endpoint for camera streaming."""
-    stream = await camera_manager.get_stream(device_index)
-    if stream:
+    try:
+        # Check camera availability first
+        stream = await camera_manager.get_stream(device_index)
+        if not stream:
+            await websocket.accept()
+            await websocket.close(code=1008, reason=f"Camera {device_index} not available")
+            return
+
+        # Connect to stream
+        await stream.connect(websocket)
+        
+    except Exception as e:
+        log.error(f"WebSocket error for camera {device_index}: {e}")
         try:
-            await stream.connect(websocket)
-        except Exception as e:
-            log.error(f"Stream error: {e}")
-            await websocket.close(code=1011)  # Internal error
-    else:
-        await websocket.close(code=1008)  # Policy violation
+            if websocket.client_state != WebSocketState.DISCONNECTED:
+                await websocket.close(code=1011, reason=str(e))
+        except:
+            pass
 
 @app.post("/capture/{device_index}")
 async def capture_image(device_index: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)) -> Image:

@@ -30,11 +30,24 @@ class CameraManager:
     async def get_stream(self, device_index: int) -> Optional['CameraStream']:
         """Get or create a camera stream."""
         if device_index not in self.streams:
-            stream = CameraStream(device_index, self)
-            success = await stream.start()
-            if success:
-                self.streams[device_index] = stream
-            else:
+            try:
+                # Test camera access before creating stream
+                with self.get_lock(device_index):
+                    cap = cv2.VideoCapture(device_index, cv2.CAP_V4L2)
+                    if not cap.isOpened():
+                        log.error(f"Failed to open camera {device_index}")
+                        return None
+                    cap.release()
+                
+                stream = CameraStream(device_index, self)
+                success = await stream.start()
+                if success:
+                    self.streams[device_index] = stream
+                else:
+                    log.error(f"Failed to start stream for camera {device_index}")
+                    return None
+            except Exception as e:
+                log.error(f"Error creating stream for camera {device_index}: {e}")
                 return None
         return self.streams[device_index]
     
@@ -170,11 +183,33 @@ class CameraStream:
     async def start(self) -> bool:
         """Start the camera stream."""
         if not self.active:
-            self.active = True
-            self.capture_thread = threading.Thread(target=self._capture_frames)
-            self.capture_thread.daemon = True
-            self.capture_thread.start()
-            return True
+            try:
+                # Test camera access first
+                with self.manager.get_lock(self.device_index):
+                    self.cap = cv2.VideoCapture(self.device_index, cv2.CAP_V4L2)
+                    if not self.cap.isOpened():
+                        raise RuntimeError(f"Failed to open camera {self.device_index}")
+                    
+                    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                    self.cap.set(cv2.CAP_PROP_FPS, self.fps)
+                    
+                    # Test frame capture
+                    ret, _ = self.cap.read()
+                    if not ret:
+                        raise RuntimeError("Failed to capture test frame")
+                    
+                self.active = True
+                self.capture_thread = threading.Thread(target=self._capture_frames)
+                self.capture_thread.daemon = True
+                self.capture_thread.start()
+                return True
+            except Exception as e:
+                log.error(f"Failed to start camera {self.device_index}: {e}")
+                if self.cap:
+                    self.cap.release()
+                    self.cap = None
+                return False
         return False
     
     async def stop(self):

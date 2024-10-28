@@ -34,15 +34,19 @@ const CameraStream = ({ deviceIndex }) => {
         setError('Connection error');
       };
 
-      wsRef.current.onclose = () => {
-        setError('Connection closed');
-        // Try to reconnect after 5 seconds
-        if (!reconnecting) {
-          setReconnecting(true);
-          reconnectTimeout = setTimeout(() => {
-            setReconnecting(false);
-            connectWebSocket();
-          }, 5000);
+      wsRef.current.onclose = (event) => {
+        const reason = event.reason || 'Connection closed';
+        setError(`Camera ${deviceIndex}: ${reason}`);
+        
+        // Only reconnect if it's a general error, not a camera availability issue
+        if (event.code !== 1008) {  // 1008 = Policy Violation (camera not available)
+          if (!reconnecting) {
+            setReconnecting(true);
+            reconnectTimeout = setTimeout(() => {
+              setReconnecting(false);
+              connectWebSocket();
+            }, 5000);
+          }
         }
       };
     };
