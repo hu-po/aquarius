@@ -34,14 +34,19 @@ class CameraManager:
         """List available camera devices."""
         devices = []
         try:
+            # Get configured device indices
+            configured_devices = os.getenv('CAMERA_DEVICES', '0,4').split(',')
+            configured_indices = [int(x.strip()) for x in configured_devices]
+            
             # Log available video devices
             import subprocess
             result = subprocess.run(['v4l2-ctl', '--list-devices'], capture_output=True, text=True)
             log.info(f"Available video devices:\n{result.stdout}")
             
-            for i in range(10):  # Check first 10 possible devices
-                path = f"/dev/video{i}"
+            for device_index in configured_indices:
+                path = f"/dev/video{device_index}"
                 if not os.path.exists(path):
+                    log.warning(f"Configured camera device {path} does not exist")
                     continue
                     
                 log.info(f"Attempting to open camera at {path}")
@@ -50,10 +55,10 @@ class CameraManager:
                     # Test reading a frame
                     ret, _ = cap.read()
                     if ret:
-                        name = f"Camera {i}"
+                        name = f"Camera {device_index}"
                         log.info(f"Successfully opened camera {name} at {path}")
                         devices.append(CameraDevice(
-                            index=len(devices),
+                            index=device_index,  # Use actual device index instead of len(devices)
                             name=name,
                             path=path
                         ))

@@ -35,6 +35,7 @@ services:
       - TANK_AMMONIA_MAX=${TANK_AMMONIA_MAX}
       - TANK_NITRITE_MAX=${TANK_NITRITE_MAX}
       - TANK_NITRATE_MAX=${TANK_NITRATE_MAX}
+      - CAMERA_DEVICES=${CAMERA_DEVICES:-0,4}  # Specify which video devices to use
     volumes:
       - ./data:/app/data:rw
       - /dev:/dev:rw

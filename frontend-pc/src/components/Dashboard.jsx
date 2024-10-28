@@ -64,10 +64,10 @@ export const Dashboard = () => {
       </header>
 
       <div className="camera-streams">
-        {[0, 1].map(index => (
-          <div key={index} className="stream-container">
-            <h2>📸 {index}</h2>
-            <CameraStream deviceIndex={index} />
+        {devices.map(device => (
+          <div key={device.index} className="stream-container">
+            <h2>📸 {device.name}</h2>
+            <CameraStream deviceIndex={device.index} />
           </div>
         ))}
       </div>
