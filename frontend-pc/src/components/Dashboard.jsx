@@ -8,6 +8,7 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [capturing, setCapturing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -33,15 +34,24 @@ export const Dashboard = () => {
 
   const handleCapture = async () => {
     setCapturing(true);
+    setAnalysisProgress('Capturing images...');
     try {
-      await captureImage(0);
+      // Capture images from all active devices
+      const capturePromises = devices.map(device => 
+        captureImage(device.index)
+      );
+      await Promise.all(capturePromises);
+      
+      setAnalysisProgress('Analyzing images...');
+      // Get updated status which includes analysis results
       const statusData = await getStatus();
       setStatus(statusData);
       setError(null);
     } catch (err) {
-      setError(err.message || 'Failed to capture image');
+      setError(err.message || 'Failed to capture/analyze images');
     } finally {
       setCapturing(false);
+      setAnalysisProgress(null);
     }
   };
 
@@ -91,7 +101,7 @@ export const Dashboard = () => {
               onClick={handleCapture}
               disabled={capturing}
             >
-              {capturing ? '📸 ...' : '📸'}
+              {capturing ? `${analysisProgress || '📸 ...'} ` : '📸'}
             </button>
             <LLMReply descriptions={status?.latest_descriptions} />
           </div>
