@@ -86,43 +86,48 @@ class CameraManager:
 
     def generate_frames(self, device: CameraDevice) -> Generator[bytes, None, None]:
         """Generate MJPEG frames from camera."""
-        with self.get_lock(device.path):
-            cap = cv2.VideoCapture(device.path, cv2.CAP_V4L2)
-            try:
+        cap = None
+        try:
+            with self.get_lock(device.path):
+                # Only lock during camera initialization
+                cap = cv2.VideoCapture(device.path, cv2.CAP_V4L2)
                 if not cap.isOpened():
                     raise RuntimeError(f"Failed to open camera {device.path}")
-
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
                 cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
 
-                frame_interval = 1.0 / CAMERA_FPS
-                last_frame_time = 0
+            frame_interval = 1.0 / CAMERA_FPS
+            last_frame_time = 0
 
-                while True:
-                    current_time = time.time()
-                    if current_time - last_frame_time < frame_interval:
-                        time.sleep(0.001)
-                        continue
+            while True:
+                current_time = time.time()
+                if current_time - last_frame_time < frame_interval:
+                    time.sleep(0.001)
+                    continue
 
+                with self.get_lock(device.path):
+                    # Lock only during frame capture
                     ret, frame = cap.read()
                     if not ret:
                         break
 
-                    ret, buffer = cv2.imencode('.jpg', frame)
-                    if not ret:
-                        continue
+                ret, buffer = cv2.imencode('.jpg', frame)
+                if not ret:
+                    continue
 
-                    frame_bytes = buffer.tobytes()
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                    
-                    last_frame_time = current_time
+                frame_bytes = buffer.tobytes()
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                
+                last_frame_time = current_time
 
-            except Exception as e:
-                log.error(f"Frame generation error: {e}")
-            finally:
-                cap.release()
+        except Exception as e:
+            log.error(f"Frame generation error: {e}")
+        finally:
+            if cap:
+                with self.get_lock(device.path):
+                    cap.release()
 
     async def capture_image(self, filename: str, device_index: int = 0) -> bool:
         """Capture and save a single image."""
