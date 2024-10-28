@@ -111,11 +111,17 @@ async def capture_image(device_index: int, background_tasks: BackgroundTasks, db
 @app.get("/devices")
 async def list_camera_devices():
     """List all available camera devices."""
-    try:
-        devices = CameraManager.list_devices_info()
-        return devices
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    devices = camera_manager.devices
+    return [
+        {
+            "index": device.index,
+            "name": device.name,
+            "path": device.path,
+            "width": device.width,
+            "height": device.height
+        }
+        for device in devices
+    ]
 
 async def analyze_image(image_id: str, image_path: str, db: Session):
     try:

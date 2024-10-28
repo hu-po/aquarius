@@ -88,28 +88,6 @@ export const Dashboard = () => {
         <div className="header-content">
           <h1>🐟</h1>
           <div className="header-controls">
-            <div className="camera-selector">
-              {loadingDevices ? (
-                <span>Loading cameras...</span>
-              ) : devices.length === 0 ? (
-                <span className="error">No cameras found</span>
-              ) : (
-                <>
-                  <span className="selector-label">📷</span>
-                  <select
-                    value={selectedDevice}
-                    onChange={(e) => setSelectedDevice(Number(e.target.value))}
-                    className="camera-select"
-                  >
-                    {devices.map((device) => (
-                      <option key={device.index} value={device.index}>
-                        Camera {device.index} ({device.width}x{device.height})
-                      </option>
-                    ))}
-                  </select>
-                </>
-              )}
-            </div>
             <button 
               className={`capture-button ${capturing ? 'capturing' : ''}`}
               onClick={handleCapture}
