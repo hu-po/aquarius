@@ -36,7 +36,7 @@ const CameraStream = ({ deviceIndex }) => {
 
       wsRef.current.onclose = (event) => {
         const reason = event.reason || 'Connection closed';
-        setError(`Camera ${deviceIndex}: ${reason}`);
+        setError(`📸 ${deviceIndex}: ${reason}`);
         
         // Only try to reconnect if it wasn't a deliberate closure
         if (event.code !== 1000 && event.code !== 1008) {

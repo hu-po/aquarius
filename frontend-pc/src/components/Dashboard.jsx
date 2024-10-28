@@ -1,0 +1,145 @@
+import React, { useState, useEffect } from 'react';
+import { getStatus, captureImage, getDevices } from '../services/api';
+import CameraStream from './CameraStream';
+import LatestImage from './LatestImage';
+import Stats from './Stats';
+import LLMReply from './LLMReply';
+
+const POLL_INTERVAL = 30000;
+
+export const Dashboard = () => {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [capturing, setCapturing] = useState(false);
+
+  const fetchDevices = async () => {
+    try {
+      const deviceList = await getDevices();
+      setDevices(deviceList);
+      if (deviceList.length > 0) {
+        setSelectedDevice(deviceList[0].index);
+      }
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+      setError('Failed to load camera devices.');
+    } finally {
+      setLoadingDevices(false);
+    }
+  };
+
+  const fetchStatus = async () => {
+    try {
+      const data = await getStatus();
+      setStatus(data);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching status:', error);
+      setError(error.message || 'Failed to load aquarium data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCapture = async () => {
+    setCapturing(true);
+    try {
+      await captureImage(0);
+      await fetchStatus();
+    } catch (error) {
+      console.error('Error capturing image:', error);
+      setError(error.message || 'Failed to capture image.');
+    } finally {
+      setCapturing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchData = async () => {
+      if (mounted) {
+        await fetchStatus();
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, POLL_INTERVAL);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  if (loading && !status) {
+    return <div className="dashboard loading">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="dashboard error">{error}</div>;
+  }
+
+  return (
+    <div className="dashboard">
+      <header className="dashboard-header">
+        <div className="header-content">
+          <h1>🐟</h1>
+          <div className="header-controls">
+            <button 
+              className={`capture-button ${capturing ? 'capturing' : ''}`}
+              onClick={handleCapture}
+              disabled={capturing}
+            >
+              {capturing ? 'Capturing...' : '📸'}
+            </button>
+          </div>
+        </div>
+        {status?.alerts?.length > 0 && (
+          <div className="alerts">
+            {status.alerts.map((alert, index) => (
+              <div key={index} className="alert">{alert}</div>
+            ))}
+          </div>
+        )}
+      </header>
+      <div className="camera-streams">
+        <div className="stream-container">
+          <h2>Camera 0</h2>
+          <CameraStream deviceIndex={0} />
+        </div>
+        <div className="stream-container">
+          <h2>Camera 1</h2>
+          <CameraStream deviceIndex={1} />
+        </div>
+      </div>
+      <div className="dashboard-grid">
+        <div className="dashboard-section">
+          <h2>🖼️</h2>
+          <LatestImage image={status?.latest_image} />
+        </div>
+        <div className="dashboard-section">
+          <h2>📈</h2>
+          <Stats reading={status?.latest_reading} />
+        </div>
+        <div className="dashboard-section">
+          <h2>🧠</h2>
+          <div className="brain-container">
+            <button 
+              className={`capture-button ${capturing ? 'capturing' : ''}`}
+              onClick={handleCapture}
+              disabled={capturing}
+            >
+              {capturing ? 'Capturing...' : '📸'}
+            </button>
+            <LLMReply descriptions={status?.latest_descriptions} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

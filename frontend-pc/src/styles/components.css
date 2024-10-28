@@ -310,3 +310,13 @@ body {
     height: 100%;
     object-fit: contain;
   }
+
+.brain-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.brain-container .capture-button {
+  align-self: flex-start;
+}
