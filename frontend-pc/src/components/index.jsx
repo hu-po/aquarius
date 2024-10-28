@@ -9,9 +9,6 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [capturing, setCapturing] = useState(false);
-  const [devices, setDevices] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState(0);
-  const [loadingDevices, setLoadingDevices] = useState(true);
 
   const fetchDevices = async () => {
     try {
@@ -44,7 +41,7 @@ export const Dashboard = () => {
   const handleCapture = async () => {
     setCapturing(true);
     try {
-      await captureImage(selectedDevice);
+      await captureImage(0);
       await fetchStatus();
     } catch (error) {
       console.error('Error capturing image:', error);
@@ -91,7 +88,7 @@ export const Dashboard = () => {
             <button 
               className={`capture-button ${capturing ? 'capturing' : ''}`}
               onClick={handleCapture}
-              disabled={capturing || devices.length === 0}
+              disabled={capturing}
             >
               {capturing ? 'Capturing...' : '📸'}
             </button>
@@ -233,3 +230,4 @@ export const Stats = ({ reading }) => {
     </div>
   );
 };
+
