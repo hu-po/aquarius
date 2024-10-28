@@ -12,6 +12,7 @@ from typing import Dict, Set, List, Optional
 from dataclasses import dataclass
 from fastapi import WebSocket
 from queue import Queue
+from .models import IMAGES_DIR
 
 log = logging.getLogger(__name__)
 
@@ -388,4 +389,6 @@ class CameraStream:
         if retry_count >= max_retries:
             log.error(f"Camera {self.device.path} failed after {max_retries} retries")
             self.active = False
+
+
 

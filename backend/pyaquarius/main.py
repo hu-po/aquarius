@@ -33,8 +33,7 @@ from pyaquarius.models import (
     DBImage, DBReading, DBVLMDescription
 )
 
-from .camera import CameraManager
-from .config import config
+from .camera import CameraManager, CAMERA_IMG_TYPE, CAMERA_MAX_DIM
 
 log = logging.getLogger(__name__)
 
