@@ -2,6 +2,7 @@
 YELLOW='\033[1;33m'
 NC='\033[0m'
 echo -e "${YELLOW}🧹 cleaning aquarius ...${NC}"
+export HOST_IP=${HOST_IP:-$(hostname -I | awk '{print $1}')}
 docker compose down
 git pull
 rm -f .env
