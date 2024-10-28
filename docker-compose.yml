@@ -53,7 +53,7 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
-    user: "${UID}:${GID}"
+    # user: "${UID}:${GID}"
 
   frontend-pc:
     build: 
