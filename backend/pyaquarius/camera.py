@@ -34,23 +34,39 @@ class CameraManager:
         """List available camera devices."""
         devices = []
         try:
+            # Log available video devices
+            import subprocess
+            result = subprocess.run(['v4l2-ctl', '--list-devices'], capture_output=True, text=True)
+            log.info(f"Available video devices:\n{result.stdout}")
+            
             for i in range(10):  # Check first 10 possible devices
                 path = f"/dev/video{i}"
                 if not os.path.exists(path):
                     continue
                     
+                log.info(f"Attempting to open camera at {path}")
                 cap = cv2.VideoCapture(path, cv2.CAP_V4L2)
                 if cap.isOpened():
-                    name = f"Camera {i}"
-                    devices.append(CameraDevice(
-                        index=len(devices),
-                        name=name,
-                        path=path
-                    ))
+                    # Test reading a frame
+                    ret, _ = cap.read()
+                    if ret:
+                        name = f"Camera {i}"
+                        log.info(f"Successfully opened camera {name} at {path}")
+                        devices.append(CameraDevice(
+                            index=len(devices),
+                            name=name,
+                            path=path
+                        ))
+                    else:
+                        log.warning(f"Could not read frame from camera at {path}")
+                else:
+                    log.warning(f"Could not open camera at {path}")
                 cap.release()
                 
         except Exception as e:
-            log.error(f"Error listing camera devices: {e}")
+            log.error(f"Error listing camera devices: {e}", exc_info=True)
+        
+        log.info(f"Found {len(devices)} camera devices: {[d.path for d in devices]}")
         return devices
 
     def get_lock(self, device_path: str) -> threading.Lock:

@@ -64,8 +64,10 @@ async def stream_camera(device_index: int):
     """Stream camera feed as MJPEG."""
     device = camera_manager.get_device(device_index)
     if not device:
-        raise HTTPException(status_code=404, detail="Camera not found")
+        log.error(f"No camera found with index {device_index}. Available devices: {[d.path for d in camera_manager.devices]}")
+        raise HTTPException(status_code=404, detail=f"Camera {device_index} not found. Available devices: {[d.path for d in camera_manager.devices]}")
         
+    log.info(f"Streaming camera {device_index} from {device.path}")
     return Response(
         content=camera_manager.generate_frames(device),
         media_type='multipart/x-mixed-replace; boundary=frame'

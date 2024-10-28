@@ -1,13 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { getStreamUrl } from '../services/api';
 
 const CameraStream = ({ deviceIndex }) => {
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-  
   return (
     <div className="camera-stream">
       <img
-        src={`${BACKEND_URL}/camera/${deviceIndex}/stream`}
+        src={getStreamUrl(deviceIndex)}
         alt={`Camera ${deviceIndex} stream`}
         className="stream-image"
       />
