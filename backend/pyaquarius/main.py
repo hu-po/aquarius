@@ -20,11 +20,9 @@ TANK_NITRATE_MAX = float(os.getenv('TANK_NITRATE_MAX', '20.0'))
 # Image settings
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
 
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import WebSocket, WebSocketDisconnect
-from starlette.websockets import WebSocketState
 from sqlalchemy.orm import Session
 from contextlib import contextmanager
 from pyaquarius.vlms import caption
@@ -40,14 +38,13 @@ log = logging.getLogger(__name__)
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in CORS_ORIGINS.split(",") if origin.strip()],
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["Content-Type", "Authorization"],
-    max_age=CORS_MAX_AGE,
 )
-app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
+
+camera_manager = CameraManager()
 
 @contextmanager
 def get_db_session():
@@ -62,46 +59,30 @@ def get_db_session():
     finally:
         session.close()
 
-camera_manager = CameraManager()
-
-@app.websocket("/ws/camera/{device_index}")
-async def camera_websocket(websocket: WebSocket, device_index: int):
-    """WebSocket endpoint for camera streaming."""
-    stream = None
-    try:
-        await websocket.accept()
+@app.get("/camera/{device_index}/stream")
+async def stream_camera(device_index: int):
+    """Stream camera feed as MJPEG."""
+    device = camera_manager.get_device(device_index)
+    if not device:
+        raise HTTPException(status_code=404, detail="Camera not found")
         
-        stream = await camera_manager.get_stream(device_index)
-        if not stream:
-            await websocket.close(code=1008, reason=f"Camera {device_index} not available")
-            return
-
-        await stream.connect(websocket)
-        
-    except WebSocketDisconnect:
-        log.info(f"WebSocket disconnected for camera {device_index}")
-    except Exception as e:
-        log.error(f"WebSocket error for camera {device_index}: {e}")
-        if websocket.client_state != WebSocketState.DISCONNECTED:
-            try:
-                await websocket.close(code=1011, reason=str(e))
-            except:
-                pass
-    finally:
-        if stream and not stream.connections:
-            await stream.stop()
+    return Response(
+        content=camera_manager.generate_frames(device),
+        media_type='multipart/x-mixed-replace; boundary=frame'
+    )
 
 @app.post("/capture/{device_index}")
-async def capture_image(device_index: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)) -> Image:
-    """Capture image endpoint."""
+async def capture_image(
+    device_index: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+) -> Image:
+    """Capture and save an image."""
     timestamp = datetime.now(timezone.utc)
     filename = f"{timestamp.isoformat()}.{CAMERA_IMG_TYPE}"
     
-    if not await camera_manager.save_frame(filename, device_index):
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to capture image from device {device_index}"
-        )
+    if not await camera_manager.capture_image(filename, device_index):
+        raise HTTPException(status_code=500, detail="Failed to capture image")
     
     try:
         filepath = os.path.join(IMAGES_DIR, filename)
@@ -114,9 +95,10 @@ async def capture_image(device_index: int, background_tasks: BackgroundTasks, db
         )
         db.add(db_image)
         db.commit()
+        
         background_tasks.add_task(analyze_image, db_image.id, filepath, db)
         return Image.from_orm(db_image)
-    
+        
     except Exception as e:
         db.rollback()
         if os.path.exists(filepath):
@@ -124,9 +106,8 @@ async def capture_image(device_index: int, background_tasks: BackgroundTasks, db
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/devices")
-async def list_camera_devices():
-    """List all available camera devices."""
-    devices = camera_manager.devices
+async def list_devices():
+    """List available camera devices."""
     return [
         {
             "index": device.index,
@@ -135,7 +116,7 @@ async def list_camera_devices():
             "width": device.width,
             "height": device.height
         }
-        for device in devices
+        for device in camera_manager.devices
     ]
 
 async def analyze_image(image_id: str, image_path: str, db: Session):
