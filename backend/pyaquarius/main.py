@@ -20,7 +20,8 @@ TANK_NITRATE_MAX = float(os.getenv('TANK_NITRATE_MAX', '20.0'))
 # Image settings
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
 
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Response
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
