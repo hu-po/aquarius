@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const CameraStream = ({ deviceIndex }) => {
   const imgRef = useRef(null);
@@ -55,7 +55,7 @@ const CameraStream = ({ deviceIndex }) => {
         wsRef.current.close();
       }
     };
-  }, [deviceIndex]);
+  }, [deviceIndex, reconnecting]);
 
   return (
     <div className="camera-stream">
