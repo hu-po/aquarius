@@ -77,7 +77,6 @@ for var in "${required_vars[@]}"; do
 done
 
 # Set additional environment variables
-# Get host IP
 HOST_IP=$(hostname -I | awk '{print $1}')
 sed -i "s|HOST_IP=.*|HOST_IP=${HOST_IP}|" .env
 

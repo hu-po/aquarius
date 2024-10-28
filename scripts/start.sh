@@ -29,7 +29,7 @@ fi
 # Check/create .env file
 if [ ! -f .env ]; then
     echo -e "${YELLOW}⚠️  No .env file found. Running environment setup...${NC}"
-    if ! "$(dirname "$0")/setup-env.sh"; then
+    if ! "$(dirname "$0")/setup.sh"; then
         echo -e "${RED}❌ Environment setup failed. Please check the error messages above.${NC}"
         exit 1
     fi
