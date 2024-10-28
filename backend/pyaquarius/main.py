@@ -2,6 +2,8 @@ import asyncio
 import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+import logging
+
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +19,7 @@ from pyaquarius.models import (
 from .camera import CameraManager
 from .config import config
 
+log = logging.getLogger(__name__)
 
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
@@ -49,19 +52,12 @@ camera_manager = CameraManager()
 async def camera_websocket(websocket: WebSocket, device_index: int):
     """WebSocket endpoint for camera streaming."""
     stream = await camera_manager.get_stream(device_index)
-    await stream.connect(websocket)
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up camera streams on shutdown."""
-    await camera_manager.stop_all()
-
-@app.websocket("/ws/camera/{device_index}")
-async def camera_websocket(websocket: WebSocket, device_index: int):
-    """WebSocket endpoint for camera streaming."""
-    stream = await camera_manager.get_stream(device_index)
     if stream:
-        await stream.connect(websocket)
+        try:
+            await stream.connect(websocket)
+        except Exception as e:
+            log.error(f"Stream error: {e}")
+            await websocket.close(code=1011)  # Internal error
     else:
         await websocket.close(code=1008)  # Policy violation
 
