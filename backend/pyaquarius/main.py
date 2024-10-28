@@ -20,7 +20,7 @@ TANK_NITRATE_MAX = float(os.getenv('TANK_NITRATE_MAX', '20.0'))
 # Image settings
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
 
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Response
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -68,7 +68,7 @@ async def stream_camera(device_index: int):
         raise HTTPException(status_code=404, detail=f"Camera {device_index} not found. Available devices: {[d.path for d in camera_manager.devices]}")
         
     log.info(f"Streaming camera {device_index} from {device.path}")
-    return Response(
+    return StreamingResponse(
         content=camera_manager.generate_frames(device),
         media_type='multipart/x-mixed-replace; boundary=frame'
     )
