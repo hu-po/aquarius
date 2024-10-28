@@ -38,38 +38,43 @@ class CameraManager:
             configured_devices = os.getenv('CAMERA_DEVICES', '0,4').split(',')
             configured_indices = [int(x.strip()) for x in configured_devices]
             
-            # Log available video devices
-            import subprocess
-            result = subprocess.run(['v4l2-ctl', '--list-devices'], capture_output=True, text=True)
-            log.info(f"Available video devices:\n{result.stdout}")
-            
+            # Check device permissions
+            log.info("Checking video device permissions")
             for device_index in configured_indices:
                 path = f"/dev/video{device_index}"
                 if not os.path.exists(path):
-                    log.warning(f"Configured camera device {path} does not exist")
+                    log.error(f"Camera device {path} does not exist")
+                    continue
+                    
+                if not os.access(path, os.R_OK | os.W_OK):
+                    log.error(f"Insufficient permissions for {path}")
                     continue
                     
                 log.info(f"Attempting to open camera at {path}")
                 cap = cv2.VideoCapture(path, cv2.CAP_V4L2)
                 if cap.isOpened():
-                    # Test reading a frame
-                    ret, _ = cap.read()
-                    if ret:
-                        name = f"Camera {device_index}"
-                        log.info(f"Successfully opened camera {name} at {path}")
-                        devices.append(CameraDevice(
-                            index=device_index,  # Use actual device index instead of len(devices)
-                            name=name,
-                            path=path
-                        ))
+                    # Test reading a frame with timeout
+                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    for _ in range(3):  # Try up to 3 times
+                        ret, _ = cap.read()
+                        if ret:
+                            name = f"Camera {device_index}"
+                            log.info(f"Successfully opened camera {name} at {path}")
+                            devices.append(CameraDevice(
+                                index=device_index,
+                                name=name,
+                                path=path
+                            ))
+                            break
+                        time.sleep(0.1)
                     else:
-                        log.warning(f"Could not read frame from camera at {path}")
+                        log.error(f"Could not read frame from camera at {path} after 3 attempts")
                 else:
-                    log.warning(f"Could not open camera at {path}")
+                    log.error(f"Could not open camera at {path}")
                 cap.release()
                 
         except Exception as e:
-            log.error(f"Error listing camera devices: {e}", exc_info=True)
+            log.error(f"Error listing camera devices: {str(e)}", exc_info=True)
         
         log.info(f"Found {len(devices)} camera devices: {[d.path for d in devices]}")
         return devices
@@ -138,15 +143,20 @@ class CameraManager:
 
         with self.get_lock(device.path):
             try:
+                log.info(f"Attempting to capture image from {device.path}")
                 cap = cv2.VideoCapture(device.path, cv2.CAP_V4L2)
                 if not cap.isOpened():
+                    log.error(f"Failed to open camera device {device.path}")
                     return False
 
+                log.info(f"Setting camera properties: width={device.width}, height={device.height}")
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
                 
+                log.info("Reading frame")
                 ret, frame = cap.read()
                 if not ret:
+                    log.error(f"Failed to read frame from {device.path}")
                     return False
 
                 # Resize if needed
@@ -156,18 +166,24 @@ class CameraManager:
                     new_width = int(width * scale)
                     new_height = int(height * scale)
                     frame = cv2.resize(frame, (new_width, new_height))
+                    log.info(f"Resized frame to {new_width}x{new_height}")
 
                 filepath = os.path.join(IMAGES_DIR, filename)
-                cv2.imwrite(filepath, frame)
+                log.info(f"Saving image to {filepath}")
+                if not cv2.imwrite(filepath, frame):
+                    log.error(f"Failed to write image to {filepath}")
+                    return False
                 
+                log.info(f"Successfully captured and saved image to {filepath}")
                 await self._cleanup_old_images()
                 return True
 
             except Exception as e:
-                log.error(f"Image capture error: {e}")
+                log.error(f"Image capture error: {str(e)}", exc_info=True)
                 return False
             finally:
-                cap.release()
+                if cap:
+                    cap.release()
 
     async def _cleanup_old_images(self):
         """Remove old images when exceeding maximum count."""
