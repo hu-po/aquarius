@@ -26,7 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from contextlib import contextmanager
-from pyaquarius.vlms import caption
+from pyaquarius.vlms import multi_inference
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
     DBImage, DBReading, DBModelResponse
@@ -99,7 +99,7 @@ async def capture_image(
         db.add(db_image)
         db.commit()
         
-        background_tasks.add_task(analyze_image, db_image.id, filepath, db)
+        background_tasks.add_task(model_response_from_image, db_image.id, filepath, db)
         return Image.from_orm(db_image)
         
     except Exception as e:
@@ -122,7 +122,7 @@ async def list_devices():
         for device in camera_manager.devices
     ]
 
-async def analyze_image(image_id: str, image_path: str, db: Session):
+async def model_response_from_image(image_id: str, image_path: str, db: Session):
     try:
         this_dir = os.path.dirname(os.path.realpath(__file__))
         prompt = open(os.path.join(this_dir, "prompts/vlm.txt")).read().strip()
@@ -130,27 +130,23 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
         start_time = datetime.now(timezone.utc)
         
         try:
-            replies = await asyncio.wait_for(caption(image_path, prompt), timeout=VLM_API_TIMEOUT)
+            responses = await asyncio.wait_for(multi_inference(image_path, prompt), timeout=VLM_API_TIMEOUT)
         except asyncio.TimeoutError:
-            replies = {"error": "Analysis timeout"}
+            responses = {"error": "Analysis timeout"}
         except Exception as e:
-            replies = {"error": f"Analysis failed: {str(e)}"}
+            responses = {"error": f"Analysis failed: {str(e)}"}
 
         with get_db_session() as session:
-            for model_name, response in replies.items():
+            for model_name, response in responses.items():
                 if model_name != "error":
-                    inference = DBModelResponse(
+                    session.add(DBModelResponse(
                         id=f"{datetime.now(timezone.utc).isoformat()}_{model_name}",
                         image_id=image_id,
                         model_name=model_name,
                         response=response,
                         prompt=prompt,
                         latency=(datetime.now(timezone.utc) - start_time).total_seconds()
-                    )
-                    session.add(inference)
-                    concerns = extract_concerns(response)
-                    if concerns:
-                        inference.concerns_detected = concerns
+                    ))
     except Exception as e:
         print(f"Failed to analyze image: {e}")
         with get_db_session() as session:
@@ -163,16 +159,6 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
                 latency=0
             )
             session.add(error_desc)
-
-def extract_concerns(response: str) -> Optional[str]:
-    if not response:
-        return None
-    concerns = []
-    keywords = ["concern", "warning", "alert", "problem", "issue", "high", "low", "unsafe", "dangerous", "unhealthy"]
-    for line in response.split('\n'):
-        if any(keyword in line.lower() for keyword in keywords):
-            concerns.append(line.strip())
-    return "; ".join(concerns) if concerns else None
 
 @app.get("/healthcheck")
 async def health_check():
@@ -191,8 +177,6 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
         for desc in responses:
             if desc.model_name != "system":
                 latest_responses[desc.model_name] = desc.response
-            if desc.concerns_detected:
-                alerts.extend(desc.concerns_detected.split('; '))
     if latest_reading:
         if latest_reading.temperature > TANK_TEMP_MAX or latest_reading.temperature < TANK_TEMP_MIN:
             alerts.append(f"Temperature outside ideal range: {latest_reading.temperature}°F")

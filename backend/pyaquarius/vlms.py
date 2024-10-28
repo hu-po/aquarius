@@ -58,7 +58,7 @@ async def claude(prompt: str, image_path: str) -> str:
         )
         response = response.content[0].text
         log.info("Claude API responded")
-        log.debug(f"ModelResponse: {response}")
+        log.debug(f"Response: {response}")
         return response
     except Exception as e:
         log.error(f"Claude API error: {str(e)}")
@@ -93,7 +93,7 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
         )
         response = response.choices[0].message.content
         log.info("GPT-4o-mini API responded")
-        log.debug(f"ModelResponse: {response}")
+        log.debug(f"Response: {response}")
         return response
 
     except Exception as e:
@@ -117,7 +117,7 @@ async def gemini(prompt: str, image_path: str) -> str:
         )
         response = response.text
         log.info("Gemini API responded")
-        log.debug(f"ModelResponse: {response}")
+        log.debug(f"Response: {response}")
         return response
 
     except Exception as e:
@@ -126,7 +126,7 @@ async def gemini(prompt: str, image_path: str) -> str:
 
 
 
-async def caption(image_path: str, prompt: str) -> Dict[str, str]:
+async def multi_inference(image_path: str, prompt: str) -> Dict[str, str]:
     """Generate captions using multiple VLMs."""
     try:
         responses = await asyncio.gather(
@@ -146,4 +146,4 @@ async def caption(image_path: str, prompt: str) -> Dict[str, str]:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    asyncio.run(caption("test.jpg", "Describe what you see in this image."))
+    asyncio.run(multi_inference("test.jpg", "Describe what you see in this image."))

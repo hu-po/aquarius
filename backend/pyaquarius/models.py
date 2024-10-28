@@ -68,7 +68,6 @@ class DBModelResponse(BaseMixin, Base):
     response = Column(String)
     prompt = Column(String)
     latency = Column(Float)
-    concerns_detected = Column(String, nullable=True)
 
 class ModelResponseBase(BaseModel):
     image_id: str
@@ -76,7 +75,6 @@ class ModelResponseBase(BaseModel):
     response: str
     prompt: str
     latency: float
-    concerns_detected: Optional[str] = None
 
 class ModelResponse(ModelResponseBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())
