@@ -38,8 +38,8 @@ const CameraStream = ({ deviceIndex }) => {
         const reason = event.reason || 'Connection closed';
         setError(`Camera ${deviceIndex}: ${reason}`);
         
-        // Only reconnect if it's a general error, not a camera availability issue
-        if (event.code !== 1008) {  // 1008 = Policy Violation (camera not available)
+        // Only try to reconnect if it wasn't a deliberate closure
+        if (event.code !== 1000 && event.code !== 1008) {
           if (!reconnecting) {
             setReconnecting(true);
             reconnectTimeout = setTimeout(() => {
