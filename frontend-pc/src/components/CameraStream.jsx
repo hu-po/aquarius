@@ -69,3 +69,5 @@ const CameraStream = ({ deviceIndex }) => {
     </div>
   );
 };
+
+export default CameraStream;
