@@ -21,7 +21,7 @@ TANK_NITRATE_MAX = float(os.getenv('TANK_NITRATE_MAX', '20.0'))
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
 
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingModelResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -29,7 +29,7 @@ from contextlib import contextmanager
 from pyaquarius.vlms import caption
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
-    DBImage, DBReading, DBVLMDescription
+    DBImage, DBReading, DBModelResponse
 )
 
 from .camera import CameraManager, CAMERA_IMG_TYPE, CAMERA_MAX_DIM
@@ -69,7 +69,7 @@ async def stream_camera(device_index: int):
         raise HTTPException(status_code=404, detail=f"Camera {device_index} not found. Available devices: {[d.path for d in camera_manager.devices]}")
         
     log.info(f"Streaming camera {device_index} from {device.path}")
-    return StreamingResponse(
+    return StreamingModelResponse(
         content=camera_manager.generate_frames(device),
         media_type='multipart/x-mixed-replace; boundary=frame'
     )
@@ -130,46 +130,46 @@ async def analyze_image(image_id: str, image_path: str, db: Session):
         start_time = datetime.now(timezone.utc)
         
         try:
-            descriptions = await asyncio.wait_for(caption(image_path, prompt), timeout=VLM_API_TIMEOUT)
+            replies = await asyncio.wait_for(caption(image_path, prompt), timeout=VLM_API_TIMEOUT)
         except asyncio.TimeoutError:
-            descriptions = {"error": "Analysis timeout"}
+            replies = {"error": "Analysis timeout"}
         except Exception as e:
-            descriptions = {"error": f"Analysis failed: {str(e)}"}
+            replies = {"error": f"Analysis failed: {str(e)}"}
 
         with get_db_session() as session:
-            for vlm_name, description in descriptions.items():
-                if vlm_name != "error":
-                    vlm_desc = DBVLMDescription(
-                        id=f"{datetime.now(timezone.utc).isoformat()}_{vlm_name}",
+            for model_name, response in replies.items():
+                if model_name != "error":
+                    inference = DBModelResponse(
+                        id=f"{datetime.now(timezone.utc).isoformat()}_{model_name}",
                         image_id=image_id,
-                        vlm_name=vlm_name,
-                        description=description,
+                        model_name=model_name,
+                        response=response,
                         prompt=prompt,
                         latency=(datetime.now(timezone.utc) - start_time).total_seconds()
                     )
-                    session.add(vlm_desc)
-                    concerns = extract_concerns(description)
+                    session.add(inference)
+                    concerns = extract_concerns(response)
                     if concerns:
-                        vlm_desc.concerns_detected = concerns
+                        inference.concerns_detected = concerns
     except Exception as e:
         print(f"Failed to analyze image: {e}")
         with get_db_session() as session:
-            error_desc = DBVLMDescription(
+            error_desc = DBModelResponse(
                 id=f"{datetime.now(timezone.utc).isoformat()}_error",
                 image_id=image_id,
-                vlm_name="system",
-                description=f"Analysis failed: {str(e)}",
+                model_name="system",
+                response=f"Analysis failed: {str(e)}",
                 prompt=prompt,
                 latency=0
             )
             session.add(error_desc)
 
-def extract_concerns(description: str) -> Optional[str]:
-    if not description:
+def extract_concerns(response: str) -> Optional[str]:
+    if not response:
         return None
     concerns = []
     keywords = ["concern", "warning", "alert", "problem", "issue", "high", "low", "unsafe", "dangerous", "unhealthy"]
-    for line in description.split('\n'):
+    for line in response.split('\n'):
         if any(keyword in line.lower() for keyword in keywords):
             concerns.append(line.strip())
     return "; ".join(concerns) if concerns else None
@@ -182,15 +182,15 @@ async def health_check():
 async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
     latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
     latest_reading = db.query(DBReading).order_by(DBReading.timestamp.desc()).first()
-    latest_descriptions = {}
+    latest_responses = {}
     alerts = []
     if latest_image:
-        descriptions = db.query(DBVLMDescription).filter(
-            DBVLMDescription.image_id == latest_image.id
+        responses = db.query(DBModelResponse).filter(
+            DBModelResponse.image_id == latest_image.id
         ).all()
-        for desc in descriptions:
-            if desc.vlm_name != "system":
-                latest_descriptions[desc.vlm_name] = desc.description
+        for desc in responses:
+            if desc.model_name != "system":
+                latest_responses[desc.model_name] = desc.response
             if desc.concerns_detected:
                 alerts.extend(desc.concerns_detected.split('; '))
     if latest_reading:
@@ -207,7 +207,7 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
     return AquariumStatus(
         latest_image=Image.from_orm(latest_image) if latest_image else None,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
-        latest_descriptions=latest_descriptions,
+        latest_responses=latest_responses,
         alerts=list(set(alerts))
     )
 

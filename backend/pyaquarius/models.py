@@ -59,16 +59,30 @@ class DBReading(BaseMixin, Base):
     nitrate = Column(Float, nullable=True)
     image_id = Column(String, nullable=True)
 
-class DBVLMDescription(BaseMixin, Base):
-    __tablename__ = "vlm_descriptions"
+class DBModelResponse(BaseMixin, Base):
+    __tablename__ = "model_responses"
     id = Column(String, primary_key=True)
     image_id = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    vlm_name = Column(String)
-    description = Column(String)
+    model_name = Column(String)
+    response = Column(String)
     prompt = Column(String)
     latency = Column(Float)
     concerns_detected = Column(String, nullable=True)
+
+class ModelResponseBase(BaseModel):
+    image_id: str
+    model_name: str
+    response: str
+    prompt: str
+    latency: float
+    concerns_detected: Optional[str] = None
+
+class ModelResponse(ModelResponseBase):
+    id: str = Field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    class Config:
+        from_attributes = True
 
 class ImageBase(BaseModel):
     filepath: str
@@ -98,24 +112,10 @@ class Reading(ReadingBase):
     class Config:
         from_attributes = True
 
-class VLMDescriptionBase(BaseModel):
-    image_id: str
-    vlm_name: str
-    description: str
-    prompt: str
-    latency: float
-    concerns_detected: Optional[str] = None
-
-class VLMDescription(VLMDescriptionBase):
-    id: str = Field(default_factory=lambda: datetime.now().isoformat())
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    class Config:
-        from_attributes = True
-
 class AquariumStatus(BaseModel):
     latest_image: Optional[Image] = None
     latest_reading: Optional[Reading] = None
-    latest_descriptions: Dict[str, str] = {}
+    latest_responses: Dict[str, str] = {}
     alerts: List[str] = []
 
 Base.metadata.create_all(bind=engine)

@@ -56,10 +56,10 @@ async def claude(prompt: str, image_path: str) -> str:
                 ],
             }]
         )
-        reply = response.content[0].text
+        response = response.content[0].text
         log.info("Claude API responded")
-        log.debug(f"Response: {reply}")
-        return reply
+        log.debug(f"ModelResponse: {response}")
+        return response
     except Exception as e:
         log.error(f"Claude API error: {str(e)}")
         return f"Claude API error: {str(e)}"
@@ -91,10 +91,10 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
                 }
             ],
         )
-        reply = response.choices[0].message.content
+        response = response.choices[0].message.content
         log.info("GPT-4o-mini API responded")
-        log.debug(f"Response: {reply}")
-        return reply
+        log.debug(f"ModelResponse: {response}")
+        return response
 
     except Exception as e:
         log.error(f"GPT-4o-mini API error: {str(e)}")
@@ -115,10 +115,10 @@ async def gemini(prompt: str, image_path: str) -> str:
             request_options={"timeout": 600},
             generation_config={"max_output_tokens": VLM_MAX_TOKENS},
         )
-        reply = response.text
+        response = response.text
         log.info("Gemini API responded")
-        log.debug(f"Response: {reply}")
-        return reply
+        log.debug(f"ModelResponse: {response}")
+        return response
 
     except Exception as e:
         log.error(f"Gemini API error: {str(e)}")

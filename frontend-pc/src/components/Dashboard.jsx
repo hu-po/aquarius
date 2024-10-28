@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CameraStream, LatestImage, Stats, LLMReply } from './';
+import { CameraStream, LatestImage, Stats, ModelResponse } from './';
 import { getDevices, getStatus, captureImage } from '../services/api';
 
 export const Dashboard = () => {
@@ -103,7 +103,7 @@ export const Dashboard = () => {
             >
               {capturing ? `${analysisProgress || '📸 ...'} ` : '📸'}
             </button>
-            <LLMReply descriptions={status?.latest_descriptions} />
+            <ModelResponse responses={status?.latest_responses} />
           </div>
         </div>
       </div>
