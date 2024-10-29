@@ -136,7 +136,7 @@ async def capture_image(device_index: int):
             if analysis:
                 ai_response = DBAIResponse(
                     image_id=image.id,
-                    response_text=analysis,
+                    response=analysis,
                     model="vlm",
                     created_at=datetime.now(timezone.utc)
                 )
