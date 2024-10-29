@@ -10,9 +10,9 @@ import google.generativeai as genai
 log = logging.getLogger(__name__)
 
 # API settings
-VLM_API_TIMEOUT = int(os.getenv('VLM_API_TIMEOUT', '30'))
-VLM_API_MAX_RETRIES = int(os.getenv('VLM_API_MAX_RETRIES', '3'))
-VLM_MAX_TOKENS = int(os.getenv('VLM_MAX_TOKENS', '1000'))
+AI_API_TIMEOUT = int(os.getenv('AI_API_TIMEOUT', '30'))
+AI_API_MAX_RETRIES = int(os.getenv('AI_API_MAX_RETRIES', '3'))
+AI_MAX_TOKENS = int(os.getenv('AI_MAX_TOKENS', '1000'))
 
 if not all([os.getenv('ANTHROPIC_API_KEY'), os.getenv('OPENAI_API_KEY'), os.getenv('GOOGLE_API_KEY')]):
     log.warning("One or more API keys not set - some VLM services will be unavailable")
@@ -40,7 +40,7 @@ async def claude(prompt: str, image_path: str) -> str:
         log.debug(f"Prompt: {prompt}")
         response = await client.messages.create(
             model="claude-3-sonnet-20240229",
-            max_tokens=VLM_MAX_TOKENS,
+            max_tokens=AI_MAX_TOKENS,
             messages=[{
                 "role": "user",
                 "content": [
@@ -77,7 +77,7 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
         response = await asyncio.to_thread(
             client.chat.completions.create,
             model="gpt-4o-mini",
-            max_tokens=VLM_MAX_TOKENS,
+            max_tokens=AI_MAX_TOKENS,
             messages=[
                 {
                     "role": "user",
@@ -113,7 +113,7 @@ async def gemini(prompt: str, image_path: str) -> str:
         response = await model.generate_content_async(
             [uploaded_file, "\n\n", prompt],
             request_options={"timeout": 600},
-            generation_config={"max_output_tokens": VLM_MAX_TOKENS},
+            generation_config={"max_output_tokens": AI_MAX_TOKENS},
         )
         response = response.text
         log.info("Gemini API responded")

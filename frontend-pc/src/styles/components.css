@@ -212,7 +212,7 @@ body {
 }
 
 /* LLM Reply */
-.model-response .model-output {
+.ai-response .ai-output {
     margin-bottom: 1.5rem;
     padding: 1rem;
     background: #1e293b;
@@ -220,18 +220,18 @@ body {
     border: 1px solid #334155;
 }
 
-.model-response .model-header {
+.ai-response .ai-header {
     display: flex;
     align-items: center;
     margin-bottom: 0.5rem;
 }
 
-.model-response .model-icon {
+.ai-response .ai-icon {
     font-size: 1.5rem;
     margin-right: 0.5rem;
 }
 
-.model-response .model-name {
+.ai-response .ai-name {
     font-weight: 600;
     font-size: 1.125rem;
 }

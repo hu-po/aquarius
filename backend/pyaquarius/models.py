@@ -64,24 +64,24 @@ class DBReading(BaseMixin, Base):
     nitrate = Column(Float, nullable=True)
     image_id = Column(String, nullable=True)
 
-class DBModelResponse(BaseMixin, Base):
-    __tablename__ = "model_responses"
+class DBAIResponse(BaseMixin, Base):
+    __tablename__ = "ai_responses"
     id = Column(String, primary_key=True)
     image_id = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    model_name = Column(String)
+    ai_name = Column(String)
     response = Column(String)
     prompt = Column(String)
     latency = Column(Float)
 
-class ModelResponseBase(BaseModel):
+class AIResponseBase(BaseModel):
     image_id: str
-    model_name: str
+    ai_name: str
     response: str
     prompt: str
     latency: float
 
-class ModelResponse(ModelResponseBase):
+class AIResponse(AIResponseBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     class Config:
@@ -122,6 +122,7 @@ class DBLife(BaseMixin, Base):
     common_name = Column(String)
     description = Column(String)
     emoji = Column(String)
+    count = Column(Integer)  # Add this line
     category = Column(String)  # fish, plant, invertebrate
     introduced_at = Column(DateTime, default=datetime.utcnow)
     last_seen_at = Column(DateTime, default=datetime.utcnow)
@@ -162,11 +163,11 @@ def load_life_from_csv(db: Session) -> None:
                 db_life = DBLife(
                     id=datetime.now(timezone.utc).isoformat(),
                     emoji=row['emoji'],
-                    count=int(row['count']),
                     common_name=row['common_name'],
                     scientific_name=row['scientific_name'],
                     description=row['description'],
-                    category=row['category']
+                    category=row['category'],
+                    count=int(row.get('count', 1))  # Default to 1 if not specified
                 )
                 db.add(db_life)
             db.commit()

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ModelResponse = ({ responses }) => {
+const AIResponse = ({ responses }) => {
   if (!responses || Object.keys(responses).length === 0) {
     return <div className="model-response">no model responses available</div>;
   }
@@ -28,4 +28,4 @@ const ModelResponse = ({ responses }) => {
   );
 };
 
-export default ModelResponse;
+export default AIResponse;
