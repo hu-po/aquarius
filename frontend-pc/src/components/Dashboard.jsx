@@ -10,9 +10,7 @@ export const Dashboard = () => {
   const [error, setError] = useState(null);
   const [capturing, setCapturing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(null);
-  const [location, setLocation] = useState(null);
-  const [timezone, setTimezone] = useState(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [pausedDevices, setPausedDevices] = useState(new Set());
 
   useEffect(() => {
     const loadData = async () => {
@@ -23,8 +21,6 @@ export const Dashboard = () => {
         ]);
         setDevices(deviceList);
         setStatus(statusData);
-        setLocation(statusData.location);
-        setTimezone(statusData.timezone);
         setError(null);
       } catch (err) {
         setError(err.message || 'Failed to load data');
@@ -36,46 +32,55 @@ export const Dashboard = () => {
     loadData();
     const dataInterval = setInterval(loadData, 30000);
 
-    // Update time every second
-    const timeInterval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
     return () => {
       clearInterval(dataInterval);
-      clearInterval(timeInterval);
     };
   }, []);
 
   const handleCapture = async () => {
     setCapturing(true);
-    setAnalysisProgress('Capturing images...');
+    setAnalysisProgress('Preparing to capture...');
+    
     try {
-      // Filter only active devices
       const activeDevices = devices.filter(device => device.active);
       if (activeDevices.length === 0) {
         throw new Error('No active camera devices found');
       }
 
-      // Capture images from all active devices
+      // Pause all streams
+      setPausedDevices(new Set(activeDevices.map(d => d.index)));
+      await new Promise(resolve => setTimeout(resolve, 500)); // Allow streams to stop
+
+      setAnalysisProgress('Capturing images...');
       const captureResults = await Promise.allSettled(
         activeDevices.map(device => captureImage(device.index))
       );
 
-      // Check for failures
-      const failures = captureResults.filter(result => result.status === 'rejected');
+      const failures = captureResults.filter(r => r.status === 'rejected');
       if (failures.length === activeDevices.length) {
         throw new Error('Failed to capture images from all devices');
       }
 
-      setAnalysisProgress('Analyzing images...');
-      // Get updated status which includes analysis results
-      const statusData = await getStatus();
-      setStatus(statusData);
+      setAnalysisProgress('Processing with AI models...');
+      // Wait for VLM analysis to complete via status poll
+      let analysisComplete = false;
+      let attempts = 0;
+      while (!analysisComplete && attempts < 30) {
+        const statusData = await getStatus();
+        if (statusData.latest_responses && Object.keys(statusData.latest_responses).length > 0) {
+          analysisComplete = true;
+          setStatus(statusData);
+        } else {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+        }
+      }
+
       setError(null);
     } catch (err) {
       setError(err.message || 'Failed to capture/analyze images');
     } finally {
+      setPausedDevices(new Set()); // Resume all streams
       setCapturing(false);
       setAnalysisProgress(null);
     }
@@ -95,9 +100,9 @@ export const Dashboard = () => {
         <div className="header-content">
           <h1>🐟</h1>
           <div className="tank-info">
-            <span className="location">📍 {location || "Location not set"}</span>
-            <span className="time">🕒 {currentTime.toLocaleString('en-US', { 
-              timeZone: timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+            <span className="location">📍 {status?.location || "Location not set"}</span>
+            <span className="time">🕒 {new Date().toLocaleString('en-US', { 
+              timeZone: status?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
               dateStyle: 'medium',
               timeStyle: 'medium'
             })}</span>
@@ -112,14 +117,14 @@ export const Dashboard = () => {
         )}
       </header>
 
-      <div className="camera-streams">
+      <div className="streams-grid">
         {devices.map(device => (
           <div key={device.index} className="stream-container">
-            <h2>📸 {device.name}</h2>
-            <CameraStream deviceIndex={device.index} />
-            {status?.latest_images[device.index] && (
-              <LatestImage image={status.latest_images[device.index]} />
-            )}
+            <h2>{device.name}</h2>
+            <CameraStream 
+              deviceIndex={device.index}
+              isPaused={pausedDevices.has(device.index)}
+            />
           </div>
         ))}
       </div>

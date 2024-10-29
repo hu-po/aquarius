@@ -113,6 +113,8 @@ body {
     cursor: pointer;
     font-weight: 500;
     transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
 }
 
 .capture-button:disabled {
@@ -128,6 +130,22 @@ body {
     0% { opacity: 1; }
     50% { opacity: 0.5; }
     100% { opacity: 1; }
+}
+
+.capture-button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+    animation: capturing 1.5s infinite;
+}
+
+@keyframes capturing {
+    100% { transform: translateX(100%); }
 }
 
 /* Alerts */
@@ -346,4 +364,15 @@ body {
 .error-message {
   font-size: 1.25rem;
   color: #e2e8f0;
+}
+
+.stream-paused {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e2e8f0;
+  font-size: 1.125rem;
 }
