@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CameraStream, LatestImage, Stats, ModelResponse } from './';
+import { CameraStream, LatestImage, Stats, AIResponse } from './';
 import { getDevices, getStatus, captureImage } from '../services/api';
 import Life from './Life';
 
@@ -124,7 +124,7 @@ export const Dashboard = () => {
             >
               {capturing ? `${analysisProgress || '📸 ...'} ` : '📸'}
             </button>
-            <ModelResponse responses={status?.latest_responses} />
+            <AIResponse responses={status?.latest_responses} />
           </div>
         </div>
 

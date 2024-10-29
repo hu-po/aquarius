@@ -36,10 +36,15 @@ echo "📁 Creating data directories..."
 mkdir -p data/images data/db
 chmod -R 777 data
 
-export HOST_IP=${HOST_IP:-$(hostname -I | awk '{print $1}')}
+# Get host IP, fallback to localhost if not found
+HOST_IP=$(hostname -I | awk '{print $1}')
+HOST_IP=${HOST_IP:-"127.0.0.1"}
 echo "🌐 HOST_IP: $HOST_IP"
-echo "👤 UID/GID: $(id -u)/$(id -g)"
+
+# Update .env file with HOST_IP
 sed -i "s|HOST_IP=.*|HOST_IP=${HOST_IP}|" .env
+
+echo "👤 UID/GID: $(id -u)/$(id -g)"
 sed -i "s|UID=.*|UID=$(id -u)|" .env
 sed -i "s|GID=.*|GID=$(id -g)|" .env
 
