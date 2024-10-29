@@ -107,6 +107,7 @@ async def gemini(prompt: str, image_path: str) -> str:
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY not set")
+        genai.configure(api_key=api_key)
         uploaded_file = genai.upload_file(image_path)
         log.info(f"Uploaded file to Gemini: {uploaded_file.uri}")
         model = genai.GenerativeModel("models/gemini-pro")
