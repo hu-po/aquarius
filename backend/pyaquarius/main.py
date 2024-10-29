@@ -104,81 +104,49 @@ async def stream_camera(device_index: int, request: Request):
     )
 
 @app.post("/capture/{device_index}")
-async def capture_image(
-    device_index: int,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
-) -> Image:
-    """Capture and save an image."""
+async def capture_image(device_index: int):
+    """Capture image from specified camera and trigger VLM analysis."""
     device = camera_manager.get_device(device_index)
     if not device:
         raise HTTPException(status_code=404, detail=f"Camera {device_index} not found")
-
+    
     if not device.is_active:
         raise HTTPException(status_code=400, detail=f"Camera {device_index} is not active")
-
-    filepath = await camera_manager.capture_image(device)
-    if not filepath:
-        raise HTTPException(status_code=500, detail="Failed to capture image")
     
     try:
-        db_image = DBImage(
-            id=datetime.now(timezone.utc).isoformat(),
-            device_index=device_index,
-            filepath=filepath,
-            width=CAMERA_MAX_DIM,
-            height=CAMERA_MAX_DIM,
-            file_size=os.path.getsize(filepath)
-        )
-        db.add(db_image)
-        db.commit()
+        # Stop any existing stream
+        await device.stop_stream()
         
-        background_tasks.add_task(ai_response_from_image, db_image.id, filepath, db)
-        return Image.from_orm(db_image)
+        # Capture image
+        filepath = await camera_manager.capture_image(device)
+        if not filepath:
+            raise HTTPException(status_code=500, detail=f"Failed to capture from camera {device_index}")
+            
+        # Trigger VLM analysis
+        with open(os.path.join(os.path.dirname(__file__), "prompts", "vlm.txt")) as f:
+            prompt = f.read().strip()
+        with open(os.path.join(os.path.dirname(__file__), "prompts", "aquarium.txt")) as f:
+            prompt += f.read().strip()
+        analysis = await multi_inference(filepath, prompt)
+        
+        # Store results in database
+        with get_db_session() as db:
+            image = DBImage(filepath=filepath, captured_at=datetime.now(timezone.utc))
+            db.add(image)
+            if analysis:
+                ai_response = DBAIResponse(
+                    image_id=image.id,
+                    response_text=analysis,
+                    model="vlm",
+                    created_at=datetime.now(timezone.utc)
+                )
+                db.add(ai_response)
+        
+        return {"filepath": filepath, "analysis": analysis}
         
     except Exception as e:
-        db.rollback()
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        log.error(f"Capture error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
-async def ai_response_from_image(image_id: str, image_path: str, db: Session):
-    try:
-        this_dir = os.path.dirname(os.path.realpath(__file__))
-        prompt = open(os.path.join(this_dir, "prompts/vlm.txt")).read().strip()
-        prompt += open(os.path.join(this_dir, "prompts/aquarium.txt")).read().strip()        
-        start_time = datetime.now(timezone.utc)
-        
-        try:
-            responses = await asyncio.wait_for(multi_inference(image_path, prompt), timeout=AI_API_TIMEOUT)
-        except asyncio.TimeoutError:
-            responses = {"error": "Analysis timeout"}
-        except Exception as e:
-            responses = {"error": f"Analysis failed: {str(e)}"}
-
-        with get_db_session() as session:
-            for ai_name, response in responses.items():
-                if ai_name != "error":
-                    session.add(DBAIResponse(
-                        id=f"{datetime.now(timezone.utc).isoformat()}_{ai_name}",
-                        image_id=image_id,
-                        ai_name=ai_name,
-                        response=response,
-                        prompt=prompt,
-                        latency=(datetime.now(timezone.utc) - start_time).total_seconds()
-                    ))
-    except Exception as e:
-        print(f"Failed to analyze image: {e}")
-        with get_db_session() as session:
-            error_desc = DBAIResponse(
-                id=f"{datetime.now(timezone.utc).isoformat()}_error",
-                image_id=image_id,
-                ai_name="system",
-                response=f"Analysis failed: {str(e)}",
-                prompt=prompt,
-                latency=0
-            )
-            session.add(error_desc)
 
 @app.get("/healthcheck")
 async def health_check():

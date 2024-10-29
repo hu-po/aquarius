@@ -43,14 +43,14 @@ export const getDevices = async () => {
 export const captureImage = async (deviceIndex) => {
   try {
     // Wait briefly to ensure stream is stopped
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     const response = await api.post(`/capture/${deviceIndex}`, null, {
-      timeout: 30000  // Increased timeout for capture
+      timeout: 30000  // Increased timeout for capture and analysis
     });
     
     // Wait briefly before resuming stream
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     return response.data;
   } catch (error) {
@@ -61,7 +61,7 @@ export const captureImage = async (deviceIndex) => {
       throw new Error(`Camera ${deviceIndex} is not active`);
     }
     if (error.response?.status === 500) {
-      throw new Error(`Failed to capture from camera ${deviceIndex}`);
+      throw new Error(`Failed to capture from camera ${deviceIndex}: ${error.response?.data?.detail || ''}`);
     }
     handleApiError(error, `Failed to capture image from camera ${deviceIndex}`);
   }

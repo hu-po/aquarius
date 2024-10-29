@@ -24,7 +24,24 @@ class CameraDevice:
         self.lock = asyncio.Lock()
         self.name = f"Camera {index}"
         self.is_streaming = False
-        self.cap = None  # Store VideoCapture instance
+        self.is_capturing = False
+        self.is_active = False
+        self.cap = None
+
+    async def stop_stream(self):
+        """Safely stop any active stream."""
+        async with self.lock:
+            self.is_streaming = False
+            if self.cap:
+                self.cap.release()
+                self.cap = None
+                await asyncio.sleep(0.5)  # Allow hardware to stabilize
+
+    async def start_stream(self):
+        """Safely start stream if not capturing."""
+        if not self.is_capturing:
+            async with self.lock:
+                self.is_streaming = True
 
 class CameraManager:
     def __init__(self):
@@ -58,36 +75,36 @@ class CameraManager:
         return self.devices.get(index)
 
     async def capture_image(self, device: CameraDevice) -> Optional[str]:
-        """Capture image from camera with proper locking."""
+        """Capture image from camera with proper locking and cleanup."""
         if device.is_streaming:
-            # Wait for any existing stream to finish cleanup
-            await asyncio.sleep(0.5)
-            
+            await device.stop_stream()
+        
         async with device.lock:
-            device.is_streaming = False
-            
+            device.is_capturing = True
             try:
                 cap = cv2.VideoCapture(device.path)
                 if not cap.isOpened():
                     log.error(f"Failed to open camera device {device.path}")
                     return None
 
-                # Set camera properties
+                # Configure camera
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
                 
-                # Multiple read attempts to ensure good frame
+                # Multiple read attempts
                 frame = None
-                for _ in range(3):
+                for attempt in range(3):
                     ret, frame = cap.read()
                     if ret and frame is not None:
                         break
-                    await asyncio.sleep(0.1)
+                    log.warning(f"Capture attempt {attempt + 1} failed, retrying...")
+                    await asyncio.sleep(0.2)
 
                 if frame is None:
                     log.error(f"Failed to capture frame from device {device.index}")
                     return None
 
+                # Save image
                 filename = f"capture_{datetime.now(timezone.utc).isoformat()}.{CAMERA_IMG_TYPE}"
                 filepath = os.path.join(IMAGES_DIR, filename)
                 
@@ -103,7 +120,8 @@ class CameraManager:
                 log.error(f"Capture error: {str(e)}", exc_info=True)
                 return None
             finally:
-                if cap is not None:
+                device.is_capturing = False
+                if cap:
                     cap.release()
 
     async def generate_frames(self, device: CameraDevice) -> AsyncGenerator[bytes, None]:
@@ -112,7 +130,10 @@ class CameraManager:
             log.error("No camera device provided")
             return
 
-        cap = None
+        if device.is_capturing:
+            log.info(f"Camera {device.index} is currently capturing, waiting...")
+            await asyncio.sleep(1)
+
         try:
             cap = cv2.VideoCapture(device.path)
             if not cap.isOpened():
@@ -127,7 +148,7 @@ class CameraManager:
                 device.is_streaming = True
                 device.cap = cap
 
-            while device.is_streaming:
+            while device.is_streaming and not device.is_capturing:
                 async with device.lock:
                     ret, frame = cap.read()
                     if not ret:
@@ -147,7 +168,7 @@ class CameraManager:
             log.error(f"Stream error: {str(e)}", exc_info=True)
         finally:
             device.is_streaming = False
-            if cap is not None:
+            if cap:
                 cap.release()
             device.cap = None
 
