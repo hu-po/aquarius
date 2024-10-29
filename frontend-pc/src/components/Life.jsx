@@ -32,20 +32,17 @@ const Life = () => {
       <table>
         <thead>
           <tr>
-            <th>Type</th>
-            <th>Name</th>
-            <th>Count</th>
-            <th>Last Seen</th>
+            <th></th>
+            <th>name</th>
+            <th>num</th>
+            <th>last seen</th>
           </tr>
         </thead>
         <tbody>
           {life.map(l => (
             <tr key={l.id}>
               <td>{l.emoji}</td>
-              <td>
-                <div>{l.common_name}</div>
-                <div className="scientific-name">{l.scientific_name}</div>
-              </td>
+              <td>{l.common_name}</td>
               <td>{l.count}</td>
               <td>{new Date(l.last_seen_at).toLocaleDateString()}</td>
             </tr>
