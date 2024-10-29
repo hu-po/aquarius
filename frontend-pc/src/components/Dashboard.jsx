@@ -10,6 +10,7 @@ export const Dashboard = () => {
   const [error, setError] = useState(null);
   const [pausedDevices, setPausedDevices] = useState(new Set());
   const [warning, setWarning] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [loadingStates, setLoadingStates] = useState({
     devices: false,
     capture: false,
@@ -35,9 +36,13 @@ export const Dashboard = () => {
 
     loadData();
     const dataInterval = setInterval(loadData, 30000);
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
 
     return () => {
       clearInterval(dataInterval);
+      clearInterval(timeInterval);
     };
   }, []);
 
@@ -109,7 +114,7 @@ export const Dashboard = () => {
           <h1>🐟</h1>
           <div className="tank-info">
             <span className="location">📍 {status?.location || "Location not set"}</span>
-            <span className="time">🕒 {new Date().toLocaleString('en-US', { 
+            <span className="time">🕒 {currentTime.toLocaleString('en-US', { 
               timeZone: status?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
               dateStyle: 'medium',
               timeStyle: 'medium'
@@ -128,7 +133,16 @@ export const Dashboard = () => {
       <div className="streams-grid">
         {devices.map(device => (
           <div key={device.index} className="stream-container">
-            <h2>{device.name}</h2>
+            <div className="stream-header">
+              <h2>📷 cam{device.index}</h2>
+              <button 
+                className={`capture-button ${pausedDevices.has(device.index) ? 'capturing' : ''}`}
+                onClick={() => handleSingleCapture(device.index)}
+                disabled={pausedDevices.has(device.index)}
+              >
+                {pausedDevices.has(device.index) ? '📸 ...' : '📸'}
+              </button>
+            </div>
             <CameraStream 
               deviceIndex={device.index}
               isPaused={pausedDevices.has(device.index)}

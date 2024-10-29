@@ -402,3 +402,20 @@ body {
   font-size: 1.25rem;
   padding: 0 0.25rem;
 }
+
+.stream-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.stream-header h2 {
+  margin: 0;
+}
+
+.stream-header .capture-button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  min-width: 60px;
+}
