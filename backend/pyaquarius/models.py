@@ -1,18 +1,22 @@
+import csv
+import logging
+import os
 from datetime import datetime
-from typing import Optional, Dict, List
+from pathlib import Path
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, Column, String, Integer, Float, DateTime, Index
+from sqlalchemy import Column, DateTime, Float, Index, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
-
-import os
 
 # Directory settings
 DATA_DIR = os.getenv('DATA_DIR', 'data')
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
 DATABASE_DIR = os.getenv('DATABASE_DIR', 'data/db')
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/db/aquarius.db')
+LIFE_CSV_PATH = os.path.join(os.path.dirname(__file__), "prompts", "life.csv")
 
 if not all([DATA_DIR, IMAGES_DIR, DATABASE_DIR, DATABASE_URL]):
     raise ValueError("Required environment variables not set")
@@ -118,7 +122,6 @@ class DBLife(BaseMixin, Base):
     common_name = Column(String)
     description = Column(String)
     emoji = Column(String)
-    count = Column(Integer)
     category = Column(String)  # fish, plant, invertebrate
     introduced_at = Column(DateTime, default=datetime.utcnow)
     last_seen_at = Column(DateTime, default=datetime.utcnow)
@@ -146,9 +149,38 @@ class AquariumStatus(BaseModel):
     location: str = Field(default=os.getenv('TANK_LOCATION', 'Austin, TX'))
     timezone: str = Field(default=os.getenv('TANK_TIMEZONE', 'America/Chicago'))
 
+def load_life_from_csv(db: Session) -> None:
+    log = logging.getLogger(__name__)
+    try:
+        if db.query(DBLife).count() > 0:
+            log.info("Life table already populated, skipping initial load")
+            return
+        
+        with open(LIFE_CSV_PATH, mode='r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                db_life = DBLife(
+                    id=datetime.now(timezone.utc).isoformat(),
+                    emoji=row['emoji'],
+                    count=int(row['count']),
+                    common_name=row['common_name'],
+                    scientific_name=row['scientific_name'],
+                    description=row['description'],
+                    category=row['category']
+                )
+                db.add(db_life)
+            db.commit()
+            log.info("Successfully loaded initial life data")
+    except Exception as e:
+        log.error(f"Failed to load life data: {str(e)}")
+        raise
+
 Base.metadata.create_all(bind=engine)
 Index('idx_readings_timestamp', DBReading.timestamp)
 Index('idx_images_timestamp', DBImage.timestamp)
+
+with SessionLocal() as db:
+    load_life_from_csv(db)
 
 def get_db():
     db = SessionLocal()
