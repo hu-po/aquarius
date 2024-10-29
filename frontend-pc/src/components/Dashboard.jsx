@@ -16,6 +16,7 @@ export const Dashboard = () => {
     capture: false,
     analysis: false
   });
+  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -49,6 +50,7 @@ export const Dashboard = () => {
   const handleSingleCapture = async (deviceIndex) => {
     setPausedDevices(new Set([deviceIndex]));
     setWarning(null);
+    setSuccessMessage(null);
     
     try {
       const currentDevices = await getDevices();
@@ -71,14 +73,15 @@ export const Dashboard = () => {
       // Wait for backend to process image
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Update status to get latest image
       const statusData = await getStatus();
       setStatus(statusData);
+      setSuccessMessage(`Successfully captured image from camera ${deviceIndex}`);
+      
+      setTimeout(() => setSuccessMessage(null), 3000);
 
     } catch (error) {
       setWarning(error.message);
     } finally {
-      // Important: Clear paused devices to resume stream
       setPausedDevices(prev => {
         const next = new Set(prev);
         next.delete(deviceIndex);
@@ -89,11 +92,14 @@ export const Dashboard = () => {
 
   const handleAnalysis = async () => {
     setLoadingStates(prev => ({...prev, analysis: true}));
+    setSuccessMessage(null);
     try {
       const analysisResult = await triggerAnalysis();
       if (analysisResult?.analysis) {
         const statusData = await getStatus();
         setStatus(statusData);
+        setSuccessMessage('Successfully analyzed latest image');
+        setTimeout(() => setSuccessMessage(null), 3000);
       }
     } catch (err) {
       setWarning(err.message || 'Failed to analyze images');
@@ -112,6 +118,12 @@ export const Dashboard = () => {
         <div className="warning-banner">
           ⚠️ {warning}
           <button onClick={() => setWarning(null)} className="close-warning">×</button>
+        </div>
+      )}
+      {successMessage && (
+        <div className="success-banner">
+          ✅ {successMessage}
+          <button onClick={() => setSuccessMessage(null)} className="close-warning">×</button>
         </div>
       )}
       <header className="dashboard-header">
