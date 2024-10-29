@@ -1,8 +1,8 @@
 #!/bin/bash
 echo "🧹 cleaning aquarius ..."
 
-if [ "$(docker ps -q)" ]; then
-  docker stop $(docker ps -q)
+if [ "$(docker ps -a -q)" ]; then
+  docker stop $(docker ps -a -q)
 else
   echo "No running containers to stop."
 fi

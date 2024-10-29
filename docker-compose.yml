@@ -108,5 +108,6 @@ volumes:
     driver: local
 
 networks:
-  aquarius-net:
+  default:
+    name: aquarius-network
     driver: bridge
