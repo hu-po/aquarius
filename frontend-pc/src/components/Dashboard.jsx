@@ -59,13 +59,18 @@ export const Dashboard = () => {
         return;
       }
 
-      // Pause only the selected stream for 500ms
+      // Pause stream for 500ms to allow capture of image
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const captureResult = await captureImage(deviceIndex);
       if (!captureResult) {
         setWarning(`Failed to capture from camera ${deviceIndex}`);
+        return;
       }
+
+      const statusData = await getStatus();
+      setStatus(statusData);
+
     } catch (err) {
       setWarning(err.message || 'Failed to capture image');
     } finally {
@@ -111,6 +116,15 @@ export const Dashboard = () => {
               timeStyle: 'medium'
             })}</span>
           </div>
+          <div className="header-controls">
+            <button 
+              className={`capture-button ${loadingStates.analysis ? 'capturing' : ''}`}
+              onClick={handleAnalysis}
+              disabled={loadingStates.analysis}
+            >
+              {loadingStates.analysis ? '🧠 ...' : '🧠 Analyze'}
+            </button>
+          </div>
         </div>
         {status?.alerts?.length > 0 && (
           <div className="alerts">
@@ -147,13 +161,6 @@ export const Dashboard = () => {
         <div className="dashboard-section">
           <h2>🧠 Analysis</h2>
           <div className="brain-container">
-            <button 
-              className="analyze-button"
-              onClick={handleAnalysis}
-              disabled={loadingStates.analysis}
-            >
-              {loadingStates.analysis ? 'Processing...' : '🧠 AI Analysis'}
-            </button>
             <AIResponse responses={status?.latest_responses} />
           </div>
         </div>
