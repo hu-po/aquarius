@@ -49,6 +49,20 @@ body {
     margin-bottom: 1rem;
 }
 
+.tank-info {
+    display: flex;
+    gap: 2rem;
+    font-size: 1rem;
+    color: #94a3b8;
+}
+
+.tank-info .location,
+.tank-info .time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .header-controls {
     display: flex;
     align-items: center;

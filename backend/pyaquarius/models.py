@@ -142,6 +142,8 @@ class AquariumStatus(BaseModel):
     latest_reading: Optional[Reading] = None
     latest_responses: Dict[str, str] = {}
     alerts: List[str] = []
+    location: str = Field(default=os.getenv('TANK_LOCATION', 'Austin, TX'))
+    timezone: str = Field(default=os.getenv('TANK_TIMEZONE', 'America/Chicago'))
 
 Base.metadata.create_all(bind=engine)
 Index('idx_readings_timestamp', DBReading.timestamp)

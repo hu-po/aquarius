@@ -36,6 +36,8 @@ services:
       - TANK_NITRITE_MAX=${TANK_NITRITE_MAX}
       - TANK_NITRATE_MAX=${TANK_NITRATE_MAX}
       - CAMERA_DEVICES=${CAMERA_DEVICES:-0,4}  # Specify which video devices to use
+      - TANK_LOCATION=${TANK_LOCATION:-"Austin, TX"}
+      - TANK_TIMEZONE=${TANK_TIMEZONE:-"America/Chicago"}
     volumes:
       - ./data:/app/data:rw
       - /dev:/dev:rw

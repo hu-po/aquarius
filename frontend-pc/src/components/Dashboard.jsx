@@ -69,6 +69,14 @@ export const Dashboard = () => {
       <header className="dashboard-header">
         <div className="header-content">
           <h1>🐟</h1>
+          <div className="tank-info">
+            <span className="location">📍 {process.env.TANK_LOCATION || "Location not set"}</span>
+            <span className="time">🕒 {new Date().toLocaleString('en-US', { 
+              timeZone: process.env.TANK_TIMEZONE || "UTC",
+              dateStyle: 'medium',
+              timeStyle: 'medium'
+            })}</span>
+          </div>
         </div>
         {status?.alerts?.length > 0 && (
           <div className="alerts">
