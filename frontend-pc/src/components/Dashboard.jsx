@@ -11,6 +11,7 @@ export const Dashboard = () => {
   const [capturing, setCapturing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(null);
   const [pausedDevices, setPausedDevices] = useState(new Set());
+  const [warning, setWarning] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -40,47 +41,58 @@ export const Dashboard = () => {
   const handleCapture = async () => {
     setCapturing(true);
     setAnalysisProgress('Preparing to capture...');
+    setWarning(null);
     
     try {
-      const activeDevices = devices.filter(device => device.active);
+      const currentDevices = await getDevices();
+      const activeDevices = currentDevices.filter(d => d.active);
+      
       if (activeDevices.length === 0) {
-        throw new Error('No active camera devices found');
+        setWarning('No active camera devices found. Please check camera connections.');
+        return;
       }
 
-      // Pause all streams
       setPausedDevices(new Set(activeDevices.map(d => d.index)));
-      await new Promise(resolve => setTimeout(resolve, 500)); // Allow streams to stop
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       setAnalysisProgress('Capturing images...');
       const captureResults = await Promise.allSettled(
         activeDevices.map(device => captureImage(device.index))
       );
 
-      const failures = captureResults.filter(r => r.status === 'rejected');
-      if (failures.length === activeDevices.length) {
-        throw new Error('Failed to capture images from all devices');
-      }
-
-      setAnalysisProgress('Processing with AI models...');
-      // Wait for VLM analysis to complete via status poll
-      let analysisComplete = false;
-      let attempts = 0;
-      while (!analysisComplete && attempts < 30) {
-        const statusData = await getStatus();
-        if (statusData.latest_responses && Object.keys(statusData.latest_responses).length > 0) {
-          analysisComplete = true;
-          setStatus(statusData);
-        } else {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          attempts++;
+      const failures = captureResults.filter(r => r.status === 'rejected')
+        .map(r => r.reason.message);
+      
+      if (failures.length > 0) {
+        setWarning(`Some captures failed: ${failures.join(', ')}`);
+        if (failures.length === activeDevices.length) {
+          return;
         }
       }
 
-      setError(null);
+      setAnalysisProgress('Processing with AI models...');
+      let analysisComplete = false;
+      let attempts = 0;
+      
+      while (!analysisComplete && attempts < 30) {
+        const statusData = await getStatus();
+        if (statusData.latest_responses?.length > 0) {
+          analysisComplete = true;
+          setStatus(statusData);
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        attempts++;
+      }
+
+      if (!analysisComplete) {
+        setWarning('Analysis timed out. Some results may be missing.');
+      }
+
     } catch (err) {
-      setError(err.message || 'Failed to capture/analyze images');
+      setWarning(err.message || 'Failed to capture/analyze images');
     } finally {
-      setPausedDevices(new Set()); // Resume all streams
+      setPausedDevices(new Set());
       setCapturing(false);
       setAnalysisProgress(null);
     }
@@ -91,9 +103,10 @@ export const Dashboard = () => {
 
   return (
     <div className="dashboard">
-      {error && (
-        <div className="backend-error">
-          <span className="error-message">{error}</span>
+      {warning && (
+        <div className="warning-banner">
+          ⚠️ {warning}
+          <button onClick={() => setWarning(null)} className="close-warning">×</button>
         </div>
       )}
       <header className="dashboard-header">

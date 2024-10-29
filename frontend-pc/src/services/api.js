@@ -40,13 +40,16 @@ export const getDevices = async () => {
   }
 };
 
-export const captureImage = async (deviceIndex = 0) => {
+export const captureImage = async (deviceIndex) => {
   try {
     const response = await api.post(`/capture/${deviceIndex}`);
     return response.data;
   } catch (error) {
     if (error.response?.status === 404) {
       throw new Error(`Camera ${deviceIndex} not found`);
+    }
+    if (error.response?.status === 400) {
+      throw new Error(`Camera ${deviceIndex} is not active`);
     }
     if (error.response?.status === 500) {
       throw new Error(`Failed to capture from camera ${deviceIndex}`);
@@ -55,7 +58,7 @@ export const captureImage = async (deviceIndex = 0) => {
   }
 };
 
-// Helper to get stream URL (useful if needed elsewhere in the app)
+// Add helper for stream URL
 export const getStreamUrl = (deviceIndex) => {
   return `${BASE_URL}/camera/${deviceIndex}/stream`;
 };

@@ -114,6 +114,9 @@ async def capture_image(
     if not device:
         raise HTTPException(status_code=404, detail=f"Camera {device_index} not found")
 
+    if not device.is_active:
+        raise HTTPException(status_code=400, detail=f"Camera {device_index} is not active")
+
     filepath = await camera_manager.capture_image(device)
     if not filepath:
         raise HTTPException(status_code=500, detail="Failed to capture image")
