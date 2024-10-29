@@ -24,17 +24,11 @@ if [ ! -f .env ]; then
     echo "✅ Setup complete"
 fi
 
-echo "📁 Creating data directories..."
-mkdir -p data/images data/db
-chmod -R 777 data
-
 start_components() {
     local components=("$@")
     [ ${#components[@]} -eq 0 ] && echo "▶️  Starting all..." || echo "▶️  Starting: ${components[*]}"
     docker compose up --build "${components[@]}"
 }
-
-export HOST_IP=${HOST_IP:-$(hostname -I | awk '{print $1}')}
 
 echo "🌐 Access URLs:
 Backend:     http://${HOST_IP}:8000

@@ -18,7 +18,11 @@ Examples:
     exit 0
 fi
 
-export HOST_IP=${HOST_IP:-$(hostname -I | awk '{print $1}')}
+if [ ! -f .env ]; then
+    echo "⚠️  No .env file found. Running setup..."
+    "$(dirname "$0")/setup.sh" || { echo "❌ Setup failed"; exit 1; }
+    echo "✅ Setup complete"
+fi
 
 stop_components() {
     local components=("$@")

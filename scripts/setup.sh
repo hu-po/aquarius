@@ -32,7 +32,13 @@ for var in "${required_vars[@]}"; do
     sed -i "s|${var}=.*|${var}=${value}|" .env
 done
 
-HOST_IP=$(hostname -I | awk '{print $1}')
+echo "📁 Creating data directories..."
+mkdir -p data/images data/db
+chmod -R 777 data
+
+export HOST_IP=${HOST_IP:-$(hostname -I | awk '{print $1}')}
+echo "🌐 HOST_IP: $HOST_IP"
+echo "👤 UID/GID: $(id -u)/$(id -g)"
 sed -i "s|HOST_IP=.*|HOST_IP=${HOST_IP}|" .env
 sed -i "s|UID=.*|UID=$(id -u)|" .env
 sed -i "s|GID=.*|GID=$(id -g)|" .env
@@ -41,5 +47,3 @@ echo "🎉 Setup complete with API keys:"
 for var in "${required_vars[@]}"; do
     echo "🔑 $var is set"
 done
-echo "🌐 HOST_IP: $HOST_IP"
-echo "👤 UID/GID: $(id -u)/$(id -g)"
