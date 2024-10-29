@@ -20,8 +20,8 @@ TANK_NITRATE_MAX = float(os.getenv('TANK_NITRATE_MAX', '20.0'))
 # Image settings
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
 
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingModelResponse
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
+from fastapi.responses import StreamingModelResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -61,16 +61,27 @@ def get_db_session():
         session.close()
 
 @app.get("/camera/{device_index}/stream")
-async def stream_camera(device_index: int):
-    """Stream camera feed as MJPEG."""
+async def stream_camera(device_index: int, request: Request):
+    """Stream camera feed as MJPEG with proper cleanup."""
     device = camera_manager.get_device(device_index)
     if not device:
-        log.error(f"No camera found with index {device_index}. Available devices: {[d.path for d in camera_manager.devices]}")
-        raise HTTPException(status_code=404, detail=f"Camera {device_index} not found. Available devices: {[d.path for d in camera_manager.devices]}")
-        
-    log.info(f"Streaming camera {device_index} from {device.path}")
-    return StreamingModelResponse(
-        content=camera_manager.generate_frames(device),
+        log.error(f"No camera found with index {device_index}")
+        raise HTTPException(status_code=404, detail=f"Camera {device_index} not found")
+    
+    async def cleanup(generator):
+        try:
+            async for frame in generator:
+                if await request.is_disconnected():
+                    log.info(f"Client disconnected from camera {device_index} stream")
+                    break
+                yield frame
+        except Exception as e:
+            log.error(f"Stream error: {str(e)}", exc_info=True)
+        finally:
+            log.info(f"Cleaning up camera {device_index} stream")
+    
+    return StreamingResponse(
+        cleanup(camera_manager.generate_frames(device)),
         media_type='multipart/x-mixed-replace; boundary=frame'
     )
 
