@@ -180,8 +180,8 @@ export const Dashboard = () => {
         </div>
 
         <div className="dashboard-section">
-          <h2>🖼️ Latest Capture</h2>
-          <LatestImage image={status?.latest_image} />
+          <h2>🖼️ Gallery</h2>
+          <Gallery />
         </div>
 
         <div className="dashboard-section">
