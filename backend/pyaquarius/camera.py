@@ -38,8 +38,16 @@ class CameraManager:
                     index = int(idx.strip())
                     path = f"/dev/video{index}"
                     if os.path.exists(path):
-                        self.devices[index] = CameraDevice(index=index, path=path)
-                        log.info(f"Initialized camera device {index} at {path}")
+                        # Test if camera is actually accessible
+                        cap = cv2.VideoCapture(path)
+                        if cap.isOpened():
+                            self.devices[index] = CameraDevice(index=index, path=path)
+                            log.info(f"Initialized camera device {index} at {path}")
+                            cap.release()
+                        else:
+                            log.error(f"Camera device {index} at {path} exists but cannot be opened")
+                    else:
+                        log.warning(f"Camera device {index} at {path} not found")
                 except ValueError as e:
                     log.error(f"Invalid camera index {idx}: {str(e)}")
                 except Exception as e:

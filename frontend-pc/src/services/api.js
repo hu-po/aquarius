@@ -45,7 +45,13 @@ export const captureImage = async (deviceIndex = 0) => {
     const response = await api.post(`/capture/${deviceIndex}`);
     return response.data;
   } catch (error) {
-    handleApiError(error, 'Failed to capture image');
+    if (error.response?.status === 404) {
+      throw new Error(`Camera ${deviceIndex} not found`);
+    }
+    if (error.response?.status === 500) {
+      throw new Error(`Failed to capture from camera ${deviceIndex}`);
+    }
+    handleApiError(error, `Failed to capture image from camera ${deviceIndex}`);
   }
 };
 
