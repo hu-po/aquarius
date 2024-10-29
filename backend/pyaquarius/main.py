@@ -121,6 +121,7 @@ async def capture_image(
     try:
         db_image = DBImage(
             id=datetime.now(timezone.utc).isoformat(),
+            device_index=device_index,
             filepath=filepath,
             width=CAMERA_MAX_DIM,
             height=CAMERA_MAX_DIM,
@@ -182,17 +183,30 @@ async def health_check():
 
 @app.get("/status")
 async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
-    latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
+    # Get latest image for each device
+    latest_images = {}
+    for device in camera_manager.devices.values():
+        latest_image = db.query(DBImage)\
+            .filter(DBImage.device_index == device.index)\
+            .order_by(DBImage.timestamp.desc())\
+            .first()
+        if latest_image:
+            latest_images[device.index] = Image.from_orm(latest_image)
+    
     latest_reading = db.query(DBReading).order_by(DBReading.timestamp.desc()).first()
     latest_responses = {}
     alerts = []
-    if latest_image:
+    
+    # Get responses for the most recent image from any device
+    if latest_images:
+        most_recent_image = max(latest_images.values(), key=lambda x: x.timestamp)
         responses = db.query(DBModelResponse).filter(
-            DBModelResponse.image_id == latest_image.id
+            DBModelResponse.image_id == most_recent_image.id
         ).all()
         for desc in responses:
             if desc.model_name != "system":
                 latest_responses[desc.model_name] = desc.response
+
     if latest_reading:
         if latest_reading.temperature > TANK_TEMP_MAX or latest_reading.temperature < TANK_TEMP_MIN:
             alerts.append(f"Temperature outside ideal range: {latest_reading.temperature}°F")
@@ -204,8 +218,9 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
             alerts.append(f"High nitrite level: {latest_reading.nitrite} ppm")
         if latest_reading.nitrate and latest_reading.nitrate > TANK_NITRATE_MAX:
             alerts.append(f"High nitrate level: {latest_reading.nitrate} ppm")
+
     return AquariumStatus(
-        latest_image=Image.from_orm(latest_image) if latest_image else None,
+        latest_images=latest_images,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
         latest_responses=latest_responses,
         alerts=list(set(alerts))

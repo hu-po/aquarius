@@ -40,6 +40,7 @@ class BaseMixin:
 class DBImage(BaseMixin, Base):
     __tablename__ = "images"
     id = Column(String, primary_key=True)
+    device_index = Column(Integer, nullable=False)  # Add this line
     timestamp = Column(DateTime, default=datetime.utcnow)
     filepath = Column(String)
     width = Column(Integer)
@@ -138,7 +139,7 @@ class Life(LifeBase):
         from_attributes = True
 
 class AquariumStatus(BaseModel):
-    latest_image: Optional[Image] = None
+    latest_images: Dict[int, Optional[Image]] = {}  # Map device_index to Image
     latest_reading: Optional[Reading] = None
     latest_responses: Dict[str, str] = {}
     alerts: List[str] = []

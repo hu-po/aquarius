@@ -70,9 +70,9 @@ export const Dashboard = () => {
         <div className="header-content">
           <h1>🐟</h1>
           <div className="tank-info">
-            <span className="location">📍 {process.env.TANK_LOCATION || "Location not set"}</span>
+            <span className="location">📍 {import.meta.env.VITE_TANK_LOCATION || "Location not set"}</span>
             <span className="time">🕒 {new Date().toLocaleString('en-US', { 
-              timeZone: process.env.TANK_TIMEZONE || "UTC",
+              timeZone: import.meta.env.VITE_TANK_TIMEZONE || "UTC",
               dateStyle: 'medium',
               timeStyle: 'medium'
             })}</span>
@@ -92,6 +92,9 @@ export const Dashboard = () => {
           <div key={device.index} className="stream-container">
             <h2>📸 {device.name}</h2>
             <CameraStream deviceIndex={device.index} />
+            {status?.latest_images[device.index] && (
+              <LatestImage image={status.latest_images[device.index]} />
+            )}
           </div>
         ))}
       </div>
