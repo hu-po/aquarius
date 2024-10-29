@@ -1,11 +1,9 @@
+import asyncio
+from typing import Optional, List, Dict, AsyncGenerator
+import logging
 import cv2
 import os
-import logging
-import threading
-import time
-from typing import Generator, List, Dict, Optional
-from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 log = logging.getLogger(__name__)
 
@@ -17,173 +15,130 @@ CAMERA_HEIGHT = int(os.getenv('CAMERA_HEIGHT', '720'))
 CAMERA_MAX_IMAGES = int(os.getenv('CAMERA_MAX_IMAGES', '1000'))
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
 
-@dataclass
 class CameraDevice:
-    index: int
-    name: str
-    path: str
-    width: int = CAMERA_WIDTH
-    height: int = CAMERA_HEIGHT
+    def __init__(self, index: int, path: str, width: int = 640, height: int = 480):
+        self.index = index
+        self.path = path
+        self.width = width
+        self.height = height
+        self.lock = asyncio.Lock()  # Add lock per device
 
 class CameraManager:
     def __init__(self):
-        self._locks: Dict[str, threading.Lock] = {}
-        self.devices = self._list_devices()
-
-    def _list_devices(self) -> List[CameraDevice]:
-        """List available camera devices."""
-        devices = []
-        try:
-            # Get configured device indices
-            configured_devices = os.getenv('CAMERA_DEVICES', '0,4').split(',')
-            configured_indices = [int(x.strip()) for x in configured_devices]
-            
-            # Check device permissions
-            log.info("Checking video device permissions")
-            for device_index in configured_indices:
-                path = f"/dev/video{device_index}"
-                if not os.path.exists(path):
-                    log.error(f"Camera device {path} does not exist")
-                    continue
-                    
-                if not os.access(path, os.R_OK | os.W_OK):
-                    log.error(f"Insufficient permissions for {path}")
-                    continue
-                    
-                log.info(f"Attempting to open camera at {path}")
-                cap = cv2.VideoCapture(path, cv2.CAP_V4L2)
-                if cap.isOpened():
-                    # Test reading a frame with timeout
-                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-                    for _ in range(3):  # Try up to 3 times
-                        ret, _ = cap.read()
-                        if ret:
-                            name = f"Camera {device_index}"
-                            log.info(f"Successfully opened camera {name} at {path}")
-                            devices.append(CameraDevice(
-                                index=device_index,
-                                name=name,
-                                path=path
-                            ))
-                            break
-                        time.sleep(0.1)
-                    else:
-                        log.error(f"Could not read frame from camera at {path} after 3 attempts")
-                else:
-                    log.error(f"Could not open camera at {path}")
-                cap.release()
-                
-        except Exception as e:
-            log.error(f"Error listing camera devices: {str(e)}", exc_info=True)
+        self.devices: Dict[int, CameraDevice] = {}
+        self._init_lock = asyncio.Lock()
+        self._stream_locks: Dict[int, asyncio.Lock] = {}
         
-        log.info(f"Found {len(devices)} camera devices: {[d.path for d in devices]}")
-        return devices
-
-    def get_lock(self, device_path: str) -> threading.Lock:
-        """Get or create a lock for a camera device."""
-        if device_path not in self._locks:
-            self._locks[device_path] = threading.Lock()
-        return self._locks[device_path]
-
-    def get_device(self, device_index: int) -> Optional[CameraDevice]:
-        """Get camera device by index."""
-        return next((d for d in self.devices if d.index == device_index), None)
-
-    def generate_frames(self, device: CameraDevice) -> Generator[bytes, None, None]:
-        """Generate MJPEG frames from camera."""
-        cap = None
-        try:
-            with self.get_lock(device.path):
-                # Only lock during camera initialization
-                cap = cv2.VideoCapture(device.path, cv2.CAP_V4L2)
-                if not cap.isOpened():
-                    raise RuntimeError(f"Failed to open camera {device.path}")
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
-                cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
-
-            frame_interval = 1.0 / CAMERA_FPS
-            last_frame_time = 0
-
-            while True:
-                current_time = time.time()
-                if current_time - last_frame_time < frame_interval:
-                    time.sleep(0.001)
-                    continue
-
-                with self.get_lock(device.path):
-                    # Lock only during frame capture
-                    ret, frame = cap.read()
-                    if not ret:
-                        break
-
-                ret, buffer = cv2.imencode('.jpg', frame)
-                if not ret:
-                    continue
-
-                frame_bytes = buffer.tobytes()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-                
-                last_frame_time = current_time
-
-        except Exception as e:
-            log.error(f"Frame generation error: {e}")
-        finally:
-            if cap:
-                with self.get_lock(device.path):
-                    cap.release()
-
-    async def capture_image(self, filename: str, device_index: int = 0) -> bool:
-        """Capture and save a single image."""
-        device = self.get_device(device_index)
+    async def capture_image(self, device: CameraDevice) -> bool:
+        """Capture image from camera with proper locking."""
         if not device:
-            log.error(f"No camera found with index {device_index}")
+            log.error("No camera device provided")
             return False
-
-        with self.get_lock(device.path):
+            
+        async with device.lock:  # Use device-specific lock
+            cap = None
             try:
-                log.info(f"Attempting to capture image from {device.path}")
-                cap = cv2.VideoCapture(device.path, cv2.CAP_V4L2)
+                filename = f"capture_{datetime.now(timezone.utc).isoformat()}.jpg"
+                cap = cv2.VideoCapture(device.path)
+                
                 if not cap.isOpened():
                     log.error(f"Failed to open camera device {device.path}")
                     return False
 
-                log.info(f"Setting camera properties: width={device.width}, height={device.height}")
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
+                # Set properties with verification
+                for prop, value in [
+                    (cv2.CAP_PROP_FRAME_WIDTH, device.width),
+                    (cv2.CAP_PROP_FRAME_HEIGHT, device.height)
+                ]:
+                    if not cap.set(prop, value):
+                        log.warning(f"Failed to set camera property {prop} to {value}")
                 
-                log.info("Reading frame")
-                ret, frame = cap.read()
-                if not ret:
-                    log.error(f"Failed to read frame from {device.path}")
+                # Multiple read attempts with timeout
+                for attempt in range(3):
+                    ret, frame = cap.read()
+                    if ret and frame is not None:
+                        break
+                    log.warning(f"Read attempt {attempt + 1} failed, retrying...")
+                    await asyncio.sleep(0.1)
+                
+                if not ret or frame is None:
+                    log.error(f"Failed to read frame from {device.path} after 3 attempts")
                     return False
 
-                # Resize if needed
-                height, width = frame.shape[:2]
-                if width > CAMERA_MAX_DIM or height > CAMERA_MAX_DIM:
-                    scale = CAMERA_MAX_DIM / max(width, height)
-                    new_width = int(width * scale)
-                    new_height = int(height * scale)
-                    frame = cv2.resize(frame, (new_width, new_height))
-                    log.info(f"Resized frame to {new_width}x{new_height}")
-
-                filepath = os.path.join(IMAGES_DIR, filename)
-                log.info(f"Saving image to {filepath}")
-                if not cv2.imwrite(filepath, frame):
-                    log.error(f"Failed to write image to {filepath}")
+                # Process frame
+                try:
+                    height, width = frame.shape[:2]
+                    if width > CAMERA_MAX_DIM or height > CAMERA_MAX_DIM:
+                        scale = CAMERA_MAX_DIM / max(width, height)
+                        new_width = int(width * scale)
+                        new_height = int(height * scale)
+                        frame = cv2.resize(frame, (new_width, new_height))
+                        log.info(f"Resized frame to {new_width}x{new_height}")
+                    
+                    filepath = os.path.join(IMAGES_DIR, filename)
+                    if cv2.imwrite(filepath, frame):
+                        log.info(f"Successfully saved image to {filepath}")
+                        await self._cleanup_old_images()
+                        return True
+                    else:
+                        log.error(f"Failed to write image to {filepath}")
+                        return False
+                        
+                except Exception as e:
+                    log.error(f"Frame processing error: {str(e)}", exc_info=True)
                     return False
-                
-                log.info(f"Successfully captured and saved image to {filepath}")
-                await self._cleanup_old_images()
-                return True
 
             except Exception as e:
                 log.error(f"Image capture error: {str(e)}", exc_info=True)
                 return False
             finally:
-                if cap:
+                if cap is not None:
                     cap.release()
+
+    async def generate_frames(self, device: CameraDevice) -> AsyncGenerator[bytes, None]:
+        """Generate video frames with proper resource management."""
+        if not device:
+            log.error("No camera device provided")
+            return
+            
+        cap = None
+        try:
+            async with device.lock:  # Lock during initialization
+                cap = cv2.VideoCapture(device.path)
+                if not cap.isOpened():
+                    log.error(f"Failed to open camera device {device.path}")
+                    return
+                
+                # Set properties
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
+            
+            while True:
+                async with device.lock:  # Lock for each frame
+                    ret, frame = cap.read()
+                    if not ret:
+                        log.error(f"Failed to read frame from {device.path}")
+                        break
+                        
+                    # Process frame
+                    try:
+                        _, buffer = cv2.imencode('.jpg', frame)
+                        frame_bytes = b'--frame\r\n' + \
+                                    b'Content-Type: image/jpeg\r\n\r\n' + \
+                                    buffer.tobytes() + \
+                                    b'\r\n'
+                        yield frame_bytes
+                    except Exception as e:
+                        log.error(f"Frame encoding error: {str(e)}", exc_info=True)
+                        break
+                        
+                await asyncio.sleep(1/30)  # 30 FPS cap
+                
+        except Exception as e:
+            log.error(f"Stream error: {str(e)}", exc_info=True)
+        finally:
+            if cap is not None:
+                cap.release()
 
     async def _cleanup_old_images(self):
         """Remove old images when exceeding maximum count."""
