@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import logging
+from zoneinfo import ZoneInfo, available_timezones
 
 # CORS settings
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', '')
@@ -223,7 +224,8 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
         latest_images=latest_images,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
         latest_responses=latest_responses,
-        alerts=list(set(alerts))
+        alerts=list(set(alerts)),
+        timezone=validate_timezone(os.getenv('TANK_TIMEZONE', 'UTC'))
     )
 
 @app.get("/images")
@@ -265,3 +267,11 @@ async def update_life(life_id: str, life: LifeBase, db: Session = Depends(get_db
     db_life.last_seen_at = datetime.now(timezone.utc)
     db.commit()
     return Life.from_orm(db_life)
+
+def validate_timezone(tz: str) -> str:
+    try:
+        ZoneInfo(tz)
+        return tz
+    except Exception:
+        log.warning(f"Invalid timezone {tz}, falling back to UTC")
+        return "UTC"

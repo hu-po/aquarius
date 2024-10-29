@@ -86,7 +86,7 @@ export const Dashboard = () => {
           <div className="tank-info">
             <span className="location">📍 {location || "Location not set"}</span>
             <span className="time">🕒 {currentTime.toLocaleString('en-US', { 
-              timeZone: timezone || "UTC",
+              timeZone: timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
               dateStyle: 'medium',
               timeStyle: 'medium'
             })}</span>

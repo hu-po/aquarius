@@ -14,7 +14,7 @@ const api = axios.create({
 const handleApiError = (error, defaultMessage) => {
   console.error('API Error:', error);
   if (error.code === 'ERR_NETWORK') {
-    throw new Error('🐠 Backend not available');
+    throw new Error('backend not available 🐠');
   }
   if (error.response?.data?.detail) {
     throw new Error(error.response.data.detail);
