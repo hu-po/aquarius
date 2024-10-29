@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "🧹 cleaning aquarius ..."
-docker stop aquarius-frontend-pc aquarius-backend aquarius-frontend-vr
+docker stop $(docker ps -q)
 docker rmi aquarius-frontend-pc aquarius-backend aquarius-frontend-vr
 docker image prune -f
 docker volume prune -f
