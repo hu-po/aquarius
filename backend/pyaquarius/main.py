@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import logging
 from zoneinfo import ZoneInfo, available_timezones
+import cv2
 
 # CORS settings
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', '')
@@ -68,16 +69,14 @@ async def startup_event():
 @app.get("/devices")
 async def get_devices():
     """List available camera devices."""
-    return [
-        {
-            "index": device.index,
-            "name": device.name,
-            "path": device.path,
-            "width": device.width,
-            "height": device.height
-        }
-        for device in camera_manager.devices.values()
-    ]
+    return [{
+        "index": device.index,
+        "name": device.name,
+        "path": device.path,
+        "width": device.width,
+        "height": device.height,
+        "active": device.is_active
+    } for device in camera_manager.devices.values()]
 
 @app.get("/camera/{device_index}/stream")
 async def stream_camera(device_index: int, request: Request):
