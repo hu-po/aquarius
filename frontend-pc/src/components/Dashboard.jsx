@@ -52,31 +52,22 @@ export const Dashboard = () => {
     
     try {
       const currentDevices = await getDevices();
-      const activeDevices = currentDevices.filter(d => d.active);
+      const device = currentDevices.find(d => d.index === deviceIndex);
       
-      if (activeDevices.length === 0) {
-        setWarning('No active camera devices found. Please check camera connections.');
+      if (!device?.active) {
+        setWarning('Selected camera is not active. Please check camera connection.');
         return;
       }
-      // Pause the streams for 500ms to allow the camera to capture an image
-      setPausedDevices(new Set(activeDevices.map(d => d.index)));
+
+      // Pause only the selected stream for 500ms
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const captureResults = await Promise.allSettled(
-        activeDevices.map(device => captureImage(device.index))
-      );
-
-      const failures = captureResults.filter(r => r.status === 'rejected')
-        .map(r => r.reason.message);
-      
-      if (failures.length > 0) {
-        setWarning(`Some captures failed: ${failures.join(', ')}`);
-        if (failures.length === activeDevices.length) {
-          return;
-        }
+      const captureResult = await captureImage(deviceIndex);
+      if (!captureResult) {
+        setWarning(`Failed to capture from camera ${deviceIndex}`);
       }
     } catch (err) {
-      setWarning(err.message || 'Failed to capture images');
+      setWarning(err.message || 'Failed to capture image');
     } finally {
       setPausedDevices(new Set());
     }

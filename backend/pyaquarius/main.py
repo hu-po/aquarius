@@ -115,14 +115,19 @@ async def capture_image(device_index: int):
     
     try:
         await device.stop_stream()
-        filepath = await camera_manager.capture_image(device)
-        if not filepath:
+        result = await camera_manager.capture_image(device)
+        if not result:
             raise HTTPException(status_code=500, detail=f"Failed to capture from camera {device_index}")
             
+        filepath, width, height, file_size = result
+        
         with get_db_session() as db:
             image = DBImage(
                 id=datetime.now(timezone.utc).isoformat(),
                 filepath=filepath,
+                width=width,
+                height=height,
+                file_size=file_size,
                 timestamp=datetime.now(timezone.utc),
                 device_index=device_index
             )
