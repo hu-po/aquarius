@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CameraStream, LatestImage, Stats, AIResponse } from './';
+import { CameraStream, Gallery, Stats, AIResponse } from './';
 import { getDevices, getStatus, captureImage, triggerAnalysis } from '../services/api';
 import Life from './Life';
 
