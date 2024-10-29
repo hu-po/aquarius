@@ -15,8 +15,7 @@ check_and_set_vars() {
     done
 
     # Set HOST_IP if not already set
-    HOST_IP=${HOST_IP:-$(hostname -I | awk '{print $1}')}
-    HOST_IP=${HOST_IP:-"127.0.0.1"}
+    HOST_IP=$(hostname -I | awk '{print $1}')
     sed -i "s|HOST_IP=.*|HOST_IP=${HOST_IP}|" .env
 
     # Set USER_ID/GROUP_ID if not already set
