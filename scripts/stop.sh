@@ -18,17 +18,7 @@ Examples:
     exit 0
 fi
 
-# Setup environment if needed
-if [ ! -f .env ]; then
-    echo "⚠️  No .env file found. Running setup..."
-    "$(dirname "$0")/setup.sh" || { echo "❌ Setup failed"; exit 1; }
-    echo "✅ Setup complete"
-fi
-
-# Source environment variables
-set -a
-source .env
-set +a
+source "$(dirname "$0")/load_env.sh"
 
 stop_components() {
     local components=("$@")

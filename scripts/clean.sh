@@ -1,8 +1,8 @@
 #!/bin/bash
 echo "🧹 cleaning aquarius ..."
+"$(dirname "$0")/stop.sh"
 rm -f .env
 rm -rf data
-"$(dirname "$0")/stop.sh"
 git pull
 docker rmi aquarius-frontend-pc aquarius-backend aquarius-frontend-vr
 docker image prune -f
