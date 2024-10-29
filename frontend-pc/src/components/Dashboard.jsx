@@ -8,10 +8,13 @@ export const Dashboard = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [capturing, setCapturing] = useState(false);
-  const [analysisProgress, setAnalysisProgress] = useState(null);
   const [pausedDevices, setPausedDevices] = useState(new Set());
   const [warning, setWarning] = useState(null);
+  const [loadingStates, setLoadingStates] = useState({
+    devices: false,
+    capture: false,
+    analysis: false
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -75,7 +78,7 @@ export const Dashboard = () => {
   };
 
   const handleAnalysis = async () => {
-    setAnalysisProgress('Processing with AI models...');
+    setLoadingStates(prev => ({...prev, analysis: true}));
     try {
       const analysisResult = await triggerAnalysis();
       if (analysisResult?.analysis) {
@@ -85,9 +88,8 @@ export const Dashboard = () => {
     } catch (err) {
       setWarning(err.message || 'Failed to analyze images');
     } finally {
+      setLoadingStates(prev => ({...prev, analysis: false}));
       setPausedDevices(new Set());
-      setCapturing(false);
-      setAnalysisProgress(null);
     }
   };
 
@@ -143,9 +145,9 @@ export const Dashboard = () => {
             <button 
               className="analyze-button"
               onClick={handleAnalysis}
-              disabled={analysisProgress !== null}
+              disabled={loadingStates.analysis}
             >
-              {analysisProgress || '🧠 AI Analysis'}
+              {loadingStates.analysis ? 'Processing...' : '🧠 AI Analysis'}
             </button>
             <AIResponse responses={status?.latest_responses} />
           </div>
