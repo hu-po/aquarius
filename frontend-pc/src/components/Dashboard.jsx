@@ -84,7 +84,6 @@ export const Dashboard = () => {
       </div>
 
       <div className="dashboard-grid">
-
         <div className="dashboard-section">
           <h2>🧠 Analysis</h2>
           <div className="brain-container">
