@@ -319,3 +319,17 @@ body {
 .life-table td:first-child {
   font-size: 1.5rem;
 }
+
+.backend-error {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.error-message {
+  font-size: 1.25rem;
+  color: #e2e8f0;
+}

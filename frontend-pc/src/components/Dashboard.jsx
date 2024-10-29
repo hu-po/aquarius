@@ -61,6 +61,11 @@ export const Dashboard = () => {
 
   return (
     <div className="dashboard">
+      {error && (
+        <div className="backend-error">
+          <span className="error-message">{error}</span>
+        </div>
+      )}
       <header className="dashboard-header">
         <div className="header-content">
           <h1>🐟</h1>
