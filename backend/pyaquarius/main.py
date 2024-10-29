@@ -29,7 +29,7 @@ from contextlib import contextmanager
 from pyaquarius.vlms import multi_inference
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
-    DBImage, DBReading, DBModelResponse
+    DBImage, DBReading, DBModelResponse, DBLife, LifeBase, Life
 )
 
 from .camera import CameraManager, CAMERA_IMG_TYPE, CAMERA_MAX_DIM
@@ -221,3 +221,32 @@ async def get_readings_history(hours: int = 24, db: Session = Depends(get_db)) -
     since = datetime.now(timezone.utc) - timedelta(hours=hours)
     readings = db.query(DBReading).filter(DBReading.timestamp >= since).order_by(DBReading.timestamp.asc()).all()
     return [Reading.from_orm(r) for r in readings]
+
+@app.get("/life")
+async def get_life(db: Session = Depends(get_db)) -> List[Life]:
+    """Get all life in the aquarium."""
+    life = db.query(DBLife).order_by(DBLife.category, DBLife.common_name).all()
+    return [Life.from_orm(l) for l in life]
+
+@app.post("/life")
+async def add_life(life: LifeBase, db: Session = Depends(get_db)) -> Life:
+    """Add new life to the aquarium."""
+    db_life = DBLife(
+        id=datetime.now(timezone.utc).isoformat(),
+        **life.dict()
+    )
+    db.add(db_life)
+    db.commit()
+    return Life.from_orm(db_life)
+
+@app.put("/life/{life_id}")
+async def update_life(life_id: str, life: LifeBase, db: Session = Depends(get_db)) -> Life:
+    """Update life details."""
+    db_life = db.query(DBLife).filter(DBLife.id == life_id).first()
+    if not db_life:
+        raise HTTPException(status_code=404, detail="Life not found")
+    for key, value in life.dict().items():
+        setattr(db_life, key, value)
+    db_life.last_seen_at = datetime.now(timezone.utc)
+    db.commit()
+    return Life.from_orm(db_life)

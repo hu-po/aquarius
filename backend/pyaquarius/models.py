@@ -110,6 +110,33 @@ class Reading(ReadingBase):
     class Config:
         from_attributes = True
 
+class DBLife(BaseMixin, Base):
+    __tablename__ = "life"
+    id = Column(String, primary_key=True)
+    scientific_name = Column(String)
+    common_name = Column(String)
+    description = Column(String)
+    emoji = Column(String)
+    count = Column(Integer)
+    category = Column(String)  # fish, plant, invertebrate
+    introduced_at = Column(DateTime, default=datetime.utcnow)
+    last_seen_at = Column(DateTime, default=datetime.utcnow)
+
+class LifeBase(BaseModel):
+    scientific_name: str
+    common_name: str
+    description: str
+    emoji: str
+    count: int
+    category: str
+    
+class Life(LifeBase):
+    id: str = Field(default_factory=lambda: datetime.now().isoformat())
+    introduced_at: datetime = Field(default_factory=datetime.utcnow)
+    last_seen_at: datetime = Field(default_factory=datetime.utcnow)
+    class Config:
+        from_attributes = True
+
 class AquariumStatus(BaseModel):
     latest_image: Optional[Image] = None
     latest_reading: Optional[Reading] = None

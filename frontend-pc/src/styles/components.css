@@ -277,3 +277,45 @@ body {
 .brain-container .capture-button {
   align-self: flex-start;
 }
+
+.life-table {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.life-category h3 {
+  color: #e2e8f0;
+  margin-bottom: 1rem;
+}
+
+.life-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1e293b;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.life-table th,
+.life-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #334155;
+}
+
+.life-table th {
+  background: #0f172a;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.scientific-name {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.life-table td:first-child {
+  font-size: 1.5rem;
+}

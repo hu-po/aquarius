@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CameraStream, LatestImage, Stats, ModelResponse } from './';
 import { getDevices, getStatus, captureImage } from '../services/api';
+import Life from './Life';
 
 export const Dashboard = () => {
   const [devices, setDevices] = useState([]);
@@ -83,15 +84,6 @@ export const Dashboard = () => {
       </div>
 
       <div className="dashboard-grid">
-        <div className="dashboard-section">
-          <h2>🖼️ Latest Capture</h2>
-          <LatestImage image={status?.latest_image} />
-        </div>
-
-        <div className="dashboard-section">
-          <h2>📈 Stats</h2>
-          <Stats reading={status?.latest_reading} />
-        </div>
 
         <div className="dashboard-section">
           <h2>🧠 Analysis</h2>
@@ -105,6 +97,21 @@ export const Dashboard = () => {
             </button>
             <ModelResponse responses={status?.latest_responses} />
           </div>
+        </div>
+
+        <div className="dashboard-section">
+          <h2>🌿 Life</h2>
+          <Life />
+        </div>
+
+        <div className="dashboard-section">
+          <h2>🖼️ Latest Capture</h2>
+          <LatestImage image={status?.latest_image} />
+        </div>
+
+        <div className="dashboard-section">
+          <h2>📈 Stats</h2>
+          <Stats reading={status?.latest_reading} />
         </div>
       </div>
     </div>

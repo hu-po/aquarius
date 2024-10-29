@@ -50,3 +50,30 @@ export const captureImage = async (deviceIndex = 0) => {
 export const getStreamUrl = (deviceIndex) => {
   return `${BASE_URL}/camera/${deviceIndex}/stream`;
 };
+
+export const getLife = async () => {
+  try {
+    const response = await api.get('/life');
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to fetch aquarium life');
+  }
+};
+
+export const addLife = async (life) => {
+  try {
+    const response = await api.post('/life', life);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to add life');
+  }
+};
+
+export const updateLife = async (id, life) => {
+  try {
+    const response = await api.put(`/life/${id}`, life);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to update life');
+  }
+};
