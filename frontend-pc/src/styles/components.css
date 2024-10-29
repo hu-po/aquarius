@@ -376,3 +376,29 @@ body {
   color: #e2e8f0;
   font-size: 1.125rem;
 }
+
+.warning-banner {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 0.75rem 1rem;
+  border-radius: 0.25rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.close-warning {
+  background: none;
+  border: none;
+  color: #856404;
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 0 0.25rem;
+}

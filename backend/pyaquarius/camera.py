@@ -59,8 +59,11 @@ class CameraManager:
 
     async def capture_image(self, device: CameraDevice) -> Optional[str]:
         """Capture image from camera with proper locking."""
+        if device.is_streaming:
+            # Wait for any existing stream to finish cleanup
+            await asyncio.sleep(0.5)
+            
         async with device.lock:
-            was_streaming = device.is_streaming
             device.is_streaming = False
             
             try:
@@ -102,7 +105,6 @@ class CameraManager:
             finally:
                 if cap is not None:
                     cap.release()
-                device.is_streaming = was_streaming
 
     async def generate_frames(self, device: CameraDevice) -> AsyncGenerator[bytes, None]:
         """Generate video frames with proper resource management."""

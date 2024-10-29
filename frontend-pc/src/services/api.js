@@ -42,7 +42,16 @@ export const getDevices = async () => {
 
 export const captureImage = async (deviceIndex) => {
   try {
-    const response = await api.post(`/capture/${deviceIndex}`);
+    // Wait briefly to ensure stream is stopped
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const response = await api.post(`/capture/${deviceIndex}`, null, {
+      timeout: 30000  // Increased timeout for capture
+    });
+    
+    // Wait briefly before resuming stream
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     return response.data;
   } catch (error) {
     if (error.response?.status === 404) {
