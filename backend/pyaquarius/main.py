@@ -60,6 +60,24 @@ def get_db_session():
     finally:
         session.close()
 
+@app.on_event("startup")
+async def startup_event():
+    await camera_manager.initialize()
+
+@app.get("/devices")
+async def get_devices():
+    """List available camera devices."""
+    return [
+        {
+            "index": device.index,
+            "name": device.name,
+            "path": device.path,
+            "width": device.width,
+            "height": device.height
+        }
+        for device in camera_manager.devices.values()
+    ]
+
 @app.get("/camera/{device_index}/stream")
 async def stream_camera(device_index: int, request: Request):
     """Stream camera feed as MJPEG with proper cleanup."""
@@ -92,16 +110,17 @@ async def capture_image(
     db: Session = Depends(get_db)
 ) -> Image:
     """Capture and save an image."""
-    timestamp = datetime.now(timezone.utc)
-    filename = f"{timestamp.isoformat()}.{CAMERA_IMG_TYPE}"
-    
-    if not await camera_manager.capture_image(filename, device_index):
+    device = camera_manager.get_device(device_index)
+    if not device:
+        raise HTTPException(status_code=404, detail=f"Camera {device_index} not found")
+
+    filepath = await camera_manager.capture_image(device)
+    if not filepath:
         raise HTTPException(status_code=500, detail="Failed to capture image")
     
     try:
-        filepath = os.path.join(IMAGES_DIR, filename)
         db_image = DBImage(
-            id=timestamp.isoformat(),
+            id=datetime.now(timezone.utc).isoformat(),
             filepath=filepath,
             width=CAMERA_MAX_DIM,
             height=CAMERA_MAX_DIM,
@@ -118,20 +137,6 @@ async def capture_image(
         if os.path.exists(filepath):
             os.remove(filepath)
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/devices")
-async def list_devices():
-    """List available camera devices."""
-    return [
-        {
-            "index": device.index,
-            "name": device.name,
-            "path": device.path,
-            "width": device.width,
-            "height": device.height
-        }
-        for device in camera_manager.devices
-    ]
 
 async def model_response_from_image(image_id: str, image_path: str, db: Session):
     try:
