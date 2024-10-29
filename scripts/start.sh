@@ -23,6 +23,7 @@ if [ ! -f .env ]; then
     "$(dirname "$0")/setup.sh" || { echo "❌ Setup failed"; exit 1; }
     echo "✅ Setup complete"
 fi
+[ -f .env ] && source .env
 
 start_components() {
     local components=("$@")
