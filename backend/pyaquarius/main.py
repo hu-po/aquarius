@@ -124,25 +124,30 @@ async def capture_image(device_index: int):
         with open(os.path.join(os.path.dirname(__file__), "prompts", "aquarium.txt")) as f:
             prompt += f.read().strip()
         
-        analysis = await multi_inference(filepath, prompt)
+        ai_responses = await multi_inference(filepath, prompt)
         
         with get_db_session() as db:
             image = DBImage(
+                id=datetime.now(timezone.utc).isoformat(),
                 filepath=filepath,
                 timestamp=datetime.now(timezone.utc),
                 device_index=device_index
             )
             db.add(image)
-            if analysis:
-                ai_response = DBAIResponse(
-                    image_id=image.id,
-                    response=analysis,
-                    model="vlm",
-                    created_at=datetime.now(timezone.utc)
-                )
-                db.add(ai_response)
+            if ai_responses:
+                for ai_name, response in ai_responses.items():
+                    ai_response = DBAIResponse(
+                        id=datetime.now(timezone.utc).isoformat(),
+                        image_id=image.id,
+                        response=response,
+                        ai_name=ai_name,
+                        prompt=prompt,
+                        timestamp=datetime.now(timezone.utc),
+                        latency=0.0
+                    )
+                    db.add(ai_response)
         
-        return {"filepath": filepath, "analysis": analysis}
+        return {"filepath": filepath, "ai_responses": ai_responses}
         
     except Exception as e:
         log.error(f"Capture error: {str(e)}", exc_info=True)
