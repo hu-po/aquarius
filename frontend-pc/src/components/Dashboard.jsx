@@ -10,6 +10,9 @@ export const Dashboard = () => {
   const [error, setError] = useState(null);
   const [capturing, setCapturing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(null);
+  const [location, setLocation] = useState(null);
+  const [timezone, setTimezone] = useState(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const loadData = async () => {
@@ -20,6 +23,8 @@ export const Dashboard = () => {
         ]);
         setDevices(deviceList);
         setStatus(statusData);
+        setLocation(statusData.location);
+        setTimezone(statusData.timezone);
         setError(null);
       } catch (err) {
         setError(err.message || 'Failed to load data');
@@ -29,8 +34,17 @@ export const Dashboard = () => {
     };
 
     loadData();
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
+    const dataInterval = setInterval(loadData, 30000);
+
+    // Update time every second
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => {
+      clearInterval(dataInterval);
+      clearInterval(timeInterval);
+    };
   }, []);
 
   const handleCapture = async () => {
@@ -70,9 +84,9 @@ export const Dashboard = () => {
         <div className="header-content">
           <h1>🐟</h1>
           <div className="tank-info">
-            <span className="location">📍 {import.meta.env.VITE_TANK_LOCATION || "Location not set"}</span>
-            <span className="time">🕒 {new Date().toLocaleString('en-US', { 
-              timeZone: import.meta.env.VITE_TANK_TIMEZONE || "UTC",
+            <span className="location">📍 {location || "Location not set"}</span>
+            <span className="time">🕒 {currentTime.toLocaleString('en-US', { 
+              timeZone: timezone || "UTC",
               dateStyle: 'medium',
               timeStyle: 'medium'
             })}</span>
