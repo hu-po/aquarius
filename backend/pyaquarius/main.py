@@ -114,24 +114,24 @@ async def capture_image(device_index: int):
         raise HTTPException(status_code=400, detail=f"Camera {device_index} is not active")
     
     try:
-        # Stop any existing stream
         await device.stop_stream()
-        
-        # Capture image
         filepath = await camera_manager.capture_image(device)
         if not filepath:
             raise HTTPException(status_code=500, detail=f"Failed to capture from camera {device_index}")
             
-        # Trigger VLM analysis
         with open(os.path.join(os.path.dirname(__file__), "prompts", "vlm.txt")) as f:
             prompt = f.read().strip()
         with open(os.path.join(os.path.dirname(__file__), "prompts", "aquarium.txt")) as f:
             prompt += f.read().strip()
+        
         analysis = await multi_inference(filepath, prompt)
         
-        # Store results in database
         with get_db_session() as db:
-            image = DBImage(filepath=filepath, captured_at=datetime.now(timezone.utc))
+            image = DBImage(
+                filepath=filepath,
+                timestamp=datetime.now(timezone.utc),
+                device_index=device_index
+            )
             db.add(image)
             if analysis:
                 ai_response = DBAIResponse(
