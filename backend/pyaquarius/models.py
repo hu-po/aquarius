@@ -1,14 +1,14 @@
 import csv
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, DateTime, Float, Index, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 
 # Directory settings
