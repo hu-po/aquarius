@@ -6,7 +6,7 @@ if [ "$(docker ps -a -q)" ]; then
 else
   echo "No running containers to stop."
 fi
-
+docker system prune -f
 docker rmi -f aquarius-frontend-pc aquarius-backend aquarius-frontend-vr
 docker image prune -f
 docker volume prune -f
