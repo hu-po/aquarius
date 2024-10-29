@@ -127,8 +127,8 @@ async def gemini(prompt: str, image_path: str) -> str:
 
 
 
-async def multi_inference(image_path: str, prompt: str) -> Dict[str, str]:
-    """Generate captions using multiple VLMs."""
+async def async_vlm_inference(image_path: str, prompt: str) -> Dict[str, str]:
+    """Analyze images using multiple VLMs asynchronously."""
     try:
         responses = await asyncio.gather(
             claude(prompt, image_path),
@@ -142,9 +142,9 @@ async def multi_inference(image_path: str, prompt: str) -> Dict[str, str]:
             "gemini": responses[2] if not isinstance(responses[2], Exception) else str(responses[2]),
         }
     except Exception as e:
-        log.error(f"Caption error: {str(e)}")
-        return {"error": f"Caption failed: {str(e)}"}
+        log.error(f"vlm inference error: {str(e)}")
+        return {"error": f"vlm inference failed: {str(e)}"}
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    asyncio.run(multi_inference("test.jpg", "Describe what you see in this image."))
+    asyncio.run(async_vlm_inference("test.jpg", "Describe what you see in this image."))

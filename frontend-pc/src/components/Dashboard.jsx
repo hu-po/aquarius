@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CameraStream, LatestImage, Stats, AIResponse } from './';
-import { getDevices, getStatus, captureImage } from '../services/api';
+import { getDevices, getStatus, captureImage, triggerAnalysis } from '../services/api';
 import Life from './Life';
 
 export const Dashboard = () => {
@@ -38,9 +38,8 @@ export const Dashboard = () => {
     };
   }, []);
 
-  const handleCapture = async () => {
-    setCapturing(true);
-    setAnalysisProgress('Preparing to capture...');
+  const handleSingleCapture = async (deviceIndex) => {
+    setPausedDevices(new Set([deviceIndex]));
     setWarning(null);
     
     try {
@@ -51,11 +50,10 @@ export const Dashboard = () => {
         setWarning('No active camera devices found. Please check camera connections.');
         return;
       }
-
+      // Pause the streams for 500ms to allow the camera to capture an image
       setPausedDevices(new Set(activeDevices.map(d => d.index)));
       await new Promise(resolve => setTimeout(resolve, 500));
-
-      setAnalysisProgress('Capturing images...');
+      
       const captureResults = await Promise.allSettled(
         activeDevices.map(device => captureImage(device.index))
       );
@@ -69,28 +67,23 @@ export const Dashboard = () => {
           return;
         }
       }
-
-      setAnalysisProgress('Processing with AI models...');
-      let analysisComplete = false;
-      let attempts = 0;
-      
-      while (!analysisComplete && attempts < 30) {
-        const statusData = await getStatus();
-        if (statusData.latest_responses?.length > 0) {
-          analysisComplete = true;
-          setStatus(statusData);
-          break;
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        attempts++;
-      }
-
-      if (!analysisComplete) {
-        setWarning('Analysis timed out. Some results may be missing.');
-      }
-
     } catch (err) {
-      setWarning(err.message || 'Failed to capture/analyze images');
+      setWarning(err.message || 'Failed to capture images');
+    } finally {
+      setPausedDevices(new Set());
+    }
+  };
+
+  const handleAnalysis = async () => {
+    setAnalysisProgress('Processing with AI models...');
+    try {
+      const analysisResult = await triggerAnalysis();
+      if (analysisResult?.analysis) {
+        const statusData = await getStatus();
+        setStatus(statusData);
+      }
+    } catch (err) {
+      setWarning(err.message || 'Failed to analyze images');
     } finally {
       setPausedDevices(new Set());
       setCapturing(false);
@@ -137,6 +130,7 @@ export const Dashboard = () => {
             <CameraStream 
               deviceIndex={device.index}
               isPaused={pausedDevices.has(device.index)}
+              onCapture={handleSingleCapture}
             />
           </div>
         ))}
@@ -147,11 +141,11 @@ export const Dashboard = () => {
           <h2>🧠 Analysis</h2>
           <div className="brain-container">
             <button 
-              className={`capture-button ${capturing ? 'capturing' : ''}`}
-              onClick={handleCapture}
-              disabled={capturing}
+              className="analyze-button"
+              onClick={handleAnalysis}
+              disabled={analysisProgress !== null}
             >
-              {capturing ? `${analysisProgress || '📸 ...'} ` : '📸'}
+              {analysisProgress || '🧠 AI Analysis'}
             </button>
             <AIResponse responses={status?.latest_responses} />
           </div>

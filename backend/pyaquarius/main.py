@@ -28,7 +28,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from contextlib import contextmanager
-from pyaquarius.vlms import multi_inference
+from pyaquarius.vlms import async_vlm_inference
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
     DBImage, DBReading, DBAIResponse, DBLife, LifeBase, Life
@@ -105,7 +105,7 @@ async def stream_camera(device_index: int, request: Request):
 
 @app.post("/capture/{device_index}")
 async def capture_image(device_index: int):
-    """Capture image from specified camera and trigger VLM analysis."""
+    """Capture image from specified camera."""
     device = camera_manager.get_device(device_index)
     if not device:
         raise HTTPException(status_code=404, detail=f"Camera {device_index} not found")
@@ -119,13 +119,6 @@ async def capture_image(device_index: int):
         if not filepath:
             raise HTTPException(status_code=500, detail=f"Failed to capture from camera {device_index}")
             
-        with open(os.path.join(os.path.dirname(__file__), "prompts", "vlm.txt")) as f:
-            prompt = f.read().strip()
-        with open(os.path.join(os.path.dirname(__file__), "prompts", "aquarium.txt")) as f:
-            prompt += f.read().strip()
-        
-        ai_responses = await multi_inference(filepath, prompt)
-        
         with get_db_session() as db:
             image = DBImage(
                 id=datetime.now(timezone.utc).isoformat(),
@@ -134,23 +127,58 @@ async def capture_image(device_index: int):
                 device_index=device_index
             )
             db.add(image)
-            if ai_responses:
-                for ai_name, response in ai_responses.items():
-                    ai_response = DBAIResponse(
-                        id=datetime.now(timezone.utc).isoformat(),
-                        image_id=image.id,
-                        response=response,
-                        ai_name=ai_name,
-                        prompt=prompt,
-                        timestamp=datetime.now(timezone.utc),
-                        latency=0.0
-                    )
-                    db.add(ai_response)
         
-        return {"filepath": filepath, "ai_responses": ai_responses}
+        return {"filepath": filepath}
         
     except Exception as e:
         log.error(f"Capture error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+            
+@app.post("/analysis")
+async def analysis():
+    """Trigger VLM analysis on latest image."""
+    try:
+        with get_db_session() as db:
+            latest_image = db.query(DBImage)\
+                .order_by(DBImage.timestamp.desc())\
+                .first()
+            
+            if not latest_image:
+                raise HTTPException(status_code=404, detail="No images available for analysis")
+
+            with open(os.path.join(os.path.dirname(__file__), "prompts", "vlm.txt")) as f:
+                prompt = f.read().strip()
+            with open(os.path.join(os.path.dirname(__file__), "prompts", "aquarium.txt")) as f:
+                prompt += f.read().strip()
+            
+            # Run VLM analysis asynchronously
+            ai_responses = await async_vlm_inference(latest_image.filepath, prompt)
+            
+            if ai_responses:
+                for ai_name, response in ai_responses.items():
+                    if not isinstance(response, Exception):
+                        ai_response = DBAIResponse(
+                            id=datetime.now(timezone.utc).isoformat(),
+                            image_id=latest_image.id,
+                            response=response,
+                            ai_name=ai_name,
+                            prompt=prompt,
+                            timestamp=datetime.now(timezone.utc),
+                        )
+                        db.add(ai_response)
+            
+            return {
+                "filepath": latest_image.filepath,
+                "analysis": {
+                    name: resp for name, resp in ai_responses.items() 
+                    if not isinstance(resp, Exception)
+                }
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f"Analysis error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/healthcheck")

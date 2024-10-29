@@ -44,7 +44,7 @@ class BaseMixin:
 class DBImage(BaseMixin, Base):
     __tablename__ = "images"
     id = Column(String, primary_key=True)
-    device_index = Column(Integer, nullable=False)  # Add this line
+    device_index = Column(Integer, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
     filepath = Column(String)
     width = Column(Integer)
@@ -72,14 +72,12 @@ class DBAIResponse(BaseMixin, Base):
     ai_name = Column(String)
     response = Column(String)
     prompt = Column(String)
-    latency = Column(Float)
 
 class AIResponseBase(BaseModel):
     image_id: str
     ai_name: str
     response: str
     prompt: str
-    latency: float
 
 class AIResponse(AIResponseBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())
@@ -92,8 +90,6 @@ class ImageBase(BaseModel):
     width: int
     height: int
     file_size: int
-    water_level: Optional[float] = None
-    fish_count: Optional[int] = None
 
 class Image(ImageBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())

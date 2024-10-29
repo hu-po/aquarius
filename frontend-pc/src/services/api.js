@@ -98,3 +98,17 @@ export const updateLife = async (id, life) => {
     handleApiError(error, 'Failed to update life');
   }
 };
+
+export const triggerAnalysis = async () => {
+  try {
+    const response = await api.post('/analysis', null, {
+      timeout: 60000  // Increased timeout for parallel VLM processing
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      throw new Error('No images available for analysis');
+    }
+    handleApiError(error, 'Failed to analyze image');
+  }
+};
