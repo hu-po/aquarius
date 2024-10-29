@@ -39,7 +39,7 @@ const Gallery = () => {
   const getImageUrl = (filepath) => {
     if (!filepath) return null;
     const filename = filepath.split('/').pop();
-    return `${BACKEND_URL}/images/${encodeURIComponent(filename)}`;
+    return `${BACKEND_URL}/images/${filename}`;
   };
 
   const handlePrevious = () => {

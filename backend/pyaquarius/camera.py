@@ -109,6 +109,9 @@ class CameraManager:
                 filepath = os.path.join(IMAGES_DIR, filename)
                 
                 if cv2.imwrite(filepath, frame):
+                    # Ensure file is readable
+                    os.chmod(filepath, 0o644)
+                    
                     # Get image metadata
                     height, width = frame.shape[:2]
                     file_size = os.path.getsize(filepath)
@@ -116,7 +119,7 @@ class CameraManager:
                     log.info(f"Successfully saved image to {filepath}")
                     await self._cleanup_old_images()
                     return filepath, width, height, file_size
-                
+
                 log.error(f"Failed to write image to {filepath}")
                 return None
             except Exception as e:

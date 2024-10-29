@@ -21,6 +21,7 @@ TANK_NITRATE_MAX = float(os.getenv('TANK_NITRATE_MAX', '20.0'))
 
 # Image settings
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
+os.chmod(IMAGES_DIR, 0o755)  # Ensure directory is readable
 
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
@@ -46,6 +47,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 camera_manager = CameraManager()
 
