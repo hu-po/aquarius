@@ -19,7 +19,12 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
   
   useEffect(() => {
     if (isPaused) {
-      return; // Don't setup stream if paused
+      if (imgRef.current) {
+        imgRef.current.src = '';
+        imgRef.current.onerror = null;
+        imgRef.current.onload = null;
+      }
+      return;
     }
 
     const maxRetries = 3;
@@ -43,6 +48,9 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
           setError(null);
           setRetryCount(0);
         };
+
+        // Always set a new stream URL when effect runs
+        imgRef.current.src = `${getStreamUrl(deviceIndex)}?t=${Date.now()}`;
       }
     };
     

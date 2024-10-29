@@ -68,13 +68,22 @@ export const Dashboard = () => {
         return;
       }
 
+      // Wait for backend to process image
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Update status to get latest image
       const statusData = await getStatus();
       setStatus(statusData);
 
-    } catch (err) {
-      setWarning(err.message || 'Failed to capture image');
+    } catch (error) {
+      setWarning(error.message);
     } finally {
-      setPausedDevices(new Set());
+      // Important: Clear paused devices to resume stream
+      setPausedDevices(prev => {
+        const next = new Set(prev);
+        next.delete(deviceIndex);
+        return next;
+      });
     }
   };
 
