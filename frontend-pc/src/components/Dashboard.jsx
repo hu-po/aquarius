@@ -51,12 +51,23 @@ export const Dashboard = () => {
     setCapturing(true);
     setAnalysisProgress('Capturing images...');
     try {
+      // Filter only active devices
+      const activeDevices = devices.filter(device => device.active);
+      if (activeDevices.length === 0) {
+        throw new Error('No active camera devices found');
+      }
+
       // Capture images from all active devices
-      const capturePromises = devices.map(device => 
-        captureImage(device.index)
+      const captureResults = await Promise.allSettled(
+        activeDevices.map(device => captureImage(device.index))
       );
-      await Promise.all(capturePromises);
-      
+
+      // Check for failures
+      const failures = captureResults.filter(result => result.status === 'rejected');
+      if (failures.length === activeDevices.length) {
+        throw new Error('Failed to capture images from all devices');
+      }
+
       setAnalysisProgress('Analyzing images...');
       // Get updated status which includes analysis results
       const statusData = await getStatus();
