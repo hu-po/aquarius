@@ -10,19 +10,22 @@ check_and_set_vars() {
             missing_vars=$((missing_vars + 1))
         else
             echo "✅ Found $var"
-            sed -i "s|${var}=.*|${var}=${!var}|" .env
+            # Use double quotes to ensure proper variable expansion
+            # Use different delimiter (|) to avoid conflicts with potential / in API keys
+            val="${!var}"
+            sed -i "s|^${var}=.*|${var}=${val}|" .env
         fi
     done
 
     # Set HOST_IP if not already set
     HOST_IP=$(hostname -I | awk '{print $1}')
-    sed -i "s|HOST_IP=.*|HOST_IP=${HOST_IP}|" .env
+    sed -i "s|^HOST_IP=.*|HOST_IP=${HOST_IP}|" .env
 
     # Set USER_ID/GROUP_ID if not already set
     USER_ID=${USER_ID:-$(id -u)}
     GROUP_ID=${GROUP_ID:-$(id -g)}
-    sed -i "s|USER_ID=.*|USER_ID=${USER_ID}|" .env
-    sed -i "s|GROUP_ID=.*|GROUP_ID=${GROUP_ID}|" .env
+    sed -i "s|^USER_ID=.*|USER_ID=${USER_ID}|" .env
+    sed -i "s|^GROUP_ID=.*|GROUP_ID=${GROUP_ID}|" .env
 
     return $missing_vars
 }
