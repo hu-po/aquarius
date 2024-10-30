@@ -159,9 +159,9 @@ async def analyze(ai_models: str, analyses: str):
             ai_responses = await async_inference(ai_models, analyses, latest_image.filepath)
             
             if ai_responses:
-                for ai_name, response in ai_responses.items():
+                for key, response in ai_responses.items():
                     if not isinstance(response, Exception):
-                        ai_model, analysis = ai_name.split('.')
+                        ai_model, analysis = key.split('.')
                         ai_response = DBAIAnalysis(
                             id=datetime.now(timezone.utc).isoformat(),
                             image_id=latest_image.id,
@@ -173,9 +173,8 @@ async def analyze(ai_models: str, analyses: str):
                         db.add(ai_response)
             
             return {
-                "filepath": latest_image.filepath,
                 "analysis": {
-                    name: resp for name, resp in ai_responses.items() 
+                    key: resp for key, resp in ai_responses.items() 
                     if not isinstance(resp, Exception)
                 }
             }
