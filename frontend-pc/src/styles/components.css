@@ -497,10 +497,6 @@ body {
 
 .analysis-controls {
   margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: #1e293b;
-  border-radius: 0.5rem;
-  border: 1px solid #334155;
 }
 
 .checkbox-group {
@@ -536,7 +532,7 @@ body {
 
 .model-output {
   padding: 1rem;
-  background: #1e293b;
+  background: #0f172a;
   border-radius: 0.5rem;
   border: 1px solid #334155;
 }
