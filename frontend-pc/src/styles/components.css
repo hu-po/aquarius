@@ -488,3 +488,65 @@ body {
   font-size: 1.25rem;
   padding: 0 0.25rem;
 }
+
+.analysis-controls {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #1e293b;
+  border-radius: 0.5rem;
+  border: 1px solid #334155;
+}
+
+.checkbox-group {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.checkbox-section {
+  flex: 1;
+}
+
+.checkbox-section h3 {
+  font-size: 1rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.responses-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.model-output {
+  padding: 1rem;
+  background: #1e293b;
+  border-radius: 0.5rem;
+  border: 1px solid #334155;
+}
+
+.model-header {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.response {
+  white-space: pre-wrap;
+  color: #e2e8f0;
+}
