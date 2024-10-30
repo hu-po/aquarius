@@ -13,8 +13,7 @@ export const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loadingStates, setLoadingStates] = useState({
     devices: false,
-    capture: false,
-    analysis: false
+    capture: false
   });
   const [successMessage, setSuccessMessage] = useState(null);
 
@@ -90,25 +89,6 @@ export const Dashboard = () => {
     }
   };
 
-  const handleAnalysis = async () => {
-    setLoadingStates(prev => ({...prev, analysis: true}));
-    setSuccessMessage(null);
-    try {
-      const analysisResult = await Analyze();
-      if (analysisResult?.analysis) {
-        const statusData = await getStatus();
-        setStatus(statusData);
-        setSuccessMessage('Successfully analyzed latest image');
-        setTimeout(() => setSuccessMessage(null), 3000);
-      }
-    } catch (err) {
-      setWarning(err.message || 'Failed to analyze images');
-    } finally {
-      setLoadingStates(prev => ({...prev, analysis: false}));
-      setPausedDevices(new Set());
-    }
-  };
-
   if (loading) return <div className="loading">🔄</div>;
   if (error) return <div className="error">⚠️ {error}</div>;
 
@@ -138,13 +118,6 @@ export const Dashboard = () => {
             })}</span>
           </div>
           <div className="header-controls">
-            <button 
-              className={`capture-button ${loadingStates.analysis ? 'capturing' : ''}`}
-              onClick={handleAnalysis}
-              disabled={loadingStates.analysis}
-            >
-              {loadingStates.analysis ? '🧠 ...' : '🧠 Analyze'}
-            </button>
           </div>
         </div>
         {status?.alerts?.length > 0 && (
