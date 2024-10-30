@@ -35,6 +35,7 @@ from pyaquarius.models import (
     DBImage, DBReading, DBAIAnalysis, DBLife, LifeBase, Life
 )
 
+from .ai import ENABLED_MODELS
 from .camera import CameraManager, CAMERA_IMG_TYPE, CAMERA_MAX_DIM
 
 log = logging.getLogger(__name__)
@@ -146,36 +147,61 @@ async def capture_image(device_index: int):
 async def analyze(ai_models: str, analyses: str):
     """Analyze latest image."""
     try:
+        ai_models_list = ai_models.split(',')
+        analyses_list = analyses.split(',')
+        
+        # Validate requested models against enabled ones
+        invalid_models = [m for m in ai_models_list if m not in ENABLED_MODELS]
+        if invalid_models:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid AI models: {', '.join(invalid_models)}"
+            )
+            
         with get_db_session() as db:
             latest_image = db.query(DBImage)\
                 .order_by(DBImage.timestamp.desc())\
                 .first()
             
             if not latest_image:
-                raise HTTPException(status_code=404, detail="No images available for analysis")
+                raise HTTPException(status_code=404, detail="No images available")
 
-            ai_models = ai_models.split(',')
-            analyses = analyses.split(',')
-            ai_responses = await async_inference(ai_models, analyses, latest_image.filepath)
+            ai_responses = await async_inference(ai_models_list, analyses_list, latest_image.filepath)
             
-            if ai_responses:
-                for key, response in ai_responses.items():
-                    if not isinstance(response, Exception):
-                        ai_model, analysis = key.split('.')
-                        ai_response = DBAIAnalysis(
-                            id=datetime.now(timezone.utc).isoformat(),
-                            image_id=latest_image.id,
-                            response=response,
-                            ai_model=ai_model,
-                            analysis=analysis,
-                            timestamp=datetime.now(timezone.utc),
-                        )
-                        db.add(ai_response)
+            responses_with_errors = {
+                key: {
+                    'success': not isinstance(resp, Exception),
+                    'result': str(resp) if not isinstance(resp, Exception) else None,
+                    'error': str(resp) if isinstance(resp, Exception) else None
+                }
+                for key, resp in ai_responses.items()
+            }
+            
+            successful_responses = {
+                key: resp['result'] 
+                for key, resp in responses_with_errors.items() 
+                if resp['success']
+            }
+            
+            if successful_responses:
+                for key, response in successful_responses.items():
+                    ai_model, analysis = key.split('.')
+                    ai_response = DBAIAnalysis(
+                        id=datetime.now(timezone.utc).isoformat(),
+                        image_id=latest_image.id,
+                        response=response,
+                        ai_model=ai_model,
+                        analysis=analysis,
+                        timestamp=datetime.now(timezone.utc)
+                    )
+                    db.add(ai_response)
             
             return {
-                "analysis": {
-                    key: resp for key, resp in ai_responses.items() 
-                    if not isinstance(resp, Exception)
+                "analysis": successful_responses,
+                "errors": {
+                    key: resp['error']
+                    for key, resp in responses_with_errors.items()
+                    if not resp['success']
                 }
             }
             
@@ -202,19 +228,12 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
             latest_images[device.index] = Image.from_orm(latest_image)
     
     latest_reading = db.query(DBReading).order_by(DBReading.timestamp.desc()).first()
-    latest_responses = {}
-    alerts = []
     
-    # Get responses for the most recent image from any device
-    if latest_images:
-        most_recent_image = max(latest_images.values(), key=lambda x: x.timestamp)
-        responses = db.query(DBAIAnalysis).filter(
-            DBAIAnalysis.image_id == most_recent_image.id
-        ).all()
-        for desc in responses:
-            if desc.ai_name != "system":
-                latest_responses[desc.ai_name] = desc.response
+    latest_analyses = {}
+    for analysis in db.query(DBAIAnalysis).order_by(DBAIAnalysis.timestamp.desc()).limit(3).all():
+        latest_analyses[analysis.ai_model] = analysis.response
 
+    alerts = []
     if latest_reading:
         if latest_reading.temperature > TANK_TEMP_MAX or latest_reading.temperature < TANK_TEMP_MIN:
             alerts.append(f"Temperature outside ideal range: {latest_reading.temperature}°F")
@@ -230,7 +249,7 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
     return AquariumStatus(
         latest_images=latest_images,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
-        latest_responses=latest_responses,
+        latest_analyses=latest_analyses,
         alerts=list(set(alerts)),
         timezone=validate_timezone(os.getenv('TANK_TIMEZONE', 'UTC'))
     )

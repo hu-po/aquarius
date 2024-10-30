@@ -107,10 +107,21 @@ export const Analyze = async (models, analyses) => {
     const response = await api.post(`/analyze/${models}/${analyses}`, null, {
       timeout: ANALYSIS_TIMEOUT
     });
-    return response.data;
+    
+    if (response.data.errors && Object.keys(response.data.errors).length > 0) {
+      console.warn('Some analyses failed:', response.data.errors);
+    }
+    
+    return {
+      analysis: response.data.analysis || {},
+      errors: response.data.errors || {}
+    };
   } catch (error) {
     if (error.response?.status === 404) {
       throw new Error('No images available for analysis');
+    }
+    if (error.response?.status === 400) {
+      throw new Error(error.response.data.detail || 'Invalid analysis request');
     }
     handleApiError(error, 'Failed to analyze image');
   }

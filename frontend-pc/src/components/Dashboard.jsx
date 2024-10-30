@@ -182,7 +182,7 @@ export const Dashboard = () => {
         <div className="dashboard-section">
           <h2>🧠 Analysis</h2>
           <div className="brain-container">
-            <AIAnalysis responses={status?.latest_responses} />
+            <AIAnalysis analyses={status?.analyses} />
           </div>
         </div>
 
