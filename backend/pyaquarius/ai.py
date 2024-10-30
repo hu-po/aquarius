@@ -175,6 +175,29 @@ AI_MODEL_MAP: Dict[str, callable] = {
     'gemini': gemini
 }
 
+async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
+    """Identify life in an image."""
+    prompt = "Identify any fish, invertebrates, and plants in this underwater image of an aquarium. Use the attached csv to confirm your identifications. Return only the life you can identify in the image. Return your answers in the same csv format as the attached csv.\n"
+    with open(os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")) as f:
+        header = next(f)
+        prompt += f"{header}\n"
+        prompt += f.read()
+    response = await AI_MODEL_MAP[ai_model](prompt, image_path)
+    reader = csv.reader(response.splitlines())
+    assert next(reader) == header.split(',')
+    life_filepath = os.path.join(os.path.dirname(__file__), "ainotes", f"life_{ai_model}_{datetime.now().isoformat()}.csv")
+    with open(life_filepath, "w") as f:
+        writer = csv.writer(f)
+        writer.writerows(reader)
+    return response
+
+
+async def async_estimate_temperature(ai_model: str, image_path: str) -> Dict[str, str]:
+    """Estimate the temperature of the water in an image."""
+    prompt = "Estimate the temperature of the water in this underwater image of an aquarium. Use the red digital submersible thermometer visible in the image.\n"
+    return await AI_MODEL_MAP[ai_model](prompt, image_path)
+
+
 AI_ANALYSES_MAP: Dict[str, callable] = {
     'identify_life': async_identify_life,
     'estimate_temperature': async_estimate_temperature,
@@ -210,24 +233,3 @@ async def async_inference(ai_models: List[str], analyses: List[str], image_path:
     except Exception as e:
         log.error(f"ai api inference error: {str(e)}")
         return {"error": f"ai api inference failed: {str(e)}"}
-
-async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
-    """Identify life in an image."""
-    prompt = "Identify any fish, invertebrates, and plants in this underwater image of an aquarium. Use the attached csv to confirm your identifications. Return only the life you can identify in the image. Return your answers in the same csv format as the attached csv.\n"
-    with open(os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")) as f:
-        header = next(f)
-        prompt += f"{header}\n"
-        prompt += f.read()
-    response = await AI_MODEL_MAP[ai_model](prompt, image_path)
-    reader = csv.reader(response.splitlines())
-    assert next(reader) == header.split(',')
-    life_filepath = os.path.join(os.path.dirname(__file__), "ainotes", f"life_{ai_model}_{datetime.now().isoformat()}.csv")
-    with open(life_filepath, "w") as f:
-        writer = csv.writer(f)
-        writer.writerows(reader)
-    return response
-
-async def async_estimate_temperature(ai_model: str, image_path: str) -> Dict[str, str]:
-    """Estimate the temperature of the water in an image."""
-    prompt = "Estimate the temperature of the water in this underwater image of an aquarium. Use the red digital submersible thermometer visible in the image.\n"
-    return await AI_MODEL_MAP[ai_model](prompt, image_path)
