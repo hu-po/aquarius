@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Analyze } from '../services/api';
 
 const AI_MODELS = [
-  { id: 'claude', label: '🧠 Claude' },
-  { id: 'gpt', label: '🤖 GPT' },
-  { id: 'gemini', label: '🌟 Gemini' }
+  { id: 'claude', label: '🧠 claude' },
+  { id: 'gpt', label: '🤖 gpt' },
+  { id: 'gemini', label: '🌟 gemini' }
 ];
 
 const ANALYSES = [

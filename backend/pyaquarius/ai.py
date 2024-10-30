@@ -26,11 +26,11 @@ except ImportError:
 try:
     from openai import OpenAI
     if os.getenv('OPENAI_API_KEY'):
-        ENABLED_MODELS.append('gpt4v')
+        ENABLED_MODELS.append('gpt')
     else:
-        log.warning("OPENAI_API_KEY not set - GPT-4V service will be unavailable") 
+        log.warning("OPENAI_API_KEY not set - GPT service will be unavailable") 
 except ImportError:
-    log.warning("openai module not installed - GPT-4V service will be unavailable")
+    log.warning("openai module not installed - GPT service will be unavailable")
 
 try:
     import google.generativeai as genai
@@ -108,15 +108,15 @@ async def claude(prompt: str, image_path: str) -> str:
         return f"Claude API error: {str(e)}"
 
 @ai_retry_decorator
-async def gpt4o_mini(prompt: str, image_path: str) -> str:
-    """Call GPT-4o-mini API with image and prompt."""
+async def gpt(prompt: str, image_path: str) -> str:
+    """Call GPT API with image and prompt."""
     try:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY not set")
         client = OpenAI(api_key=api_key)
         base64_image = encode_image(image_path)
-        log.info("Calling GPT-4o-mini API")
+        log.info("Calling GPT API")
         log.debug(f"Prompt: {prompt}")
         response = await asyncio.to_thread(
             client.chat.completions.create,
@@ -136,13 +136,13 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
             ],
         )
         response = response.choices[0].message.content
-        log.info("GPT-4o-mini API responded")
+        log.info("GPT API responded")
         log.debug(f"Response: {response}")
         return response
 
     except Exception as e:
-        log.error(f"GPT-4o-mini API error: {str(e)}")
-        return f"GPT-4o-mini API error: {str(e)}"
+        log.error(f"GPT API error: {str(e)}")
+        return f"GPT API error: {str(e)}"
 
 @ai_retry_decorator
 async def gemini(prompt: str, image_path: str) -> str:
@@ -171,7 +171,7 @@ async def gemini(prompt: str, image_path: str) -> str:
 
 AI_MODEL_MAP: Dict[str, callable] = {
     'claude': claude,
-    'gpt': gpt4o_mini,
+    'gpt': gpt,
     'gemini': gemini
 }
 
