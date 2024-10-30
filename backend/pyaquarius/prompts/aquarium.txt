@@ -1,4 +1,4 @@
-more information on the freshwater aquarium:
+to help you, here is more information on the freshwater aquarium:
 hardware:
  - 7-gallon ultra-clear rimless tank with low iron glass and a top glass canopy.
  - programmable LED light on an alternating daylight (6:30am to 6:30pm) and blue moonlight schedule.
@@ -9,16 +9,4 @@ hardware:
 substrate:
  - 6 red lava rocks with two holes each
  - bio-active sugar white sand substrate overtop a base of aq
- - pea gravel river rocks 
-plant life:
- - two clumps of ludwigia natans super red
- - one clump of hornwort coontail
- - floating water lettuce
-fishes:
- - four fancy male guppies
- - two kuhli loach
- - three neon tetra
- - one honey gourami
-invertebrates:
- - one yellow neocaridina shrimp
- - nine ramshorn snails
+ - pea gravel river rocks

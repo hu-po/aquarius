@@ -316,11 +316,6 @@ body {
   gap: 1.5rem;
 }
 
-.life-category h3 {
-  color: #e2e8f0;
-  margin-bottom: 1rem;
-}
-
 .life-table table {
   width: 100%;
   border-collapse: collapse;

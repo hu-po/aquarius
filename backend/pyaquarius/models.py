@@ -116,20 +116,16 @@ class DBLife(BaseMixin, Base):
     id = Column(String, primary_key=True)
     scientific_name = Column(String)
     common_name = Column(String)
-    description = Column(String)
     emoji = Column(String)
-    count = Column(Integer)  # Add this line
-    category = Column(String)  # fish, plant, invertebrate
+    count = Column(Integer)
     introduced_at = Column(DateTime, default=datetime.utcnow)
     last_seen_at = Column(DateTime, default=datetime.utcnow)
 
 class LifeBase(BaseModel):
     scientific_name: str
     common_name: str
-    description: str
     emoji: str
     count: int
-    category: str
     
 class Life(LifeBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())
@@ -161,8 +157,6 @@ def load_life_from_csv(db: Session) -> None:
                     emoji=row['emoji'],
                     common_name=row['common_name'],
                     scientific_name=row['scientific_name'],
-                    description=row['description'],
-                    category=row['category'],
                     count=int(row.get('count', 1))  # Default to 1 if not specified
                 )
                 db.add(db_life)
