@@ -183,19 +183,6 @@ async def analyze(ai_models: str, analyses: str):
                 if resp['success']
             }
             
-            if successful_responses:
-                for key, response in successful_responses.items():
-                    ai_model, analysis = key.split('.')
-                    ai_response = DBAIAnalysis(
-                        id=datetime.now(timezone.utc).isoformat(),
-                        image_id=latest_image.id,
-                        response=response,
-                        ai_model=ai_model,
-                        analysis=analysis,
-                        timestamp=datetime.now(timezone.utc)
-                    )
-                    db.add(ai_response)
-            
             return {
                 "analysis": successful_responses,
                 "errors": {

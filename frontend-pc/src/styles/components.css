@@ -25,15 +25,20 @@ body {
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
+    gap: 0;
 }
 
 .dashboard-section {
     background: #1e293b;
-    padding: 1.5rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border: 1px solid #334155;
+    padding: 1rem;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+}
+
+.dashboard-section + .dashboard-section {
+    border-left: 1px solid #334155;
+    border-top: 1px solid #334155;
 }
 
 .dashboard-section h2 {
@@ -529,11 +534,6 @@ body {
   cursor: pointer;
 }
 
-.responses-grid {
-  display: grid;
-  gap: 1rem;
-}
-
 .model-output {
   padding: 1rem;
   background: #1e293b;
@@ -545,9 +545,4 @@ body {
   margin-bottom: 0.5rem;
   font-weight: 500;
   color: #94a3b8;
-}
-
-.response {
-  white-space: pre-wrap;
-  color: #e2e8f0;
 }

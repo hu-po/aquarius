@@ -176,27 +176,98 @@ AI_MODEL_MAP: Dict[str, callable] = {
 }
 
 async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
-    """Identify life in an image."""
+    """Identify life in an image and update database."""
     prompt = "Identify any fish, invertebrates, and plants in this underwater image of an aquarium. Use the attached csv to confirm your identifications. Return only the life you can identify in the image. Return your answers in the same csv format as the attached csv.\n"
     with open(os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")) as f:
         header = next(f)
         prompt += f"{header}\n"
         prompt += f.read()
+    
     response = await AI_MODEL_MAP[ai_model](prompt, image_path)
-    reader = csv.reader(response.splitlines())
-    assert next(reader) == header.split(',')
-    life_filepath = os.path.join(os.path.dirname(__file__), "ainotes", f"life_{ai_model}_{datetime.now().isoformat()}.csv")
-    with open(life_filepath, "w") as f:
-        writer = csv.writer(f)
-        writer.writerows(reader)
-    return response
-
+    
+    try:
+        with get_db_session() as db:
+            # Get latest image
+            latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
+            if not latest_image:
+                raise ValueError("No images found in database")
+            
+            # Create AI analysis record
+            analysis = DBAIAnalysis(
+                id=datetime.now(timezone.utc).isoformat(),
+                image_id=latest_image.id,
+                ai_model=ai_model,
+                analysis='identify_life',
+                response=response,
+                timestamp=datetime.now(timezone.utc)
+            )
+            db.add(analysis)
+            
+            # Parse CSV response and update life records
+            reader = csv.reader(response.splitlines())
+            header_row = next(reader)
+            if header_row != header.split(','):
+                raise ValueError("AI response header does not match expected format")
+            
+            for row in reader:
+                if len(row) >= 3:  # Ensure row has required fields
+                    life = db.query(DBLife).filter(
+                        DBLife.scientific_name == row[2]
+                    ).first()
+                    if life:
+                        life.last_seen_at = datetime.now(timezone.utc)
+                        life.count = int(row[3]) if len(row) > 3 else 1
+            
+            log.info(f"Updated life records from {ai_model} analysis")
+            return response
+            
+    except Exception as e:
+        log.error(f"Database update error in identify_life: {str(e)}")
+        return f"Database error: {str(e)}"
 
 async def async_estimate_temperature(ai_model: str, image_path: str) -> Dict[str, str]:
-    """Estimate the temperature of the water in an image."""
+    """Estimate temperature from image and update database."""
     prompt = "Estimate the temperature of the water in this underwater image of an aquarium. Use the red digital submersible thermometer visible in the image.\n"
-    return await AI_MODEL_MAP[ai_model](prompt, image_path)
-
+    response = await AI_MODEL_MAP[ai_model](prompt, image_path)
+    
+    try:
+        with get_db_session() as db:
+            # Get latest image
+            latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
+            if not latest_image:
+                raise ValueError("No images found in database")
+            
+            # Create AI analysis record
+            analysis = DBAIAnalysis(
+                id=datetime.now(timezone.utc).isoformat(),
+                image_id=latest_image.id,
+                ai_model=ai_model,
+                analysis='estimate_temperature',
+                response=response,
+                timestamp=datetime.now(timezone.utc)
+            )
+            db.add(analysis)
+            
+            # Try to extract temperature value from response
+            import re
+            temp_match = re.search(r'(\d+\.?\d*)\s*[°℉F]', response)
+            if temp_match:
+                temp = float(temp_match.group(1))
+                # Create reading record
+                reading = DBReading(
+                    id=datetime.now(timezone.utc).isoformat(),
+                    temperature=temp,
+                    image_id=latest_image.id,
+                    timestamp=datetime.now(timezone.utc)
+                )
+                db.add(reading)
+                log.info(f"Added temperature reading: {temp}°F from {ai_model}")
+            
+            return response
+            
+    except Exception as e:
+        log.error(f"Database update error in estimate_temperature: {str(e)}")
+        return f"Database error: {str(e)}"
 
 AI_ANALYSES_MAP: Dict[str, callable] = {
     'identify_life': async_identify_life,
