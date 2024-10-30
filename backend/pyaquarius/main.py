@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from contextlib import contextmanager
-from pyaquarius.vlms import async_vlm_inference
+from pyaquarius.ai import async_inference
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
     DBImage, DBReading, DBAIResponse, DBLife, LifeBase, Life
@@ -144,7 +144,7 @@ async def capture_image(device_index: int):
             
 @app.post("/analysis")
 async def analysis():
-    """Trigger VLM analysis on latest image."""
+    """Trigger AI Analysis on latest image."""
     try:
         with get_db_session() as db:
             latest_image = db.query(DBImage)\
@@ -154,13 +154,7 @@ async def analysis():
             if not latest_image:
                 raise HTTPException(status_code=404, detail="No images available for analysis")
 
-            with open(os.path.join(os.path.dirname(__file__), "prompts", "vlm.txt")) as f:
-                prompt = f.read().strip()
-            with open(os.path.join(os.path.dirname(__file__), "prompts", "aquarium.txt")) as f:
-                prompt += f.read().strip()
-            
-            # Run VLM analysis asynchronously
-            ai_responses = await async_vlm_inference(latest_image.filepath, prompt)
+            ai_responses = await async_inference(latest_image.filepath)
             
             if ai_responses:
                 for ai_name, response in ai_responses.items():

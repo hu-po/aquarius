@@ -1,16 +1,19 @@
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const DEFAULT_TIMEOUT = import.meta.env.VITE_API_TIMEOUT || 10000;
+const CAPTURE_TIMEOUT = import.meta.env.VITE_CAPTURE_TIMEOUT || 30000;
+const ANALYSIS_TIMEOUT = import.meta.env.VITE_ANALYSIS_TIMEOUT || 60000;
+const STREAM_RESUME_TIMEOUT = import.meta.env.VITE_STREAM_RESUME_TIMEOUT || 1000;
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000, // Add reasonable timeout
+  timeout: DEFAULT_TIMEOUT,
   headers: {
     'Accept': 'application/json'
   }
 });
 
-// Helper for consistent error handling
 const handleApiError = (error, defaultMessage) => {
   console.error('API Error:', error);
   if (error.code === 'ERR_NETWORK') {
@@ -43,14 +46,14 @@ export const getDevices = async () => {
 export const captureImage = async (deviceIndex) => {
   try {
     // Wait briefly to ensure stream is stopped
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, STREAM_RESUME_TIMEOUT));
     
     const response = await api.post(`/capture/${deviceIndex}`, null, {
-      timeout: 30000  // Increased timeout for capture and analysis
+      timeout: CAPTURE_TIMEOUT
     });
     
     // Wait briefly before resuming stream
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, STREAM_RESUME_TIMEOUT));
     
     return response.data;
   } catch (error) {
@@ -102,7 +105,7 @@ export const updateLife = async (id, life) => {
 export const triggerAnalysis = async () => {
   try {
     const response = await api.post('/analysis', null, {
-      timeout: 60000  // Increased timeout for parallel VLM processing
+      timeout: ANALYSIS_TIMEOUT
     });
     return response.data;
   } catch (error) {

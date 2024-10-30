@@ -10,7 +10,7 @@ Aquarium monitoring system with both a PC dashboard and a VR interface for visua
 
 ## Components
 
-- `backend`: Python (FastAPI) that processes camera captures and integrates with multiple vision-language models (VLMs).
+- `backend`: Python (FastAPI) that processes camera captures and integrates with multiple AI apis.
 - `frontend-pc`: React-based dashboard for real-time monitoring of tank status.
 - `frontend-vr`: A-Frame VR application for visualizing the aquarium in mixed reality.
 
@@ -102,7 +102,7 @@ flowchart LR
 
 ```
 @misc{hupo2024aquarius,
-  title={Aquarius: PC + VR dashboard for aquarium monitoring using VLMs},
+  title={Aquarius: AI Aquarium Monitoring},
   author={Hugo Ponte},
   year={2024},
   url={https://github.com/hu-po/aquarius}

@@ -54,7 +54,7 @@ def encode_image(image_path: str) -> str:
     except Exception as e:
         raise ValueError(f"Failed to encode image: {str(e)}")
 
-def vlm_retry_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+def ai_retry_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
     @retry(
         stop=stop_after_attempt(AI_API_MAX_RETRIES),
         wait=wait_exponential(multiplier=1, min=4, max=10),
@@ -70,7 +70,7 @@ def vlm_retry_decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             raise TimeoutError(f"{func.__name__} timed out after {AI_API_TIMEOUT} seconds")
     return wrapper
 
-@vlm_retry_decorator
+@ai_retry_decorator
 async def claude(prompt: str, image_path: str) -> str:
     """Call Claude 3.5 Sonnet API with image."""
     try:
@@ -107,7 +107,7 @@ async def claude(prompt: str, image_path: str) -> str:
         log.error(f"Claude API error: {str(e)}")
         return f"Claude API error: {str(e)}"
 
-@vlm_retry_decorator
+@ai_retry_decorator
 async def gpt4o_mini(prompt: str, image_path: str) -> str:
     """Call GPT-4o-mini API with image and prompt."""
     try:
@@ -144,7 +144,7 @@ async def gpt4o_mini(prompt: str, image_path: str) -> str:
         log.error(f"GPT-4o-mini API error: {str(e)}")
         return f"GPT-4o-mini API error: {str(e)}"
 
-@vlm_retry_decorator
+@ai_retry_decorator
 async def gemini(prompt: str, image_path: str) -> str:
     """Call Google Gemini API with image using the File API."""
     try:
@@ -169,22 +169,33 @@ async def gemini(prompt: str, image_path: str) -> str:
         log.error(f"Gemini API error: {str(e)}")
         return f"Gemini API error: {str(e)}"
 
-AI_FUNC_MAP: Dict[str, callable] = {
+AI_MODEL_MAP: Dict[str, callable] = {
     'claude': claude,
     'gpt': gpt4o_mini,
     'gemini': gemini
 }
 
-async def async_vlm_inference(image_path: str, prompt: str) -> Dict[str, str]:
-    """Analyze images using multiple VLMs asynchronously."""
+AI_ANALYSES_MAP: Dict[str, callable] = {
+    'identify_life': async_identify_life,
+    'estimate_temperature': async_estimate_temperature,
+}
+
+async def async_inference(ai_models: List[str], analyses: List[str], image_path: str) -> Dict[str, str]:
+    """Perform many AI analyses with multiple AI apis asynchronously."""
     try:
         if not ENABLED_MODELS:
-            raise ValueError("No VLM services enabled")
+            raise ValueError("No AI apis enabled")
         
-        tasks = []       
-        for model in ENABLED_MODELS:
-            if model in AI_FUNC_MAP:
-                tasks.append(AI_FUNC_MAP[model](prompt, image_path))
+        tasks = []
+        task_keys = []
+        for ai_model in ai_models:
+            if ai_model not in ENABLED_MODELS:
+                raise ValueError(f"Model {ai_model} not enabled")
+            for analysis in analyses:
+                if analysis not in AI_ANALYSES_MAP:
+                    raise ValueError(f"Analysis {analysis} not found in AI_ANALYSES_MAP")
+                tasks.append(AI_ANALYSES_MAP[analysis](ai_model, image_path))
+                task_keys.append(f"{ai_model}.{analysis}")
         
         if not tasks:
             raise ValueError("No enabled models found in model map")
@@ -192,14 +203,31 @@ async def async_vlm_inference(image_path: str, prompt: str) -> Dict[str, str]:
         responses = await asyncio.gather(*tasks, return_exceptions=True)
         
         return {
-            model: resp if not isinstance(resp, Exception) else str(resp)
-            for model, resp in zip(ENABLED_MODELS, responses)
+            key: resp if not isinstance(resp, Exception) else str(resp)
+            for key, resp in zip(task_keys, responses)
         }
         
     except Exception as e:
-        log.error(f"vlm inference error: {str(e)}")
-        return {"error": f"vlm inference failed: {str(e)}"}
+        log.error(f"ai api inference error: {str(e)}")
+        return {"error": f"ai api inference failed: {str(e)}"}
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    asyncio.run(async_vlm_inference("test.jpg", "Describe what you see in this image."))
+async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
+    """Identify life in an image."""
+    prompt = "Identify any fish, invertebrates, and plants in this underwater image of an aquarium. Use the attached csv to confirm your identifications. Return only the life you can identify in the image. Return your answers in the same csv format as the attached csv.\n"
+    with open(os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")) as f:
+        header = next(f)
+        prompt += f"{header}\n"
+        prompt += f.read()
+    response = await AI_MODEL_MAP[ai_model](prompt, image_path)
+    reader = csv.reader(response.splitlines())
+    assert next(reader) == header.split(',')
+    life_filepath = os.path.join(os.path.dirname(__file__), "ainotes", f"life_{ai_model}_{datetime.now().isoformat()}.csv")
+    with open(life_filepath, "w") as f:
+        writer = csv.writer(f)
+        writer.writerows(reader)
+    return response
+
+async def async_estimate_temperature(ai_model: str, image_path: str) -> Dict[str, str]:
+    """Estimate the temperature of the water in an image."""
+    prompt = "Estimate the temperature of the water in this underwater image of an aquarium. Use the red digital submersible thermometer visible in the image.\n"
+    return await AI_MODEL_MAP[ai_model](prompt, image_path)
