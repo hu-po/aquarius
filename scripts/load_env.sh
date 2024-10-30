@@ -9,7 +9,7 @@ if [ ! -f .env ]; then
     echo "✅ Created .env from example"
     
     # replace foo variables in .env.example with values from environment
-    local required_vars=("ANTHROPIC_API_KEY" "OPENAI_API_KEY" "GOOGLE_API_KEY")
+    required_vars=("ANTHROPIC_API_KEY" "OPENAI_API_KEY" "GOOGLE_API_KEY")
 
     # Check for required API keys
     for var in "${required_vars[@]}"; do
