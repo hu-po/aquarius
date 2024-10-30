@@ -32,7 +32,7 @@ from contextlib import contextmanager
 from pyaquarius.ai import async_inference
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
-    DBImage, DBReading, DBAIResponse, DBLife, LifeBase, Life
+    DBImage, DBReading, DBAIAnalysis, DBLife, LifeBase, Life
 )
 
 from .camera import CameraManager, CAMERA_IMG_TYPE, CAMERA_MAX_DIM
@@ -142,9 +142,9 @@ async def capture_image(device_index: int):
         log.error(f"Capture error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
             
-@app.post("/analysis")
-async def analysis():
-    """Trigger AI Analysis on latest image."""
+@app.post("/analyze/{ai_models}/{analyses}")
+async def analyze(ai_models: str, analyses: str):
+    """Analyze latest image."""
     try:
         with get_db_session() as db:
             latest_image = db.query(DBImage)\
@@ -154,17 +154,20 @@ async def analysis():
             if not latest_image:
                 raise HTTPException(status_code=404, detail="No images available for analysis")
 
-            ai_responses = await async_inference(latest_image.filepath)
+            ai_models = ai_models.split(',')
+            analyses = analyses.split(',')
+            ai_responses = await async_inference(ai_models, analyses, latest_image.filepath)
             
             if ai_responses:
                 for ai_name, response in ai_responses.items():
                     if not isinstance(response, Exception):
-                        ai_response = DBAIResponse(
+                        ai_model, analysis = ai_name.split('.')
+                        ai_response = DBAIAnalysis(
                             id=datetime.now(timezone.utc).isoformat(),
                             image_id=latest_image.id,
                             response=response,
-                            ai_name=ai_name,
-                            prompt=prompt,
+                            ai_model=ai_model,
+                            analysis=analysis,
                             timestamp=datetime.now(timezone.utc),
                         )
                         db.add(ai_response)
@@ -206,8 +209,8 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
     # Get responses for the most recent image from any device
     if latest_images:
         most_recent_image = max(latest_images.values(), key=lambda x: x.timestamp)
-        responses = db.query(DBAIResponse).filter(
-            DBAIResponse.image_id == most_recent_image.id
+        responses = db.query(DBAIAnalysis).filter(
+            DBAIAnalysis.image_id == most_recent_image.id
         ).all()
         for desc in responses:
             if desc.ai_name != "system":

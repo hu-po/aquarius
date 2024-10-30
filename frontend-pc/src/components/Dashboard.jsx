@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CameraStream, Gallery, Stats, AIResponse } from './';
-import { getDevices, getStatus, captureImage, triggerAnalysis } from '../services/api';
+import { CameraStream, Gallery, Stats, AIAnalysis } from './';
+import { getDevices, getStatus, captureImage, Analyze } from '../services/api';
 import Life from './Life';
 
 export const Dashboard = () => {
@@ -94,7 +94,7 @@ export const Dashboard = () => {
     setLoadingStates(prev => ({...prev, analysis: true}));
     setSuccessMessage(null);
     try {
-      const analysisResult = await triggerAnalysis();
+      const analysisResult = await Analyze();
       if (analysisResult?.analysis) {
         const statusData = await getStatus();
         setStatus(statusData);
@@ -182,7 +182,7 @@ export const Dashboard = () => {
         <div className="dashboard-section">
           <h2>🧠 Analysis</h2>
           <div className="brain-container">
-            <AIResponse responses={status?.latest_responses} />
+            <AIAnalysis responses={status?.latest_responses} />
           </div>
         </div>
 

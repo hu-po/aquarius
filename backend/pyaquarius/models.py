@@ -64,22 +64,22 @@ class DBReading(BaseMixin, Base):
     nitrate = Column(Float, nullable=True)
     image_id = Column(String, nullable=True)
 
-class DBAIResponse(BaseMixin, Base):
+class DBAIAnalysis(BaseMixin, Base):
     __tablename__ = "ai_responses"
     id = Column(String, primary_key=True)
     image_id = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    ai_name = Column(String)
+    ai_model = Column(String)
+    analysis = Column(String)
     response = Column(String)
-    prompt = Column(String)
 
-class AIResponseBase(BaseModel):
+class AIAnalysisBase(BaseModel):
     image_id: str
-    ai_name: str
+    ai_model: str
+    analysis: str
     response: str
-    prompt: str
 
-class AIResponse(AIResponseBase):
+class AIAnalysis(AIAnalysisBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     class Config:
