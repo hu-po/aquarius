@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
+from contextlib import contextmanager
 
 from pydantic import BaseModel, Field
 from sqlalchemy import Column, DateTime, Float, Index, Integer, String, create_engine
@@ -179,3 +180,16 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@contextmanager
+def get_db_session():
+    db = get_db()
+    session = next(db)
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()

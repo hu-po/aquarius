@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List
 
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-from pyaquarius.db import DBAIAnalysis, DBImage, DBLife, DBReading, get_db_session
+from pyaquarius.models import DBAIAnalysis, DBImage, DBLife, DBReading, get_db_session
 
 log = logging.getLogger(__name__)
 
