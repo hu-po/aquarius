@@ -16,7 +16,7 @@ DATA_DIR = os.getenv('DATA_DIR', 'data')
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
 DATABASE_DIR = os.getenv('DATABASE_DIR', 'data/db')
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/db/aquarius.db')
-LIFE_CSV_PATH = os.path.join(os.path.dirname(__file__), "prompts", "life.csv")
+LIFE_CSV_PATH = os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")
 
 if not all([DATA_DIR, IMAGES_DIR, DATABASE_DIR, DATABASE_URL]):
     raise ValueError("Required environment variables not set")
