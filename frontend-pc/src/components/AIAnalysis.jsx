@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Analyze } from '../services/api';
+import axios from 'axios';
 
 const AI_MODELS = [
   { id: 'claude', label: '🧠 claude' },
@@ -16,6 +17,11 @@ const AIAnalysis = () => {
   const [selectedModels, setSelectedModels] = useState(new Set(['claude']));
   const [selectedAnalyses, setSelectedAnalyses] = useState(new Set(['identify_life']));
   const [loading, setLoading] = useState(false);
+  const [latestImage, setLatestImage] = useState(null);
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  const FETCH_INTERVAL = import.meta.env.IMAGE_FETCH_INTERVAL || 30000;
 
   const handleModelToggle = (modelId) => {
     setSelectedModels(prev => {
@@ -41,6 +47,29 @@ const AIAnalysis = () => {
     });
   };
 
+  const fetchLatestImage = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/images?limit=1`);
+      setLatestImage(response.data[0]);
+      setImageLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch image:', error);
+      setImageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLatestImage();
+    const interval = setInterval(fetchLatestImage, FETCH_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getImageUrl = (filepath) => {
+    if (!filepath) return null;
+    const filename = filepath.split('/').pop();
+    return `${BACKEND_URL}/images/${filename}`;
+  };
+
   const handleAnalyze = async () => {
     if (selectedModels.size === 0 || selectedAnalyses.size === 0) return;
     setLoading(true);
@@ -56,42 +85,61 @@ const AIAnalysis = () => {
   };
 
   return (
-    <div className="analysis-controls">
-      <div className="checkbox-group">
-        <div className="checkbox-section">
-          <h3>Models</h3>
-          {AI_MODELS.map(model => (
-            <label key={model.id} className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={selectedModels.has(model.id)}
-                onChange={() => handleModelToggle(model.id)}
-              />
-              {model.label}
-            </label>
-          ))}
+    <div className="analysis-container">
+      <div className="analysis-controls">
+        <div className="checkbox-group">
+          <div className="checkbox-section">
+            <h3>Models</h3>
+            {AI_MODELS.map(model => (
+              <label key={model.id} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={selectedModels.has(model.id)}
+                  onChange={() => handleModelToggle(model.id)}
+                />
+                {model.label}
+              </label>
+            ))}
+          </div>
+          <div className="checkbox-section">
+            <h3>Analyses</h3>
+            {ANALYSES.map(analysis => (
+              <label key={analysis.id} className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={selectedAnalyses.has(analysis.id)}
+                  onChange={() => handleAnalysisToggle(analysis.id)}
+                />
+                {analysis.label}
+              </label>
+            ))}
+          </div>
         </div>
-        <div className="checkbox-section">
-          <h3>Analyses</h3>
-          {ANALYSES.map(analysis => (
-            <label key={analysis.id} className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={selectedAnalyses.has(analysis.id)}
-                onChange={() => handleAnalysisToggle(analysis.id)}
-              />
-              {analysis.label}
-            </label>
-          ))}
-        </div>
+        <button
+          className={`capture-button ${loading ? 'capturing' : ''}`}
+          onClick={handleAnalyze}
+          disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
+        >
+          {loading ? '🧠 Analyzing...' : '🧠 Analyze'}
+        </button>
       </div>
-      <button
-        className={`capture-button ${loading ? 'capturing' : ''}`}
-        onClick={handleAnalyze}
-        disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
-      >
-        {loading ? '🧠 Analyzing...' : '🧠 Analyze'}
-      </button>
+
+      <div className="latest-image">
+        {imageLoading ? (
+          <div>Loading image...</div>
+        ) : !latestImage ? (
+          <div>No images available</div>
+        ) : !imageError ? (
+          <img 
+            src={getImageUrl(latestImage?.filepath)}
+            alt="Latest aquarium capture"
+            className="aquarium-image"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className="image-error">Failed to load image</div>
+        )}
+      </div>
     </div>
   );
 };

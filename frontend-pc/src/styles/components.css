@@ -542,3 +542,30 @@ body {
   font-weight: 500;
   color: #94a3b8;
 }
+
+.analysis-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.latest-image {
+  width: 100%;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #0f172a;
+  padding: 1rem;
+}
+
+.latest-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  display: block;
+}
+
+.image-error {
+  padding: 2rem;
+  text-align: center;
+  color: #ef4444;
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CameraStream, Gallery, Stats, AIAnalysis } from './';
+import { CameraStream, Stats, AIAnalysis } from './';
 import { getDevices, getStatus, captureImage, Analyze } from '../services/api';
 import Life from './Life';
 
@@ -162,11 +162,6 @@ export const Dashboard = () => {
         <div className="dashboard-section">
           <h2>🌿 Life</h2>
           <Life />
-        </div>
-
-        <div className="dashboard-section">
-          <h2>🖼️ Gallery</h2>
-          <Gallery />
         </div>
 
         <div className="dashboard-section">

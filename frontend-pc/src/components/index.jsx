@@ -1,5 +1,4 @@
 export { default as Dashboard } from './Dashboard';
-export { default as Gallery } from './Gallery';
 export { default as AIAnalysis } from './AIAnalysis';
 export { default as Stats } from './Stats';
 export { default as CameraStream } from './CameraStream';
