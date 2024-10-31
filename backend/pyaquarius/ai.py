@@ -188,7 +188,7 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
         return f"Error: Image file not found"
         
     log.debug("Loading life identification prompt and CSV data")
-    prompt = "Identify any fish, invertebrates, and plants in this underwater image of an aquarium. Use the attached csv to confirm your identifications. Return only the life you can identify in the image. Return your answers in the same csv format as the attached csv.\n"
+    prompt = "Return ONLY a CSV with fish, invertebrates, and plants identified in this underwater aquarium image. Use this exact CSV format with these exact headers:\n"
     with open(os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")) as f:
         header = next(f)
         prompt += f"{header}\n"
@@ -216,21 +216,38 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
             )
             db.add(analysis)
             
-            log.debug("Parsing CSV response to update life records")
-            reader = csv.reader(response.splitlines())
-            header_row = next(reader)
-            if header_row != header.split(','):
-                log.error(f"AI response header mismatch. Expected: {header}, Got: {','.join(header_row)}")
-                raise ValueError("AI response header does not match expected format")
+            log.debug("Extracting CSV data from response")
+            # Extract CSV content from potential markdown code blocks
+            csv_content = response
+            if "```csv" in response:
+                csv_content = response.split("```csv")[1].split("```")[0].strip()
+            elif "```" in response:
+                csv_content = response.split("```")[1].strip()
             
+            log.debug("Parsing CSV response")
+            reader = csv.reader(csv_content.splitlines())
+            headers = []
+            for row in reader:
+                if row and any(row):  # Find first non-empty row as headers
+                    headers = [h.strip() for h in row if h.strip()]
+                    if all(expected in headers for expected in header.strip().split(',')):
+                        break
+            else:
+                log.error(f"Could not find valid headers in response")
+                raise ValueError("No valid headers found in response")
+
             updates = 0
             for row in reader:
-                if len(row) >= 3:
-                    log.debug(f"Processing life record: {row[0]}")
-                    life = db.query(DBLife).filter(DBLife.emoji == row[0]).first()
+                if len(row) >= 3 and any(row):  # Skip empty rows
+                    log.debug(f"Processing life record: {row}")
+                    # Find emoji column index
+                    emoji_idx = headers.index('emoji')
+                    count_idx = headers.index('count')
+                    
+                    life = db.query(DBLife).filter(DBLife.emoji == row[emoji_idx].strip()).first()
                     if life:
                         life.last_seen_at = datetime.now(timezone.utc)
-                        life.count = int(row[3]) if len(row) > 3 else 1
+                        life.count = int(row[count_idx]) if row[count_idx].strip().isdigit() else 1
                         updates += 1
             
             log.info(f"Updated {updates} life records from {ai_model} analysis")
