@@ -27,6 +27,7 @@ start_components() {
     if [[ " ${components[@]} " =~ " debug " ]]; then
         env_vars="LOG_LEVEL=DEBUG"
         components=("${components[@]/debug/}")
+        components=("${components[@]}")
         echo "🐛 Debug logging enabled"
     fi
     
