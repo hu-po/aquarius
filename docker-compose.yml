@@ -78,6 +78,7 @@ services:
     environment:
       - BACKEND_URL=http://${HOST_IP}:8000
       - HOST=0.0.0.0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       backend:
         condition: service_healthy
@@ -96,6 +97,7 @@ services:
       - "3001:3001"
     environment:
       - BACKEND_URL=http://${HOST_IP}:8000
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       backend:
         condition: service_healthy

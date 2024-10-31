@@ -181,23 +181,30 @@ AI_MODEL_MAP: Dict[str, callable] = {
 }
 
 async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
-    """Identify life in an image and update database."""
+    log.debug(f"Starting life identification with {ai_model} model")
+    if not os.path.exists(image_path):
+        log.error(f"Image file not found at {image_path}")
+        return f"Error: Image file not found"
+        
+    log.debug("Loading life identification prompt and CSV data")
     prompt = "Identify any fish, invertebrates, and plants in this underwater image of an aquarium. Use the attached csv to confirm your identifications. Return only the life you can identify in the image. Return your answers in the same csv format as the attached csv.\n"
     with open(os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")) as f:
         header = next(f)
         prompt += f"{header}\n"
         prompt += f.read()
     
+    log.debug(f"Calling {ai_model} API for life identification")
     response = await AI_MODEL_MAP[ai_model](prompt, image_path)
     
     try:
         with get_db_session() as db:
-            # Get latest image
+            log.debug("Querying latest image from database")
             latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
             if not latest_image:
+                log.error("No images found in database for analysis")
                 raise ValueError("No images found in database")
             
-            # Create AI analysis record
+            log.debug("Creating AI analysis record")
             analysis = DBAIAnalysis(
                 id=datetime.now(timezone.utc).isoformat(),
                 image_id=latest_image.id,
@@ -208,26 +215,28 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
             )
             db.add(analysis)
             
-            # Parse CSV response and update life records
+            log.debug("Parsing CSV response to update life records")
             reader = csv.reader(response.splitlines())
             header_row = next(reader)
             if header_row != header.split(','):
+                log.error(f"AI response header mismatch. Expected: {header}, Got: {','.join(header_row)}")
                 raise ValueError("AI response header does not match expected format")
             
+            updates = 0
             for row in reader:
-                if len(row) >= 3:  # Ensure row has required fields
-                    life = db.query(DBLife).filter(
-                        DBLife.scientific_name == row[2]
-                    ).first()
+                if len(row) >= 3:
+                    log.debug(f"Processing life record: {row[0]}")
+                    life = db.query(DBLife).filter(DBLife.emoji == row[0]).first()
                     if life:
                         life.last_seen_at = datetime.now(timezone.utc)
                         life.count = int(row[3]) if len(row) > 3 else 1
+                        updates += 1
             
-            log.info(f"Updated life records from {ai_model} analysis")
+            log.info(f"Updated {updates} life records from {ai_model} analysis")
             return response
             
     except Exception as e:
-        log.error(f"Database update error in identify_life: {str(e)}")
+        log.error(f"Database error in identify_life: {str(e)}", exc_info=True)
         return f"Database error: {str(e)}"
 
 async def async_estimate_temperature(ai_model: str, image_path: str) -> Dict[str, str]:
@@ -280,32 +289,47 @@ AI_ANALYSES_MAP: Dict[str, callable] = {
 }
 
 async def async_inference(ai_models: List[str], analyses: List[str], image_path: str) -> Dict[str, str]:
-    """Perform many AI analyses with multiple AI apis asynchronously."""
+    log.debug(f"Starting AI inference - models: {ai_models}, analyses: {analyses}")
     try:
         if not ENABLED_MODELS:
+            log.error("No AI APIs enabled")
             raise ValueError("No AI apis enabled")
         
         tasks = []
         task_keys = []
         for ai_model in ai_models:
             if ai_model not in ENABLED_MODELS:
+                log.error(f"Requested model {ai_model} not in enabled models: {ENABLED_MODELS}")
                 raise ValueError(f"Model {ai_model} not enabled")
             for analysis in analyses:
                 if analysis not in AI_ANALYSES_MAP:
+                    log.error(f"Requested analysis {analysis} not found in available analyses: {list(AI_ANALYSES_MAP.keys())}")
                     raise ValueError(f"Analysis {analysis} not found in AI_ANALYSES_MAP")
+                log.debug(f"Adding task: {ai_model}.{analysis}")
                 tasks.append(AI_ANALYSES_MAP[analysis](ai_model, image_path))
                 task_keys.append(f"{ai_model}.{analysis}")
         
         if not tasks:
+            log.error("No tasks created - check enabled models and analyses")
             raise ValueError("No enabled models found in model map")
             
+        log.debug(f"Executing {len(tasks)} inference tasks")
         responses = await asyncio.gather(*tasks, return_exceptions=True)
         
-        return {
+        results = {
             key: resp if not isinstance(resp, Exception) else str(resp)
             for key, resp in zip(task_keys, responses)
         }
         
+        log.debug("Inference results:")
+        for key, result in results.items():
+            if isinstance(result, Exception):
+                log.error(f"{key} failed: {str(result)}")
+            else:
+                log.debug(f"{key} succeeded")
+        
+        return results
+        
     except Exception as e:
-        log.error(f"ai api inference error: {str(e)}")
-        return {"error": f"ai api inference failed: {str(e)}"}
+        log.error(f"AI inference error: {str(e)}", exc_info=True)
+        return {"error": f"AI inference failed: {str(e)}"}

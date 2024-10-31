@@ -14,7 +14,8 @@ Examples:
   $0                   # Start all components
   $0 backend          # Start only the backend
   $0 frontend-pc      # Start only the PC frontend
-  $0 backend frontend-pc  # Start backend and PC frontend"
+  $0 backend frontend-pc  # Start backend and PC frontend
+  $0 debug               # Start all components with debug logging
     exit 0
 fi
 
@@ -22,17 +23,19 @@ source "$(dirname "$0")/load_env.sh"
 
 start_components() {
     local components=("$@")
-    local debug_flag=""
-    
-    # Check for --debug flag
-    if [[ " $* " =~ " --debug " ]]; then
-        debug_flag="-e LOG_LEVEL=DEBUG"
-        components=("${components[@]/--debug/}")  # Remove --debug from components list
+    local env_vars=""
+    if [[ " ${components[@]} " =~ " debug " ]]; then
+        env_vars="LOG_LEVEL=DEBUG"
+        components=("${components[@]/debug/}")
         echo "🐛 Debug logging enabled"
     fi
     
     [ ${#components[@]} -eq 0 ] && echo "▶️  Starting all..." || echo "▶️  Starting: ${components[*]}"
-    docker compose up --build ${debug_flag} "${components[@]}"
+    if [ -n "$env_vars" ]; then
+        LOG_LEVEL=DEBUG docker compose up -d --build "${components[@]}"
+    else
+        docker compose up -d --build "${components[@]}"
+    fi
 }
 
 echo "🌐 Access URLs:

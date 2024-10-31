@@ -115,21 +115,27 @@ async def stream_camera(device_index: int, request: Request):
 
 @app.post("/capture/{device_index}")
 async def capture_image(device_index: int):
-    """Capture image from specified camera."""
+    log.debug(f"Capture request received for device {device_index}")
     device = camera_manager.get_device(device_index)
     if not device:
+        log.error(f"No camera found with index {device_index}")
         raise HTTPException(status_code=404, detail=f"Camera {device_index} not found")
     
     if not device.is_active:
+        log.error(f"Camera {device_index} is not active")
         raise HTTPException(status_code=400, detail=f"Camera {device_index} is not active")
     
     try:
+        log.debug(f"Stopping stream on device {device_index}")
         await device.stop_stream()
+        log.debug(f"Initiating capture on device {device_index}")
         result = await camera_manager.capture_image(device)
         if not result:
+            log.error(f"Capture failed for device {device_index}")
             raise HTTPException(status_code=500, detail=f"Failed to capture from camera {device_index}")
             
         filepath, width, height, file_size = result
+        log.debug(f"Capture successful - saving to database. Path: {filepath}, dimensions: {width}x{height}")
         
         with get_db_session() as db:
             image = DBImage(
@@ -142,6 +148,7 @@ async def capture_image(device_index: int):
                 device_index=device_index
             )
             db.add(image)
+            log.debug(f"Image record created in database with id {image.id}")
         
         return {"filepath": filepath}
         
@@ -151,29 +158,29 @@ async def capture_image(device_index: int):
             
 @app.post("/analyze/{ai_models}/{analyses}")
 async def analyze(ai_models: str, analyses: str):
-    """Analyze latest image."""
+    log.debug(f"Received analysis request - models: {ai_models}, analyses: {analyses}")
     try:
         ai_models_list = ai_models.split(',')
         analyses_list = analyses.split(',')
         
-        # Validate requested models against enabled ones
+        log.debug(f"Validating requested models: {ai_models_list} against enabled models: {ENABLED_MODELS}")
         invalid_models = [m for m in ai_models_list if m not in ENABLED_MODELS]
         if invalid_models:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid AI models: {', '.join(invalid_models)}"
-            )
+            log.error(f"Invalid AI models requested: {invalid_models}")
+            raise HTTPException(status_code=400, detail=f"Invalid AI models: {', '.join(invalid_models)}")
             
         with get_db_session() as db:
-            latest_image = db.query(DBImage)\
-                .order_by(DBImage.timestamp.desc())\
-                .first()
+            log.debug("Querying latest image for analysis")
+            latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
             
             if not latest_image:
+                log.error("No images available for analysis")
                 raise HTTPException(status_code=404, detail="No images available")
 
+            log.debug(f"Starting inference on image {latest_image.id}")
             ai_responses = await async_inference(ai_models_list, analyses_list, latest_image.filepath)
             
+            log.debug("Processing AI responses")
             responses_with_errors = {
                 key: {
                     'success': not isinstance(resp, Exception),
@@ -183,14 +190,16 @@ async def analyze(ai_models: str, analyses: str):
                 for key, resp in ai_responses.items()
             }
             
-            successful_responses = {
-                key: resp['result'] 
-                for key, resp in responses_with_errors.items() 
-                if resp['success']
-            }
+            successful = sum(1 for resp in responses_with_errors.values() if resp['success'])
+            failed = sum(1 for resp in responses_with_errors.values() if not resp['success'])
+            log.info(f"Analysis complete - {successful} successful, {failed} failed")
             
             return {
-                "analysis": successful_responses,
+                "analysis": {
+                    key: resp['result'] 
+                    for key, resp in responses_with_errors.items() 
+                    if resp['success']
+                },
                 "errors": {
                     key: resp['error']
                     for key, resp in responses_with_errors.items()
@@ -201,7 +210,7 @@ async def analyze(ai_models: str, analyses: str):
     except HTTPException:
         raise
     except Exception as e:
-        log.error(f"Analysis error: {str(e)}", exc_info=True)
+        log.error(f"Unexpected error in analysis: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/healthcheck")

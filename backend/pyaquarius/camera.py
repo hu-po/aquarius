@@ -49,51 +49,65 @@ class CameraManager:
         self._init_lock = asyncio.Lock()
         
     async def initialize(self) -> None:
-        """Initialize available camera devices."""
+        log.debug("Starting camera device initialization")
         async with self._init_lock:
             device_indices = os.getenv('CAMERA_DEVICES', '0').split(',')
+            log.debug(f"Found {len(device_indices)} camera device indices in config")
+            
             for idx in device_indices:
                 try:
                     index = int(idx.strip())
                     path = f"/dev/video{index}"
-                    if os.path.exists(path):
-                        cap = cv2.VideoCapture(path)
-                        if cap.isOpened():
-                            device = CameraDevice(index=index, path=path)
-                            device.is_active = True
-                            self.devices[index] = device
-                            log.info(f"Initialized camera device {index} at {path}")
-                            cap.release()
-                        else:
-                            log.error(f"Camera device {index} exists but cannot be opened")
+                    log.debug(f"Checking camera device {index} at path {path}")
+                    
+                    if not os.path.exists(path):
+                        log.error(f"Camera device path {path} does not exist")
+                        continue
+                        
+                    log.debug(f"Attempting to open camera {index} for testing")
+                    cap = cv2.VideoCapture(path)
+                    if cap.isOpened():
+                        device = CameraDevice(index=index, path=path)
+                        device.is_active = True
+                        self.devices[index] = device
+                        log.info(f"Successfully initialized camera {index} at {path}")
+                        cap.release()
+                        log.debug(f"Released test capture for camera {index}")
+                    else:
+                        log.error(f"Camera {index} exists but failed to open - check permissions")
+                        
                 except ValueError as e:
-                    log.error(f"Invalid camera index {idx}: {str(e)}")
+                    log.error(f"Invalid camera index format {idx}: {str(e)}")
                 except Exception as e:
-                    log.error(f"Failed to initialize camera {idx}: {str(e)}")
+                    log.error(f"Unexpected error initializing camera {idx}: {str(e)}", exc_info=True)
+                    
+            log.info(f"Camera initialization complete - {len(self.devices)} active devices")
 
     def get_device(self, index: int) -> Optional[CameraDevice]:
         return self.devices.get(index)
 
     async def capture_image(self, device: CameraDevice) -> Optional[str]:
-        """Capture image from camera with proper locking and cleanup."""
+        log.debug(f"Starting image capture from device {device.index}")
         if device.is_streaming:
+            log.debug(f"Stopping stream on device {device.index} before capture")
             await device.stop_stream()
         
         async with device.lock:
             device.is_capturing = True
             try:
+                log.debug(f"Opening capture device {device.path}")
                 cap = cv2.VideoCapture(device.path)
                 if not cap.isOpened():
                     log.error(f"Failed to open camera device {device.path}")
                     return None
 
-                # Configure camera
+                log.debug(f"Configuring camera {device.index} - width: {device.width}, height: {device.height}")
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
                 
-                # Multiple read attempts
                 frame = None
                 for attempt in range(3):
+                    log.debug(f"Capture attempt {attempt + 1} for device {device.index}")
                     ret, frame = cap.read()
                     if ret and frame is not None:
                         break
@@ -101,22 +115,18 @@ class CameraManager:
                     await asyncio.sleep(0.2)
 
                 if frame is None:
-                    log.error(f"Failed to capture frame from device {device.index}")
+                    log.error(f"All capture attempts failed for device {device.index}")
                     return None
 
-                # Save image
                 filename = f"capture_{datetime.now(timezone.utc).isoformat()}.{CAMERA_IMG_TYPE}"
                 filepath = os.path.join(IMAGES_DIR, filename)
                 
+                log.debug(f"Saving captured image to {filepath}")
                 if cv2.imwrite(filepath, frame):
-                    # Ensure file is readable
                     os.chmod(filepath, 0o644)
-                    
-                    # Get image metadata
                     height, width = frame.shape[:2]
                     file_size = os.path.getsize(filepath)
-                    
-                    log.info(f"Successfully saved image to {filepath}")
+                    log.debug(f"Image saved successfully - dimensions: {width}x{height}, size: {file_size} bytes")
                     await self._cleanup_old_images()
                     return filepath, width, height, file_size
 
