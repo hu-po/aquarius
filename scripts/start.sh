@@ -30,11 +30,20 @@ start_components() {
         echo "🐛 Debug logging enabled"
     fi
     
-    [ ${#components[@]} -eq 0 ] && echo "▶️  Starting all..." || echo "▶️  Starting: ${components[*]}"
-    if [ -n "$env_vars" ]; then
-        LOG_LEVEL=DEBUG docker compose up -d --build "${components[@]}"
+    if [ ${#components[@]} -eq 0 ]; then
+        echo "▶️  Starting all..."
+        if [ -n "$env_vars" ]; then
+            LOG_LEVEL=DEBUG docker compose up -d --build
+        else
+            docker compose up -d --build
+        fi
     else
-        docker compose up -d --build "${components[@]}"
+        echo "▶️  Starting: ${components[*]}"
+        if [ -n "$env_vars" ]; then
+            LOG_LEVEL=DEBUG docker compose up -d --build "${components[@]}"
+        else
+            docker compose up -d --build "${components[@]}"
+        fi
     fi
 }
 
