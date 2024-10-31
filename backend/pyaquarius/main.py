@@ -7,12 +7,16 @@ from zoneinfo import ZoneInfo, available_timezones
 import cv2
 
 # Configure logging
-log_level = os.getenv('LOG_LEVEL', 'INFO')
 logging.basicConfig(
-    level=getattr(logging, log_level),
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# Set debug level specifically for pyaquarius module
 log = logging.getLogger(__name__)
+if os.getenv('LOG_LEVEL', 'INFO').upper() == 'DEBUG':
+    pyaquarius_logger = logging.getLogger('pyaquarius')
+    pyaquarius_logger.setLevel(logging.DEBUG)
 
 # CORS settings
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', '')
