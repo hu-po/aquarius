@@ -24,6 +24,18 @@ const Life = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const formatLastSeen = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  };
+
   if (loading) return <div>Loading life data...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -44,7 +56,7 @@ const Life = () => {
               <td>{l.emoji}</td>
               <td>{l.common_name}</td>
               <td>{l.count}</td>
-              <td>{new Date(l.last_seen_at).toLocaleDateString()}</td>
+              <td>{formatLastSeen(l.last_seen_at)}</td>
             </tr>
           ))}
         </tbody>

@@ -68,6 +68,7 @@ services:
       context: ./frontend-pc
       args:
         - BACKEND_URL=http://${HOST_IP}:8000
+        - IMAGE_FETCH_INTERVAL=${IMAGE_FETCH_INTERVAL:-30000}
     networks:
       - default
     ports:
