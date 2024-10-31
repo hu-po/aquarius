@@ -12,10 +12,10 @@ Multiple components can be specified, separated by spaces.
 
 Examples:
   $0                   # Start all components
-  $0 backend          # Start only the backend
-  $0 frontend-pc      # Start only the PC frontend
-  $0 backend frontend-pc  # Start backend and PC frontend
-  $0 debug               # Start all components with debug logging"
+  $0 debug              # Start all components with debug logging
+  $0 backend            # Start only the backend
+  $0 frontend-pc        # Start only the PC frontend
+  $0 backend frontend-pc  # Start backend and PC frontend"
     exit 0
 fi
 
