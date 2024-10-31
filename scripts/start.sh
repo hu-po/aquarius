@@ -26,6 +26,11 @@ else
 fi
 
 echo "🌐 Access URLs:
+
 Backend:     http://${HOST_IP}:8000
+
 Frontend PC: http://${HOST_IP}:3000
-Frontend VR: http://${HOST_IP}:3001"
+
+Frontend VR: http://${HOST_IP}:3001
+
+"
