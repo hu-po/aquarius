@@ -1,56 +1,31 @@
 #!/bin/bash
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    echo "Usage: $0 [component...]
+    echo "Usage: $0 [debug]
 
 Components:
-  backend      - Start the Python FastAPI backend
-  frontend-pc  - Start the React dashboard
-  frontend-vr  - Start the VR interface
+  backend      - Python FastAPI backend
+  frontend-pc  - React dashboard
+  frontend-vr  - VR interface
 
-If no component is specified, all components will be started.
-Multiple components can be specified, separated by spaces.
+Options:
+  debug    Enable debug logging
 
 Examples:
-  $0                   # Start all components
-  $0 debug              # Start all components with debug logging
-  $0 backend            # Start only the backend
-  $0 frontend-pc        # Start only the PC frontend
-  $0 backend frontend-pc  # Start backend and PC frontend"
+  $0         # Start all components
+  $0 debug   # Start all components with debug logging"
     exit 0
 fi
 
 source "$(dirname "$0")/load_env.sh"
 
-start_components() {
-    local components=("$@")
-    local env_vars=""
-    if [[ " ${components[@]} " =~ " debug " ]]; then
-        env_vars="LOG_LEVEL=DEBUG"
-        components=("${components[@]/debug/}")
-        components=("${components[@]}")
-        echo "🐛 Debug logging enabled"
-    fi
-    
-    if [ ${#components[@]} -eq 0 ]; then
-        echo "▶️  Starting all..."
-        if [ -n "$env_vars" ]; then
-            LOG_LEVEL=DEBUG docker compose up -d --build
-        else
-            docker compose up -d --build
-        fi
-    else
-        echo "▶️  Starting: ${components[*]}"
-        if [ -n "$env_vars" ]; then
-            LOG_LEVEL=DEBUG docker compose up -d --build "${components[@]}"
-        else
-            docker compose up -d --build "${components[@]}"
-        fi
-    fi
-}
+if [ "$1" = "debug" ]; then
+    echo "🐛 Debug logging enabled"
+    LOG_LEVEL=DEBUG docker compose up -d --build
+else
+    docker compose up -d --build
+fi
 
 echo "🌐 Access URLs:
 Backend:     http://${HOST_IP}:8000
 Frontend PC: http://${HOST_IP}:3000
 Frontend VR: http://${HOST_IP}:3001"
-
-start_components "$@"
