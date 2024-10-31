@@ -86,7 +86,8 @@ async def claude(prompt: str, image_path: str) -> str:
         client = Anthropic(api_key=api_key)
         log.info("Calling Claude API")
         log.debug(f"\n---prompt\n {prompt}\n---\n")
-        response = await client.messages.create(
+        response = await asyncio.to_thread(
+            client.messages.create,
             model="claude-3-sonnet-20240229",
             max_tokens=AI_MAX_TOKENS,
             messages=[{
