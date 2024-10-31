@@ -22,8 +22,17 @@ source "$(dirname "$0")/load_env.sh"
 
 start_components() {
     local components=("$@")
+    local debug_flag=""
+    
+    # Check for --debug flag
+    if [[ " $* " =~ " --debug " ]]; then
+        debug_flag="--env LOG_LEVEL=DEBUG"
+        components=("${components[@]/--debug/}")  # Remove --debug from components list
+        echo "🐛 Debug logging enabled"
+    fi
+    
     [ ${#components[@]} -eq 0 ] && echo "▶️  Starting all..." || echo "▶️  Starting: ${components[*]}"
-    docker compose up --build "${components[@]}"
+    docker compose up --build $debug_flag "${components[@]}"
 }
 
 echo "🌐 Access URLs:

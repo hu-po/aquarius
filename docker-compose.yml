@@ -28,6 +28,8 @@ services:
       - IMAGES_DIR=${IMAGES_DIR}
       - DATABASE_DIR=${DATABASE_DIR}
       - DATABASE_URL=${DATABASE_URL}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # CORS
       - CORS_ORIGINS=${CORS_ORIGINS}
       - CORS_MAX_AGE=${CORS_MAX_AGE}
       # camera devices

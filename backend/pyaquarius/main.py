@@ -6,6 +6,14 @@ import logging
 from zoneinfo import ZoneInfo, available_timezones
 import cv2
 
+# Configure logging
+log_level = os.getenv('LOG_LEVEL', 'INFO')
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+log = logging.getLogger(__name__)
+
 # CORS settings
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', '')
 CORS_MAX_AGE = int(os.getenv('CORS_MAX_AGE', '3600'))
@@ -37,8 +45,6 @@ from pyaquarius.models import (
 
 from .ai import ENABLED_MODELS
 from .camera import CameraManager, CAMERA_IMG_TYPE, CAMERA_MAX_DIM
-
-log = logging.getLogger(__name__)
 
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
