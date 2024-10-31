@@ -85,7 +85,7 @@ async def claude(prompt: str, image_path: str) -> str:
         base64_image = encode_image(image_path)
         client = Anthropic(api_key=api_key)
         log.info("Calling Claude API")
-        log.debug(f"\n---prompt\n {prompt}\n---\n")
+        log.debug(f"\n---prompt - claude 3.5 sonnet\n {prompt}\n---\n")
         response = await asyncio.to_thread(
             client.messages.create,
             model="claude-3-sonnet-20240229",
@@ -107,7 +107,7 @@ async def claude(prompt: str, image_path: str) -> str:
         )
         response = response.content[0].text
         log.info("Claude API responded")
-        log.debug(f"\n---reply\n {response}\n---\n")
+        log.debug(f"\n---reply - claude 3.5 sonnet\n {response}\n---\n")
         return response
     except Exception as e:
         log.error(f"Claude API error: {str(e)}")
@@ -123,7 +123,7 @@ async def gpt(prompt: str, image_path: str) -> str:
         client = OpenAI(api_key=api_key)
         base64_image = encode_image(image_path)
         log.info("Calling GPT API")
-        log.debug(f"\n---prompt\n {prompt}\n---\n")
+        log.debug(f"\n---prompt - gpt-4o-mini\n {prompt}\n---\n")
         response = await asyncio.to_thread(
             client.chat.completions.create,
             model="gpt-4o-mini",
@@ -143,7 +143,7 @@ async def gpt(prompt: str, image_path: str) -> str:
         )
         response = response.choices[0].message.content
         log.info("GPT API responded")
-        log.debug(f"\n---reply\n {response}\n---\n")
+        log.debug(f"\n---reply - gpt-4o-mini\n {response}\n---\n")
         return response
 
     except Exception as e:
@@ -161,7 +161,7 @@ async def gemini(prompt: str, image_path: str) -> str:
         uploaded_file = genai.upload_file(image_path)
         log.info(f"Uploaded file to Gemini: {uploaded_file.uri}")
         model = genai.GenerativeModel(model_name='gemini-1.5-flash')
-        log.debug(f"\n---prompt\n {prompt}\n---\n")
+        log.debug(f"\n---prompt - gemini 1.5 flash\n {prompt}\n---\n")
         response = await model.generate_content_async(
             [uploaded_file, "\n\n", prompt],
             request_options={"timeout": 600},
@@ -169,7 +169,7 @@ async def gemini(prompt: str, image_path: str) -> str:
         )
         response = response.text
         log.info("Gemini API responded")
-        log.debug(f"\n---reply\n {response}\n---\n")
+        log.debug(f"\n---reply - gemini 1.5 flash\n {response}\n---\n")
         return response
 
     except Exception as e:
