@@ -114,14 +114,17 @@ const AIAnalysis = () => {
               </label>
             ))}
           </div>
+          <div className="checkbox-section">
+            <h3>Action</h3>
+            <button
+              className={`capture-button ${loading ? 'capturing' : ''}`}
+              onClick={handleAnalyze}
+              disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
+            >
+              {loading ? '🧠 Analyzing...' : '🧠 Analyze'}
+            </button>
+          </div>
         </div>
-        <button
-          className={`capture-button ${loading ? 'capturing' : ''}`}
-          onClick={handleAnalyze}
-          disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
-        >
-          {loading ? '🧠 Analyzing...' : '🧠 Analyze'}
-        </button>
       </div>
 
       <div className="latest-image">
