@@ -20,7 +20,7 @@ source "$(dirname "$0")/load_env.sh"
 
 if [ "$1" = "debug" ]; then
     echo "🐛 Debug logging enabled"
-    LOG_LEVEL=DEBUG docker compose up -d --build
+    LOG_LEVEL=DEBUG docker compose up --build
 else
     docker compose up -d --build
 fi
