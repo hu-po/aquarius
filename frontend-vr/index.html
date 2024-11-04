@@ -23,11 +23,7 @@
                 try {
                     const data = JSON.parse(this.data.reading);
                     if (!data) return;
-                    const text = `Temperature: ${data.temperature?.toFixed(1) || 'N/A'}°F
-                        pH: ${data.ph?.toFixed(1) || 'N/A'}
-                        Ammonia: ${data.ammonia?.toFixed(2) || 'N/A'} ppm
-                        Nitrite: ${data.nitrite?.toFixed(2) || 'N/A'} ppm
-                        Nitrate: ${data.nitrate?.toFixed(1) || 'N/A'} ppm`;
+                    const text = `Temperature: ${data.temperature?.toFixed(1) || 'N/A'}°F`;
                     this.el.setAttribute('text', {
                         value: text,
                         width: 2,

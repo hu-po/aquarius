@@ -18,11 +18,6 @@ services:
       - TANK_TIMEZONE=${TANK_TIMEZONE}
       - TANK_TEMP_MIN=${TANK_TEMP_MIN}
       - TANK_TEMP_MAX=${TANK_TEMP_MAX}
-      - TANK_PH_MIN=${TANK_PH_MIN}
-      - TANK_PH_MAX=${TANK_PH_MAX}
-      - TANK_AMMONIA_MAX=${TANK_AMMONIA_MAX}
-      - TANK_NITRITE_MAX=${TANK_NITRITE_MAX}
-      - TANK_NITRATE_MAX=${TANK_NITRATE_MAX}
       # app settings, data directories
       - DATA_DIR=${DATA_DIR}
       - IMAGES_DIR=${IMAGES_DIR}

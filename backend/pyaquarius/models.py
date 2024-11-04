@@ -59,10 +59,6 @@ class DBReading(BaseMixin, Base):
     id = Column(String, primary_key=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     temperature = Column(Float)
-    ph = Column(Float, nullable=True)
-    ammonia = Column(Float, nullable=True)
-    nitrite = Column(Float, nullable=True)
-    nitrate = Column(Float, nullable=True)
     image_id = Column(String, nullable=True)
 
 class DBAIAnalysis(BaseMixin, Base):
@@ -100,10 +96,6 @@ class Image(ImageBase):
 
 class ReadingBase(BaseModel):
     temperature: float = Field(ge=32, le=120)
-    ph: Optional[float] = Field(None, ge=0, le=14)
-    ammonia: Optional[float] = Field(None, ge=0)
-    nitrite: Optional[float] = Field(None, ge=0)
-    nitrate: Optional[float] = Field(None, ge=0)
     image_id: Optional[str] = None
 
 class Reading(ReadingBase):

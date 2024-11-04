@@ -345,3 +345,34 @@ body {
     border-radius: 0.375rem;
     text-align: center;
 }
+
+.info-page {
+    padding: 2rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+}
+
+.stats-section,
+.life-section {
+    background: #1e293b;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid #334155;
+}
+
+.stats-section h2,
+.life-section h2 {
+    margin: 0 0 1rem 0;
+    color: #e2e8f0;
+    font-size: 1.25rem;
+}
+
+@media (max-width: 768px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+}

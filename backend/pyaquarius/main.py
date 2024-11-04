@@ -283,7 +283,6 @@ async def health_check():
 
 @app.get("/status")
 async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
-    # Get latest image for each device
     latest_images = {}
     for device in camera_manager.devices.values():
         latest_image = db.query(DBImage)\
@@ -295,22 +294,10 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
     
     latest_reading = db.query(DBReading).order_by(DBReading.timestamp.desc()).first()
     
-    latest_analyses = {}
-    for analysis in db.query(DBAIAnalysis).order_by(DBAIAnalysis.timestamp.desc()).limit(3).all():
-        latest_analyses[analysis.ai_model] = analysis.response
-
     alerts = []
     if latest_reading:
         if latest_reading.temperature > TANK_TEMP_MAX or latest_reading.temperature < TANK_TEMP_MIN:
             alerts.append(f"Temperature outside ideal range: {latest_reading.temperature}°F")
-        if latest_reading.ph and (latest_reading.ph < TANK_PH_MIN or latest_reading.ph > TANK_PH_MAX):
-            alerts.append(f"pH outside ideal range: {latest_reading.ph}")
-        if latest_reading.ammonia and latest_reading.ammonia > TANK_AMMONIA_MAX:
-            alerts.append(f"High ammonia level: {latest_reading.ammonia} ppm")
-        if latest_reading.nitrite and latest_reading.nitrite > TANK_NITRITE_MAX:
-            alerts.append(f"High nitrite level: {latest_reading.nitrite} ppm")
-        if latest_reading.nitrate and latest_reading.nitrate > TANK_NITRATE_MAX:
-            alerts.append(f"High nitrate level: {latest_reading.nitrate} ppm")
 
     return AquariumStatus(
         latest_images=latest_images,

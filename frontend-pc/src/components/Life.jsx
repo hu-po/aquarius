@@ -55,6 +55,7 @@ const Life = () => {
             <tr key={l.id}>
               <td>{l.emoji}</td>
               <td>{l.common_name}</td>
+              <td>{l.scientific_name}</td>
               <td>{l.count}</td>
               <td>{formatLastSeen(l.last_seen_at)}</td>
             </tr>

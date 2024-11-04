@@ -33,10 +33,13 @@ export const Layout = () => {
       <nav className="main-nav">
         <div className="nav-links">
           <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-            📷 Streams
+            📷
           </NavLink>
           <NavLink to="/analysis" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-            🧠 Analysis
+            🧠
+          </NavLink>
+          <NavLink to="/info" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            📝
           </NavLink>
         </div>
         <div className="tank-info">
