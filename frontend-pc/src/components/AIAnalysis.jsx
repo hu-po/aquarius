@@ -97,12 +97,17 @@ const AIAnalysis = () => {
           ) : !latestImage ? (
             <div>No images available</div>
           ) : !imageError ? (
-            <img 
-              src={getImageUrl(latestImage?.filepath)}
-              alt="Latest aquarium capture"
-              className="aquarium-image"
-              onError={() => setImageError(true)}
-            />
+            <>
+              <img 
+                src={getImageUrl(latestImage?.filepath)}
+                alt={`📷 cam${latestImage.device_index} • ${new Date(latestImage.timestamp).toLocaleString()}`}
+                className="aquarium-image"
+                onError={() => setImageError(true)}
+              />
+              <div className="image-info">
+                📷 cam{latestImage.device_index} • {new Date(latestImage.timestamp).toLocaleString()}
+              </div>
+            </>
           ) : (
             <div className="image-error">Failed to load image</div>
           )}
