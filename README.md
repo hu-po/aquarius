@@ -34,17 +34,16 @@ Use the scripts in `scripts` to start the services on the master robot node, the
 flowchart TB
     subgraph Physical Setup["{Physical Setup}"]
         direction LR
-        camera1["📷 Camera 1"] --- aquarium1["🐟 Aquarium 1"]
-        aquarium1 --- aquarium2["🐠 Aquarium 2"]
-        aquarium2 --- camera2["📷 Camera 2"]
+        aquarium1["🐟 Aquarium 1"]--- camera1["📷 Camera 1"]
+        aquarium2["🐠 Aquarium 2"]--- camera2["📷 Camera 2"]
         robot_arm["🦾 Robot Arm"] --- aquarium1
         robot_arm --- aquarium2
     end
     
     subgraph AGX Orin["AGX Orin (192.168.x.x)"]
-        backend["backend\nFastAPI"]
-        fe_pc["frontend-pc\nReact"]
-        fe_vr["frontend-vr\nA-Frame"]
+        backend["backend\n FastAPI"]
+        fe_pc["frontend-pc\n React"]
+        fe_vr["frontend-vr\n A-Frame"]
         robot_client["robot-client\nMyCobotSocket"]
         backend -- "HTTP:8000" --> fe_pc
         backend -- "HTTP:8000" --> fe_vr
