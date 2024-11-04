@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components';
-import { StreamsPage, AnalysisPage } from './pages';
+import { StreamsPage } from './pages/StreamsPage';
+import { AnalysisPage } from './pages/AnalysisPage';
 import './styles/components.css';
 
 function App() {
