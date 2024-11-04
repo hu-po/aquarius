@@ -86,12 +86,28 @@ const AIAnalysis = () => {
 
   return (
     <div className="analysis-container">
-      <div className="analysis-controls">
-        <div className="checkbox-group">
-          <div className="checkbox-section">
-            <h3>Models</h3>
+      <div className="analysis-grid">
+        <div className="latest-image">
+          {imageLoading ? (
+            <div>Loading image...</div>
+          ) : !latestImage ? (
+            <div>No images available</div>
+          ) : !imageError ? (
+            <img 
+              src={getImageUrl(latestImage?.filepath)}
+              alt="Latest aquarium capture"
+              className="aquarium-image"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="image-error">Failed to load image</div>
+          )}
+        </div>
+
+        <div className="controls-section">
+          <div className="model-toggles">
             {AI_MODELS.map(model => (
-              <label key={model.id} className="checkbox-label">
+              <label key={model.id} className="toggle-label">
                 <input
                   type="checkbox"
                   checked={selectedModels.has(model.id)}
@@ -101,10 +117,10 @@ const AIAnalysis = () => {
               </label>
             ))}
           </div>
-          <div className="checkbox-section">
-            <h3>Analyses</h3>
+
+          <div className="analysis-toggles">
             {ANALYSES.map(analysis => (
-              <label key={analysis.id} className="checkbox-label">
+              <label key={analysis.id} className="toggle-label">
                 <input
                   type="checkbox"
                   checked={selectedAnalyses.has(analysis.id)}
@@ -114,34 +130,15 @@ const AIAnalysis = () => {
               </label>
             ))}
           </div>
-          <div className="checkbox-section">
-            <h3>Action</h3>
-            <button
-              className={`capture-button ${loading ? 'capturing' : ''}`}
-              onClick={handleAnalyze}
-              disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
-            >
-              {loading ? '🧠 Analyzing...' : '🧠 Analyze'}
-            </button>
-          </div>
-        </div>
-      </div>
 
-      <div className="latest-image">
-        {imageLoading ? (
-          <div>Loading image...</div>
-        ) : !latestImage ? (
-          <div>No images available</div>
-        ) : !imageError ? (
-          <img 
-            src={getImageUrl(latestImage?.filepath)}
-            alt="Latest aquarium capture"
-            className="aquarium-image"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div className="image-error">Failed to load image</div>
-        )}
+          <button
+            className={`analyze-button ${loading ? 'analyzing' : ''}`}
+            onClick={handleAnalyze}
+            disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
+          >
+            {loading ? '🧠 Analyzing...' : '🧠 Analyze'}
+          </button>
+        </div>
       </div>
     </div>
   );

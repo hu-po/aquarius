@@ -194,3 +194,78 @@ body {
     padding: 2rem;
     font-size: 1.5rem;
 }
+
+.analysis-container {
+    padding: 1.5rem;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    align-items: start;
+}
+
+.latest-image {
+    background: #1e293b;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #334155;
+}
+
+.aquarium-image {
+    width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+}
+
+.controls-section {
+    background: #1e293b;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.model-toggles,
+.analysis-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #e2e8f0;
+    cursor: pointer;
+}
+
+.analyze-button {
+    padding: 0.75rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.analyze-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.analyze-button.analyzing {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
