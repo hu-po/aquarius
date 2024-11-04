@@ -3,7 +3,7 @@ import { Analyze } from '../services/api';
 import axios from 'axios';
 
 const AI_MODELS = [
-  { id: 'claude', label: '🧠 claude' },
+  { id: 'claude', label: '🔮 claude' },
   { id: 'gpt', label: '🤖 gpt' },
   { id: 'gemini', label: '🌟 gemini' }
 ];
@@ -20,6 +20,7 @@ const AIAnalysis = () => {
   const [latestImage, setLatestImage] = useState(null);
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [analysisResults, setAnalysisResults] = useState(null);
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
   const FETCH_INTERVAL = import.meta.env.IMAGE_FETCH_INTERVAL || 30000;
 
@@ -73,12 +74,15 @@ const AIAnalysis = () => {
   const handleAnalyze = async () => {
     if (selectedModels.size === 0 || selectedAnalyses.size === 0) return;
     setLoading(true);
+    setAnalysisResults(null);
     try {
       const modelString = Array.from(selectedModels).join(',');
       const analysisString = Array.from(selectedAnalyses).join(',');
-      await Analyze(modelString, analysisString);
+      const results = await Analyze(modelString, analysisString);
+      setAnalysisResults(results);
     } catch (error) {
       console.error('Analysis failed:', error);
+      setAnalysisResults({ error: error.message });
     } finally {
       setLoading(false);
     }
@@ -136,10 +140,38 @@ const AIAnalysis = () => {
             onClick={handleAnalyze}
             disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
           >
-            {loading ? '🧠 Analyzing...' : '🧠 Analyze'}
+            {loading ? '🧠 ... ⏳ ...' : '🧠'}
           </button>
         </div>
       </div>
+
+      {analysisResults && (
+        <div className="analysis-results">
+          <h3>Analysis Results</h3>
+          {analysisResults.error ? (
+            <div className="error-message">{analysisResults.error}</div>
+          ) : (
+            <div className="results-grid">
+              {Object.entries(analysisResults.analysis).map(([key, value]) => (
+                <div key={key} className="result-item">
+                  <h4>{key}</h4>
+                  <pre>{value}</pre>
+                </div>
+              ))}
+              {Object.keys(analysisResults.errors).length > 0 && (
+                <div className="analysis-errors">
+                  <h4>Errors</h4>
+                  {Object.entries(analysisResults.errors).map(([key, error]) => (
+                    <div key={key} className="error-item">
+                      <strong>{key}:</strong> {error}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
