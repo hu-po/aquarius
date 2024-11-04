@@ -46,6 +46,7 @@ services:
       - CAMERA_DEVICE_RETRY_DELAY=${CAMERA_DEVICE_RETRY_DELAY}
       - CAPTURE_INTERVAL=${CAPTURE_INTERVAL}
       - CAPTURE_ENABLED=${CAPTURE_ENABLED}
+      - CAMERA_STREAM_TOGGLE_DELAY=${CAMERA_STREAM_TOGGLE_DELAY}
     volumes:
       - ./data:/app/data:rw
       - /dev:/dev:rw

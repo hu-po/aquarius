@@ -14,6 +14,7 @@ CAMERA_WIDTH = int(os.getenv('CAMERA_WIDTH', '1280'))
 CAMERA_HEIGHT = int(os.getenv('CAMERA_HEIGHT', '720'))
 CAMERA_MAX_IMAGES = int(os.getenv('CAMERA_MAX_IMAGES', '1000'))
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
+CAMERA_STREAM_TOGGLE_DELAY = float(os.getenv('CAMERA_STREAM_TOGGLE_DELAY', '500')) / 1000  # Convert ms to seconds
 
 class CameraDevice:
     def __init__(self, index: int, path: str, width: int = CAMERA_WIDTH, height: int = CAMERA_HEIGHT):
@@ -31,17 +32,20 @@ class CameraDevice:
     async def stop_stream(self):
         """Safely stop any active stream."""
         async with self.lock:
-            self.is_streaming = False
-            if self.cap:
-                self.cap.release()
-                self.cap = None
-                await asyncio.sleep(0.5)  # Allow hardware to stabilize
+            if self.is_streaming:
+                self.is_streaming = False
+                if self.cap:
+                    self.cap.release()
+                    self.cap = None
+                    await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
 
     async def start_stream(self):
         """Safely start stream if not capturing."""
         if not self.is_capturing:
             async with self.lock:
-                self.is_streaming = True
+                if not self.is_streaming:
+                    self.is_streaming = True
+                    await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
 
 class CameraManager:
     def __init__(self):

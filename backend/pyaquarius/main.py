@@ -75,12 +75,31 @@ async def scheduled_capture():
         for device in camera_manager.devices.values():
             if device.is_active and not device.is_capturing:
                 log.debug(f"Capturing from device {device.index}")
+                was_streaming = device.is_streaming
                 await device.stop_stream()
                 result = await camera_manager.capture_image(device)
                 if not result:
                     log.error(f"Scheduled capture failed for device {device.index}")
                 else:
+                    filepath, width, height, file_size = result
                     log.debug(f"Scheduled capture successful for device {device.index}")
+                    with get_db_session() as db:
+                        image = DBImage(
+                            id=datetime.now(timezone.utc).isoformat(),
+                            filepath=filepath,
+                            width=width,
+                            height=height,
+                            file_size=file_size,
+                            timestamp=datetime.now(timezone.utc),
+                            device_index=device.index
+                        )
+                        db.add(image)
+                        log.debug(f"Image record created in database with id {image.id}")
+                
+                # Restart stream if it was streaming before
+                if was_streaming:
+                    await device.start_stream()
+                    log.debug(f"Restarted stream for device {device.index}")
     except Exception as e:
         log.error(f"Scheduled capture error: {str(e)}", exc_info=True)
 
