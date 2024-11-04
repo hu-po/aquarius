@@ -546,3 +546,46 @@ body {
     text-align: center;
     color: #ef4444;
 }
+
+.app-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-nav {
+    background: #1e293b;
+    padding: 1rem 2rem;
+    display: flex;
+    gap: 2rem;
+    border-bottom: 1px solid #334155;
+}
+
+.nav-link {
+    color: #94a3b8;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.nav-link:hover {
+    color: #e2e8f0;
+    background: #334155;
+}
+
+.nav-link.active {
+    color: #e2e8f0;
+    background: #334155;
+}
+
+.main-content {
+    flex: 1;
+    padding: 2rem;
+}
+
+.streams-page,
+.analysis-page {
+    max-width: 1600px;
+    margin: 0 auto;
+}
