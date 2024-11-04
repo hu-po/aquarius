@@ -6,11 +6,11 @@ export const InfoPage = () => {
     <div className="info-page">
       <div className="info-grid">
         <div className="stats-section">
-          <h2>Temperature</h2>
+          <h2>temperature</h2>
           <Stats />
         </div>
         <div className="life-section">
-          <h2>Life</h2>
+          <h2>life.csv</h2>
           <Life />
         </div>
       </div>

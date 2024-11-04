@@ -105,7 +105,11 @@ const AIAnalysis = () => {
                 onError={() => setImageError(true)}
               />
               <div className="image-info">
-                📷 cam{latestImage.device_index} • {new Date(latestImage.timestamp).toLocaleString()}
+                📷 cam{latestImage.device_index} • {new Date(latestImage.timestamp).toLocaleString('en-US', { 
+                  timeZone: status?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  dateStyle: 'medium',
+                  timeStyle: 'medium'
+                })}
               </div>
             </>
           ) : (

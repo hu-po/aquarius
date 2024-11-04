@@ -130,7 +130,6 @@ class Life(LifeBase):
 class AquariumStatus(BaseModel):
     latest_images: Dict[int, Optional[Image]] = {}  # Map device_index to Image
     latest_reading: Optional[Reading] = None
-    latest_analyses: Dict[str, str] = {}
     alerts: List[str] = []
     location: str = Field(default=os.getenv('TANK_LOCATION', 'Austin, TX'))
     timezone: str = Field(default=os.getenv('TANK_TIMEZONE', 'America/Chicago'))

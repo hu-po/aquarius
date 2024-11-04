@@ -42,14 +42,6 @@ const Life = () => {
   return (
     <div className="life-table">
       <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th>name</th>
-            <th>num</th>
-            <th>last seen</th>
-          </tr>
-        </thead>
         <tbody>
           {life.map(l => (
             <tr key={l.id}>
