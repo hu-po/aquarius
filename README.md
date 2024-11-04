@@ -51,7 +51,7 @@ flowchart TB
         robot_server["robot-server"]
     end
     
-    subgraph Remote Devices
+    subgraph Remote_Devices["Remote Devices"]
         pc["💻 PC Browser"]
         vr["🥽 VR Browser"]
         phone["📱 Mobile Browser"]
@@ -65,20 +65,29 @@ flowchart TB
     robot_client -- "TCP/IP" --> robot_server
     robot_server -- "Serial" --> robot_arm
 
-    style aquarium1 fill:#e2f5ff,stroke:#0088cc
-    style aquarium2 fill:#e2f5ff,stroke:#0088cc
-    style Edge fill:#f5f5f5,stroke:#666666
-    style camera1 fill:#f9f9f9,stroke:#999999
-    style camera2 fill:#f9f9f9,stroke:#999999
-    style backend fill:#ddfbe7,stroke:#28a745
-    style fe_pc fill:#fff3cd,stroke:#ffc107
-    style fe_vr fill:#f8d7da,stroke:#dc3545
-    style pc fill:#cce5ff,stroke:#0056b3
-    style vr fill:#d7d8f8,stroke:#6610f2
-    style phone fill:#cce5ff,stroke:#0056b3
-    style Robot Pi fill:#ffe6cc,stroke:#ff9900
-    style robot_client fill:#f5e6ff,stroke:#9933cc
-    style robot_arm fill:#ffe6cc,stroke:#ff9900
+    %% Hardware components
+    style aquarium1 fill:#b3e0ff,stroke:#0066cc
+    style aquarium2 fill:#b3e0ff,stroke:#0066cc
+    style camera1 fill:#e6e6e6,stroke:#666666
+    style camera2 fill:#e6e6e6,stroke:#666666
+    style robot_arm fill:#ffcc80,stroke:#ff8c00
+
+    %% Edge computing node
+    style Edge fill:#f8f9fa,stroke:#495057
+    style backend fill:#28a745,stroke:#1e7e34,color:#ffffff
+    style fe_pc fill:#007bff,stroke:#0056b3,color:#ffffff
+    style fe_vr fill:#6610f2,stroke:#520dc2,color:#ffffff
+    style robot_client fill:#dc3545,stroke:#bd2130,color:#ffffff
+
+    %% Robot node
+    style Robot fill:#fff3cd,stroke:#ffc107
+    style robot_server fill:#fd7e14,stroke:#d63384,color:#ffffff
+
+    %% Client devices
+    style Remote_Devices fill:#f8f9fa,stroke:#495057
+    style pc fill:#20c997,stroke:#0ca678
+    style vr fill:#6f42c1,stroke:#59359a
+    style phone fill:#20c997,stroke:#0ca678
 ```
 
 ## Citation
