@@ -15,6 +15,15 @@ Uses docker compose, all config stored in `.env` file. Make sure to add API keys
 
 Use the scripts in `scripts` to start the services on the master robot node, then access dashboards on pc/mobile/vr.
 
+```bash
+# start services on agx orin (docker compose)
+./scripts/start.sh
+./scripts/stop.sh
+./scripts/clean.sh # CAUTION: removes all local data
+# start robot on mycobot 280 pi
+./scripts/start-robot.sh
+```
+
 <!-- ## Video
 
 [![YouTube Video](https://img.youtube.com/vi/TBD/0.jpg)](https://www.youtube.com/watch?v=TBD) -->
