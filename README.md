@@ -32,13 +32,10 @@ Use the scripts in `scripts` to start the services on the master robot node, the
 
 ```mermaid
 flowchart TB
-    subgraph Physical Setup["{Physical Setup}"]
-        direction LR
-        aquarium1["🐟 Aquarium 1"]--- camera1["📷 Camera 1"]
-        aquarium2["🐠 Aquarium 2"]--- camera2["📷 Camera 2"]
-        robot_arm["🦾 Robot Arm"] --- aquarium1
-        robot_arm --- aquarium2
-    end
+    aquarium1["🐟 Aquarium 1"]--- camera1["📷 Camera 1"]
+    aquarium2["🐠 Aquarium 2"]--- camera2["📷 Camera 2"]
+    robot_arm["🦾 Robot Arm"] --- aquarium1
+    robot_arm --- aquarium2
     
     subgraph AGX Orin["AGX Orin (192.168.x.x)"]
         backend["backend\n FastAPI"]
@@ -68,7 +65,6 @@ flowchart TB
     robot_client -- "TCP/IP" --> robot_server
     robot_server -- "Serial" --> robot_arm
 
-    style Physical Setup fill:#e8f4ff,stroke:#0088cc
     style aquarium1 fill:#e2f5ff,stroke:#0088cc
     style aquarium2 fill:#e2f5ff,stroke:#0088cc
     style AGX Orin fill:#f5f5f5,stroke:#666666
