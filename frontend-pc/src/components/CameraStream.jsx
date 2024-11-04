@@ -27,8 +27,8 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
       return;
     }
 
-    const maxRetries = 3;
-    const retryDelay = 2000;
+    const maxRetries = 5;
+    const retryDelay = 1000;
     
     const setupStream = () => {
       if (imgRef.current) {
@@ -38,7 +38,9 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
             setTimeout(() => {
               setRetryCount(prev => prev + 1);
               if (imgRef.current && !isPaused) {
-                imgRef.current.src = `${getStreamUrl(deviceIndex)}?t=${Date.now()}`;
+                const timestamp = Date.now();
+                const streamUrl = `${getStreamUrl(deviceIndex)}?t=${timestamp}`;
+                imgRef.current.src = streamUrl;
               }
             }, retryDelay);
           }
@@ -49,8 +51,9 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
           setRetryCount(0);
         };
 
-        // Always set a new stream URL when effect runs
-        imgRef.current.src = `${getStreamUrl(deviceIndex)}?t=${Date.now()}`;
+        const timestamp = Date.now();
+        const streamUrl = `${getStreamUrl(deviceIndex)}?t=${timestamp}`;
+        imgRef.current.src = streamUrl;
       }
     };
     
@@ -60,6 +63,7 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
       if (imgRef.current) {
         imgRef.current.onerror = null;
         imgRef.current.onload = null;
+        imgRef.current.src = '';
       }
     };
   }, [deviceIndex, retryCount, isPaused]);

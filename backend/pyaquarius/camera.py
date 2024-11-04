@@ -38,6 +38,7 @@ class CameraDevice:
                     self.cap.release()
                     self.cap = None
                     await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
+                    log.debug(f"Stream stopped for device {self.index}")
 
     async def start_stream(self):
         """Safely start stream if not capturing."""
@@ -46,6 +47,7 @@ class CameraDevice:
                 if not self.is_streaming:
                     self.is_streaming = True
                     await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
+                    log.debug(f"Stream started for device {self.index}")
 
 class CameraManager:
     def __init__(self):

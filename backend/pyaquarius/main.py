@@ -181,8 +181,10 @@ async def capture_image(device_index: int):
         raise HTTPException(status_code=400, detail=f"Camera {device_index} is not active")
     
     try:
+        was_streaming = device.is_streaming
         log.debug(f"Stopping stream on device {device_index}")
         await device.stop_stream()
+        
         log.debug(f"Initiating capture on device {device_index}")
         result = await camera_manager.capture_image(device)
         if not result:
@@ -190,7 +192,7 @@ async def capture_image(device_index: int):
             raise HTTPException(status_code=500, detail=f"Failed to capture from camera {device_index}")
             
         filepath, width, height, file_size = result
-        log.debug(f"Capture successful - saving to database. Path: {filepath}, dimensions: {width}x{height}")
+        log.debug(f"Capture successful - saving to database. Path: {filepath}")
         
         with get_db_session() as db:
             image = DBImage(
@@ -205,12 +207,19 @@ async def capture_image(device_index: int):
             db.add(image)
             log.debug(f"Image record created in database with id {image.id}")
         
+        if was_streaming:
+            log.debug(f"Restarting stream for device {device_index}")
+            await device.start_stream()
+            
         return {"filepath": filepath}
         
     except Exception as e:
         log.error(f"Capture error: {str(e)}", exc_info=True)
+        # Attempt to restart stream on error if it was streaming
+        if was_streaming:
+            await device.start_stream()
         raise HTTPException(status_code=500, detail=str(e))
-            
+
 @app.post("/analyze/{ai_models}/{analyses}")
 async def analyze(ai_models: str, analyses: str):
     log.debug(f"Received analysis request - models: {ai_models}, analyses: {analyses}")
