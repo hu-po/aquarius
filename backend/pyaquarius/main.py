@@ -302,7 +302,6 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
     return AquariumStatus(
         latest_images=latest_images,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
-        latest_analyses=latest_analyses,
         alerts=list(set(alerts)),
         timezone=validate_timezone(os.getenv('TANK_TIMEZONE', 'UTC'))
     )
