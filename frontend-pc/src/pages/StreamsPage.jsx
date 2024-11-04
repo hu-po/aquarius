@@ -10,32 +10,58 @@ export const StreamsPage = () => {
   const [pausedDevices, setPausedDevices] = useState(new Set());
   const [warning, setWarning] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [streamsInitialized, setStreamsInitialized] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
     const loadData = async () => {
       try {
+        setLoading(true);
         const [deviceList, statusData] = await Promise.all([
           getDevices(),
           getStatus()
         ]);
+        if (!mounted) return;
         setDevices(deviceList);
         setStatus(statusData);
         setError(null);
+        setStreamsInitialized(true);
       } catch (err) {
+        if (!mounted) return;
         setError(err.message || 'Failed to load data');
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadData();
     const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
+    
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+      setStreamsInitialized(false);
+    };
   }, []);
 
   const handleSingleCapture = async (deviceIndex) => {
-    // Reference existing capture logic from Dashboard.jsx
-    // Lines 49-90 from Dashboard.jsx
+    if (pausedDevices.has(deviceIndex)) return;
+    
+    setPausedDevices(prev => new Set([...prev, deviceIndex]));
+    try {
+      await captureImage(deviceIndex);
+      setSuccessMessage(`Captured image from camera ${deviceIndex}`);
+    } catch (err) {
+      setWarning(err.message || `Failed to capture from camera ${deviceIndex}`);
+    } finally {
+      setPausedDevices(prev => {
+        const updated = new Set(prev);
+        updated.delete(deviceIndex);
+        return updated;
+      });
+    }
   };
 
   if (loading) return <div className="loading">🔄</div>;
@@ -68,11 +94,14 @@ export const StreamsPage = () => {
                 {pausedDevices.has(device.index) ? '📸 ...' : '📸'}
               </button>
             </div>
-            <CameraStream 
-              deviceIndex={device.index}
-              isPaused={pausedDevices.has(device.index)}
-              onCapture={handleSingleCapture}
-            />
+            {streamsInitialized && (
+              <CameraStream 
+                deviceIndex={device.index}
+                isPaused={pausedDevices.has(device.index)}
+                onCapture={handleSingleCapture}
+                key={`stream-${device.index}-${streamsInitialized}`}
+              />
+            )}
           </div>
         ))}
       </div>

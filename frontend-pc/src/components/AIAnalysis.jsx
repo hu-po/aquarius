@@ -9,8 +9,8 @@ const AI_MODELS = [
 ];
 
 const ANALYSES = [
-  { id: 'identify_life', label: '🐠 Identify Life' },
-  { id: 'estimate_temperature', label: '🌡️ Estimate Temperature' }
+  { id: 'identify_life', label: '🐠 identify life' },
+  { id: 'estimate_temperature', label: '🌡️ estimate temperature' }
 ];
 
 const AIAnalysis = () => {
@@ -140,14 +140,13 @@ const AIAnalysis = () => {
             onClick={handleAnalyze}
             disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
           >
-            {loading ? '🧠 ... ⏳ ...' : '🧠'}
+            {loading ? '🧠 ... ⏳' : '🧠'}
           </button>
         </div>
       </div>
 
       {analysisResults && (
         <div className="analysis-results">
-          <h3>Analysis Results</h3>
           {analysisResults.error ? (
             <div className="error-message">{analysisResults.error}</div>
           ) : (
