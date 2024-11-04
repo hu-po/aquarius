@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { getStreamUrl } from '../services/api';
 
-const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
+const CameraStream = ({ deviceIndex, isPaused, onCapture, resetKey }) => {
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isCapturing, setIsCapturing] = useState(false);

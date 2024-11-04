@@ -81,8 +81,7 @@ body {
 
 .stream-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     margin-bottom: 1rem;
 }
 
@@ -375,4 +374,24 @@ body {
     .info-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.reset-button {
+    padding: 0.5rem 1rem;
+    background: #475569;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.reset-button:hover {
+    background: #64748b;
+}
+
+.reset-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }

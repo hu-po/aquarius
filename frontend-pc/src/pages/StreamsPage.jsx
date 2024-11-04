@@ -11,6 +11,7 @@ export const StreamsPage = () => {
   const [warning, setWarning] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [streamsInitialized, setStreamsInitialized] = useState(false);
+  const [resetCounter, setResetCounter] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -64,11 +65,28 @@ export const StreamsPage = () => {
     }
   };
 
+  const handleResetStreams = () => {
+    setStreamsInitialized(false);
+    setTimeout(() => {
+      setStreamsInitialized(true);
+      setResetCounter(prev => prev + 1);
+    }, 100);
+  };
+
   if (loading) return <div className="loading">🔄</div>;
   if (error) return <div className="error">⚠️ {error}</div>;
 
   return (
     <div className="streams-page">
+      <div className="streams-header">
+        <button 
+          className="reset-button"
+          onClick={handleResetStreams}
+          disabled={loading || !streamsInitialized}
+        >
+          🔄 reset streams
+        </button>
+      </div>
       {warning && (
         <div className="warning-banner">
           ⚠️ {warning}
@@ -99,7 +117,7 @@ export const StreamsPage = () => {
                 deviceIndex={device.index}
                 isPaused={pausedDevices.has(device.index)}
                 onCapture={handleSingleCapture}
-                key={`stream-${device.index}-${streamsInitialized}`}
+                key={`stream-${device.index}-${streamsInitialized}-${resetCounter}`}
               />
             )}
           </div>
