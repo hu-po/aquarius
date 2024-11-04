@@ -38,10 +38,10 @@ flowchart TB
     robot_arm --- aquarium2
     
     subgraph Edge["AGX Orin (192.168.x.x)"]
-        backend["backend\n FastAPI"]
-        fe_pc["frontend-pc\n React"]
-        fe_vr["frontend-vr\n A-Frame"]
-        robot_client["robot-client\nMyCobotSocket"]
+        backend["backend"]
+        fe_pc["frontend-pc"]
+        fe_vr["frontend-vr"]
+        robot_client["robot-client"]
         backend -- "HTTP:8000" --> fe_pc
         backend -- "HTTP:8000" --> fe_vr
         backend -- "HTTP:3002" --> robot_client
