@@ -10,8 +10,6 @@ export const StreamsPage = () => {
   const [pausedDevices, setPausedDevices] = useState(new Set());
   const [warning, setWarning] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [streamsInitialized, setStreamsInitialized] = useState(false);
-  const [resetCounter, setResetCounter] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -26,7 +24,6 @@ export const StreamsPage = () => {
         setDevices(deviceList);
         setStatus(statusData);
         setError(null);
-        setStreamsInitialized(true);
       } catch (err) {
         if (!mounted) return;
         setError(err.message || 'Failed to load data');
@@ -43,7 +40,6 @@ export const StreamsPage = () => {
     return () => {
       mounted = false;
       clearInterval(interval);
-      setStreamsInitialized(false);
     };
   }, []);
 
@@ -65,28 +61,11 @@ export const StreamsPage = () => {
     }
   };
 
-  const handleResetStreams = () => {
-    setStreamsInitialized(false);
-    setTimeout(() => {
-      setStreamsInitialized(true);
-      setResetCounter(prev => prev + 1);
-    }, 100);
-  };
-
   if (loading) return <div className="loading">🔄</div>;
   if (error) return <div className="error">⚠️ {error}</div>;
 
   return (
     <div className="streams-page">
-      <div className="streams-header">
-        <button 
-          className="reset-button"
-          onClick={handleResetStreams}
-          disabled={loading || !streamsInitialized}
-        >
-          🔄 reset streams
-        </button>
-      </div>
       {warning && (
         <div className="warning-banner">
           ⚠️ {warning}
@@ -112,14 +91,11 @@ export const StreamsPage = () => {
                 {pausedDevices.has(device.index) ? '📸 ...' : '📸'}
               </button>
             </div>
-            {streamsInitialized && (
-              <CameraStream 
-                deviceIndex={device.index}
-                isPaused={pausedDevices.has(device.index)}
-                onCapture={handleSingleCapture}
-                key={`stream-${device.index}-${streamsInitialized}-${resetCounter}`}
-              />
-            )}
+            <CameraStream
+              deviceIndex={device.index}
+              isPaused={pausedDevices.has(device.index)}
+              onCapture={handleSingleCapture}
+            />
           </div>
         ))}
       </div>
