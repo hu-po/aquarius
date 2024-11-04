@@ -37,7 +37,7 @@ flowchart TB
     robot_arm["🦾 Robot Arm"] --- aquarium1
     robot_arm --- aquarium2
     
-    subgraph AGX Orin["AGX Orin (192.168.x.x)"]
+    subgraph Edge["AGX Orin (192.168.x.x)"]
         backend["backend\n FastAPI"]
         fe_pc["frontend-pc\n React"]
         fe_vr["frontend-vr\n A-Frame"]
@@ -67,7 +67,7 @@ flowchart TB
 
     style aquarium1 fill:#e2f5ff,stroke:#0088cc
     style aquarium2 fill:#e2f5ff,stroke:#0088cc
-    style AGX Orin fill:#f5f5f5,stroke:#666666
+    style Edge fill:#f5f5f5,stroke:#666666
     style camera1 fill:#f9f9f9,stroke:#999999
     style camera2 fill:#f9f9f9,stroke:#999999
     style backend fill:#ddfbe7,stroke:#28a745
@@ -78,7 +78,6 @@ flowchart TB
     style phone fill:#cce5ff,stroke:#0056b3
     style Robot Pi fill:#ffe6cc,stroke:#ff9900
     style robot_client fill:#f5e6ff,stroke:#9933cc
-    style robot_control fill:#ffe6cc,stroke:#ff9900
     style robot_arm fill:#ffe6cc,stroke:#ff9900
 ```
 
