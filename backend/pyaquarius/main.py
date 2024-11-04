@@ -49,6 +49,8 @@ from pyaquarius.models import (
 
 from .ai import ENABLED_MODELS
 from .camera import CameraManager, CAMERA_IMG_TYPE, CAMERA_MAX_DIM
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
@@ -62,6 +64,25 @@ app.add_middleware(
 app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 camera_manager = CameraManager()
+
+CAPTURE_INTERVAL = int(os.getenv('CAPTURE_INTERVAL', '10'))
+CAPTURE_ENABLED = os.getenv('CAPTURE_ENABLED', 'true').lower() == 'true'
+
+async def scheduled_capture():
+    """Capture images from all active cameras on schedule."""
+    log.debug("Starting scheduled capture")
+    try:
+        for device in camera_manager.devices.values():
+            if device.is_active and not device.is_capturing:
+                log.debug(f"Capturing from device {device.index}")
+                await device.stop_stream()
+                result = await camera_manager.capture_image(device)
+                if not result:
+                    log.error(f"Scheduled capture failed for device {device.index}")
+                else:
+                    log.debug(f"Scheduled capture successful for device {device.index}")
+    except Exception as e:
+        log.error(f"Scheduled capture error: {str(e)}", exc_info=True)
 
 @contextmanager
 def get_db_session():
@@ -79,6 +100,17 @@ def get_db_session():
 @app.on_event("startup")
 async def startup_event():
     await camera_manager.initialize()
+    
+    if CAPTURE_ENABLED:
+        log.info(f"Starting scheduled capture every {CAPTURE_INTERVAL} seconds")
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(
+            scheduled_capture,
+            trigger=IntervalTrigger(seconds=CAPTURE_INTERVAL),
+            id='scheduled_capture',
+            replace_existing=True
+        )
+        scheduler.start()
 
 @app.get("/devices")
 async def get_devices():

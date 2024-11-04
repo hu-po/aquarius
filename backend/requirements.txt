@@ -11,3 +11,4 @@ openai
 anthropic
 replicate
 tenacity>=8.2.0
+apscheduler
