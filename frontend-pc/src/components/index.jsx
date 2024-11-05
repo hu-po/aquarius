@@ -4,3 +4,4 @@ export { default as Stats } from './Stats';
 export { default as CameraStream } from './CameraStream';
 export { default as Life } from './Life';
 export { default as InfoPage } from '../pages/InfoPage';
+export { default as RobotPage } from '../pages/RobotPage';
