@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 log = logging.getLogger(__name__)
 
 # Client settings
-HOST = os.getenv('ROBOT_SERVER_HOST', '192.168.10.10')
+HOST = os.getenv('ROBOT_SERVER_HOST', '192.168.1.33')  # Default to Pi's IP
 PORT = int(os.getenv('ROBOT_SERVER_PORT', '9000'))
 BUFFER_SIZE = 1024
 INITIAL_RETRY_DELAY = 1.0  # Start with 1 second delay

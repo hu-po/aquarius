@@ -23,6 +23,8 @@ Use the scripts in `scripts` to start the services on the master robot node, the
 ./scripts/clean.sh # CAUTION: removes all local data
 # start robot on mycobot 280 pi
 ./scripts/start-robot.sh
+# start robot server (on robot)
+sudo python3 robot/server.py --debug # start with debug logging
 ```
 
 <!-- ## Video
@@ -42,14 +44,14 @@ flowchart TB
         backend["backend"]
         fe_pc["frontend-pc"]
         fe_vr["frontend-vr"]
-        robot_client["robot-client"]
+        robot_client["client"]
         backend -- "HTTP:8000" --> fe_pc
         backend -- "HTTP:8000" --> fe_vr
         backend -- "HTTP:3002" --> robot_client
     end
     
     subgraph Robot["MyCobot280PI (192.168.x.y)"]
-        robot_server["robot-server"]
+        robot_server["server"]
     end
     
     subgraph Remote_Devices["Remote Devices"]
