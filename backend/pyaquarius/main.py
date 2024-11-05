@@ -62,7 +62,7 @@ app.add_middleware(
     allow_headers=["*"],
     max_age=CORS_MAX_AGE
 )
-
+app.include_router(robot.router, prefix="/robot", tags=["robot"])
 app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 camera_manager = CameraManager()
