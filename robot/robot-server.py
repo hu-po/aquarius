@@ -1,189 +1,189 @@
-import time
+import socket
+import logging
 import os
-import sys
-import termios
-import tty
-import threading
 import json
-import serial
-import serial.tools.list_ports
-
+import threading
+from typing import Optional
 from pymycobot.mycobot import MyCobot
 
-port: str
-mc: MyCobot
-sp: int = 80
-debug: bool = False
-baud: int = 1000000
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+log = logging.getLogger(__name__)
 
-def setup():
-    global port, mc, debug, baud
-    port = "/dev/ttyAMA0"
-    mc = MyCobot(port, baud, debug=debug)
-    mc.power_on()
+# Server settings
+HOST = '0.0.0.0'  # Listen on all interfaces
+PORT = 9000
+BUFFER_SIZE = 1024
 
+# Robot settings
+SERIAL_PORT = "/dev/ttyAMA0"
+BAUD_RATE = 1000000
+DEBUG = False
 
-class Raw(object):
-    """Set raw input mode for device"""
-
-    def __init__(self, stream):
-        self.stream = stream
-        self.fd = self.stream.fileno()
-
-    def __enter__(self):
-        self.original_stty = termios.tcgetattr(self.stream)
-        tty.setcbreak(self.stream)
-
-    def __exit__(self, type, value, traceback):
-        termios.tcsetattr(self.stream, termios.TCSANOW, self.original_stty)
-
-
-class Helper(object):
-    def __init__(self) -> None:
-        self.w, self.h = os.get_terminal_size()
-
-    def echo(self, msg):
-        print("\r{}".format(" " * self.w), end="")
-        print("\r{}".format(msg), end="")
-
-
-class TeachingTest(Helper):
-    def __init__(self, mycobot) -> None:
-        super().__init__()
-        self.mc = mycobot
+class RobotServer:
+    def __init__(self):
+        self.mc: Optional[MyCobot] = None
         self.recording = False
         self.playing = False
         self.record_list = []
-        self.record_t = None
-        self.play_t = None
-        self.path = os.path.dirname(os.path.abspath(__file__)) + "/record.txt"
+        self.record_thread: Optional[threading.Thread] = None
+        self.play_thread: Optional[threading.Thread] = None
+        self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "record.txt")
+        
+    def initialize(self):
+        """Initialize MyCobot connection"""
+        try:
+            self.mc = MyCobot(SERIAL_PORT, BAUD_RATE, debug=DEBUG)
+            self.mc.power_on()
+            log.info("Robot initialized successfully")
+        except Exception as e:
+            log.error(f"Failed to initialize robot: {e}")
+            raise
 
-    def record(self):
-        self.record_list = []
-        self.recording = True
-        #self.mc.set_fresh_mode(0)
-        def _record():
-            while self.recording:
-                start_t = time.time()
-                angles = self.mc.get_encoders()
-                speeds = self.mc.get_servo_speeds()
-                gripper_value = self.mc.get_encoder(7)
-                interval_time = time.time() - start_t
-                if angles and speeds:
-                    record = [angles, speeds, gripper_value, interval_time]
-                    self.record_list.append(record)
-                    # time.sleep(0.1)
-                    print("\r {}".format(time.time() - start_t), end="")
-
-        self.echo("Start recording.")
-        self.record_t = threading.Thread(target=_record, daemon=True)
-        self.record_t.start()
-
-    def stop_record(self):
-        if self.recording:
-            self.recording = False
-            self.record_t.join()
-            self.echo("Stop record")
-
-    def play(self):
-        self.echo("Start play")
-        i = 0
-        for record in self.record_list:
-            angles, speeds, gripper_value, interval_time = record
-            #print(angles)
-            self.mc.set_encoders_drag(angles, speeds)
-            self.mc.set_encoder(7, 80)
-            if i == 0:
-                time.sleep(3)
-            i+=1
-            time.sleep(interval_time)
-        self.echo("Finish play")
-
-    def loop_play(self):
-        self.playing = True
-
-        def _loop():
-            while self.playing:
-                self.play()
-
-        self.echo("Start loop play.")
-        self.play_t = threading.Thread(target=_loop, daemon=True)
-        self.play_t.start()
-
-    def stop_loop_play(self):
-        if self.playing:
-            self.playing = False
-            self.play_t.join()
-            self.echo("Stop loop play.")
-
-    def save_to_local(self):
-        if not self.record_list:
-            self.echo("No data should save.")
-            return
-        with open(self.path, "w") as f:
-            json.dump(self.record_list, f, indent=2)
-            self.echo("save dir:  {}\n".format(self.path))
-
-    def load_from_local(self):
-        with open(self.path, "r") as f:
-            try:
-                data = json.load(f)
-                self.record_list = data
-                self.echo("Load data success.")
-            except Exception:
-                self.echo("Error: invalid data.")
-
-    def print_menu(self):
-        print(
-            """\
-        \r q: quit
-        \r r: start record
-        \r c: stop record
-        \r p: play once
-        \r P: loop play / stop loop play
-        \r s: save to local
-        \r l: load from local
-        \r f: release mycobot
-        \r----------------------------------
-            """
-        )
+    def handle_command(self, command: str) -> str:
+        """Handle incoming commands from client"""
+        log.debug(f"Received command: {command}")
+        
+        if command == "q":
+            return "quit"
+        elif command == "r":
+            self.start_record()
+            return "Recording started"
+        elif command == "c":
+            self.stop_record()
+            return "Recording stopped"
+        elif command == "p":
+            if not self.playing:
+                self.play_once()
+                return "Playing once"
+            return "Already playing"
+        elif command == "P":
+            if not self.playing:
+                self.start_loop_play()
+                return "Loop play started"
+            else:
+                self.stop_loop_play()
+                return "Loop play stopped"
+        elif command == "s":
+            self.save_recording()
+            return "Recording saved"
+        elif command == "l":
+            self.load_recording()
+            return "Recording loaded"
+        elif command == "f":
+            self.mc.release_all_servos()
+            return "Robot released"
+        else:
+            return f"Unknown command: {command}"
 
     def start(self):
-        self.print_menu()
+        """Start the robot server"""
+        self.initialize()
+        
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((HOST, PORT))
+        server.listen(1)
+        log.info(f"Server listening on {HOST}:{PORT}")
 
-        while not False:
-            with Raw(sys.stdin):
-                # TODO: replace this std input with socket communication to robot-client.py
-                key = sys.stdin.read(1)
-                if key == "q":
-                    break
-                elif key == "r":  # recorder
-                    self.record()
-                elif key == "c":  # stop recorder
-                    self.stop_record()
-                elif key == "p":  # play
-                    if not self.playing:
-                        self.play()
-                    else:
-                        print("Already playing. Please wait till current play stop or stop loop play.")
-                elif key == "P":  # loop play
-                    if not self.playing:
-                        self.loop_play()
-                    else:
-                        self.stop_loop_play()
-                elif key == "s":  # save to local
-                    self.save_to_local()
-                elif key == "l":  # load from local
-                    self.load_from_local()
-                elif key == "f":  # free move
-                    self.mc.release_all_servos()
-                    self.echo("Released")
-                else:
-                    print(key)
-                    continue
+        try:
+            while True:
+                conn, addr = server.accept()
+                log.info(f"Connected by {addr}")
+                
+                try:
+                    while True:
+                        data = conn.recv(BUFFER_SIZE)
+                        if not data:
+                            break
+                            
+                        command = data.decode('utf-8').strip()
+                        response = self.handle_command(command)
+                        conn.sendall(response.encode('utf-8'))
+                        
+                        if response == "quit":
+                            break
+                            
+                except Exception as e:
+                    log.error(f"Error handling client: {e}")
+                finally:
+                    conn.close()
+                    
+        except KeyboardInterrupt:
+            log.info("Server shutting down")
+        finally:
+            server.close()
 
+    # Implement the teaching functionality methods
+    def start_record(self):
+        """Start recording robot movements"""
+        if not self.recording:
+            self.record_list = []
+            self.recording = True
+            self.record_thread = threading.Thread(target=self._record_loop, daemon=True)
+            self.record_thread.start()
+            log.info("Recording started")
+
+    def _record_loop(self):
+        """Record loop to capture robot state"""
+        while self.recording:
+            angles = self.mc.get_encoders()
+            speeds = self.mc.get_servo_speeds()
+            gripper = self.mc.get_encoder(7)
+            if angles and speeds:
+                self.record_list.append([angles, speeds, gripper, 0.1])
+
+    def stop_record(self):
+        """Stop recording robot movements"""
+        if self.recording:
+            self.recording = False
+            self.record_thread.join()
+            log.info("Recording stopped")
+
+    def play_once(self):
+        """Play recorded movements once"""
+        if self.record_list:
+            self.playing = True
+            for record in self.record_list:
+                angles, speeds, gripper, interval = record
+                self.mc.set_encoders_drag(angles, speeds)
+                self.mc.set_encoder(7, gripper)
+            self.playing = False
+            log.info("Playback complete")
+
+    def start_loop_play(self):
+        """Start loop playback of recorded movements"""
+        if not self.playing and self.record_list:
+            self.playing = True
+            self.play_thread = threading.Thread(target=self._loop_play, daemon=True)
+            self.play_thread.start()
+            log.info("Loop playback started")
+
+    def _loop_play(self):
+        """Loop playback thread"""
+        while self.playing:
+            self.play_once()
+
+    def stop_loop_play(self):
+        """Stop loop playback"""
+        if self.playing:
+            self.playing = False
+            self.play_thread.join()
+            log.info("Loop playback stopped")
+
+    def save_recording(self):
+        """Save recorded movements to file"""
+        if self.record_list:
+            with open(self.path, 'w') as f:
+                json.dump(self.record_list, f, indent=2)
+            log.info(f"Recording saved to {self.path}")
+
+    def load_recording(self):
+        """Load recorded movements from file"""
+        if os.path.exists(self.path):
+            with open(self.path, 'r') as f:
+                self.record_list = json.load(f)
+            log.info(f"Recording loaded from {self.path}")
 
 if __name__ == "__main__":
-    setup()
-    recorder = TeachingTest(mc)
-    recorder.start()
+    server = RobotServer()
+    server.start()
