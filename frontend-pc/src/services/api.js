@@ -128,10 +128,12 @@ export const Analyze = async (models, analyses) => {
 };
 
 export const sendRobotCommand = async (command) => {
-  try {
-    const response = await api.post('/robot/command', { command });
-    return response.data;
-  } catch (error) {
-    handleApiError(error, 'Failed to send robot command');
+  const response = await fetch(`${BASE_URL}/robot/command/${command}`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to send robot command');
   }
+  return response.json();
 };
