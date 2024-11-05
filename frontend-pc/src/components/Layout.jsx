@@ -41,6 +41,9 @@ export const Layout = () => {
           <NavLink to="/info" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             📝
           </NavLink>
+          <NavLink to="/robot" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            🤖
+          </NavLink>
         </div>
         <div className="tank-info">
           <span className="location">📍 {status?.location || "Location not set"}</span>

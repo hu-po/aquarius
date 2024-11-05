@@ -126,3 +126,12 @@ export const Analyze = async (models, analyses) => {
     handleApiError(error, 'Failed to analyze image');
   }
 };
+
+export const sendRobotCommand = async (command) => {
+  try {
+    const response = await api.post('/robot/command', { command });
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to send robot command');
+  }
+};

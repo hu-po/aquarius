@@ -51,14 +51,16 @@ from .ai import ENABLED_MODELS
 from .camera import CameraManager, CAMERA_IMG_TYPE, CAMERA_MAX_DIM
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from .routers import robot
 
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    max_age=CORS_MAX_AGE
 )
 
 app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
