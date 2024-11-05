@@ -8,7 +8,7 @@ import json
 import serial
 import serial.tools.list_ports
 
-from pymycobot.mycobot280 import MyCobot280
+from pymycobot import MyCobot280
 
 port: str
 mc: MyCobot280
