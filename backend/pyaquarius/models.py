@@ -134,6 +134,9 @@ class AquariumStatus(BaseModel):
     location: str = Field(default=os.getenv('TANK_LOCATION', 'Austin, TX'))
     timezone: str = Field(default=os.getenv('TANK_TIMEZONE', 'America/Chicago'))
 
+class RobotCommand(BaseModel):
+    command: str = Field(description="Robot command (q/r/c/p/P/s/l/f)")
+
 def load_life_from_csv(db: Session) -> None:
     log = logging.getLogger(__name__)
     try:

@@ -2,21 +2,19 @@ import socket
 import logging
 import os
 import time
-from typing import Optional
 import threading
+from typing import Optional
+from contextlib import contextmanager
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log = logging.getLogger(__name__)
 
-# Client settings
-HOST = os.getenv('ROBOT_SERVER_HOST', '192.168.1.33')  # Default to Pi's IP
+HOST = os.getenv('ROBOT_SERVER_HOST', '192.168.1.33')
 PORT = int(os.getenv('ROBOT_SERVER_PORT', '9000'))
 BUFFER_SIZE = 1024
-INITIAL_RETRY_DELAY = 1.0  # Start with 1 second delay
-MAX_RETRY_DELAY = 30.0    # Maximum delay between retries
-RETRY_BACKOFF = 2.0       # Multiply delay by this factor after each failure
-COMMAND_TIMEOUT = 10.0    # Seconds to wait for command response
+INITIAL_RETRY_DELAY = 1.0
+MAX_RETRY_DELAY = 30.0
+RETRY_BACKOFF = 2.0
+COMMAND_TIMEOUT = 10.0
 
 class RobotClient:
     def __init__(self):
@@ -25,13 +23,21 @@ class RobotClient:
         self.last_connect_attempt = 0
         self.current_retry_delay = INITIAL_RETRY_DELAY
         self.keep_alive_thread: Optional[threading.Thread] = None
+        self._initialize()
+
+    def _initialize(self):
+        """Initialize connection on startup"""
+        self.connect()
+        if self.connected:
+            log.info("Robot client initialized successfully")
+        else:
+            log.warning("Robot client failed to initialize, will retry on commands")
 
     def start_keep_alive(self):
         """Start keep-alive thread to maintain connection"""
         def keep_alive():
             while self.connected:
                 try:
-                    # Send keep-alive ping every 30 seconds
                     time.sleep(30)
                     if self.connected:
                         response = self.send_command('ping')
@@ -64,10 +70,6 @@ class RobotClient:
             log.info(f"Attempting to connect to robot server at {HOST}:{PORT}")
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(COMMAND_TIMEOUT)
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            
-            # Add connection timeout
-            self.socket.settimeout(5)  
             self.socket.connect((HOST, PORT))
             
             # Verify connection with retries
@@ -81,19 +83,17 @@ class RobotClient:
                         self.start_keep_alive()
                         log.info(f"Connected to robot server at {HOST}:{PORT}")
                         return True
-                    log.warning(f"Invalid ping response on attempt {attempt + 1}: {response}")
                 except Exception as e:
                     log.warning(f"Ping attempt {attempt + 1} failed: {e}")
                 if attempt < max_ping_attempts - 1:
                     time.sleep(1)
                     
-            raise ConnectionError("Failed ping verification after multiple attempts")
+            raise ConnectionError("Failed ping verification")
             
         except Exception as e:
-            log.error(f"Failed to connect to robot server: {e}")
+            log.error(f"Connection failed: {e}")
             self.connected = False
             self.current_retry_delay = min(self.current_retry_delay * RETRY_BACKOFF, MAX_RETRY_DELAY)
-            log.info(f"Will retry in {self.current_retry_delay:.1f} seconds")
             return False
 
     def send_command(self, command: str) -> str:
@@ -127,40 +127,5 @@ class RobotClient:
                 log.error(f"Error closing connection: {e}")
         self.connected = False
 
-def main():
-    client = RobotClient()
-    
-    try:
-        while True:
-            if not client.connected:
-                log.info(f"Attempting to connect to robot server...")
-                if not client.connect():
-                    continue
-
-            try:
-                command = input("Enter command (q/r/c/p/P/s/l/f): ").strip()
-                if not command:
-                    continue
-                    
-                response = client.send_command(command)
-                print(f"Server response: {response}")
-                
-                if command == 'q' or response == 'quit':
-                    break
-                    
-            except EOFError:
-                log.info("EOF received, attempting reconnection...")
-                client.connected = False
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                log.error(f"Error in command loop: {e}")
-                client.connected = False
-                
-    except KeyboardInterrupt:
-        log.info("Client shutting down")
-    finally:
-        client.close()
-
-if __name__ == "__main__":
-    main()
+# Global robot client instance
+robot_client = RobotClient() 

@@ -1,10 +1,12 @@
 import asyncio
 import os
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import List, Optional, Dict
 import logging
 from zoneinfo import ZoneInfo, available_timezones
 import cv2
+from pydantic import BaseModel
+from .robot import robot_client
 
 # Configure logging
 logging.basicConfig(
@@ -44,14 +46,14 @@ from contextlib import contextmanager
 from pyaquarius.ai import async_inference
 from pyaquarius.models import (
     get_db, Image, Reading, AquariumStatus,
-    DBImage, DBReading, DBAIAnalysis, DBLife, LifeBase, Life
+    DBImage, DBReading, DBAIAnalysis, DBLife, LifeBase, Life,
+    RobotCommand
 )
 
 from .ai import ENABLED_MODELS
 from .camera import CameraManager, CAMERA_IMG_TYPE, CAMERA_MAX_DIM
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from .routers import robot
 
 app = FastAPI(title="Aquarius Monitoring System")
 app.add_middleware(
@@ -62,10 +64,10 @@ app.add_middleware(
     allow_headers=["*"],
     max_age=CORS_MAX_AGE
 )
-app.include_router(robot.router, prefix="/robot", tags=["robot"])
 app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 camera_manager = CameraManager()
+robot_client = RobotClient()
 
 CAPTURE_INTERVAL = int(os.getenv('CAPTURE_INTERVAL', '10'))
 CAPTURE_ENABLED = os.getenv('CAPTURE_ENABLED', 'true').lower() == 'true'
@@ -355,3 +357,14 @@ def validate_timezone(tz: str) -> str:
     except Exception:
         log.warning(f"Invalid timezone {tz}, falling back to UTC")
         return "UTC"
+
+@app.post("/robot/command")
+async def send_robot_command(cmd: RobotCommand) -> Dict[str, str]:
+    """Send command to robot client"""
+    log.debug(f"Received robot command: {cmd.command}")
+    try:
+        response = robot_client.send_command(cmd.command)
+        return {"message": f"Command sent: {response}"}
+    except Exception as e:
+        log.error(f"Failed to send robot command: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

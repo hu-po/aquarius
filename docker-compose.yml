@@ -43,6 +43,9 @@ services:
       - CAMERA_DEVICE_READ_ATTEMPTS=${CAMERA_DEVICE_READ_ATTEMPTS}
       - CAMERA_DEVICE_RETRY_DELAY=${CAMERA_DEVICE_RETRY_DELAY}
       - CAMERA_STREAM_TOGGLE_DELAY=${CAMERA_STREAM_TOGGLE_DELAY}
+      # robot settings
+      - ROBOT_SERVER_HOST=${ROBOT_SERVER_HOST}
+      - ROBOT_SERVER_PORT=${ROBOT_SERVER_PORT}
     volumes:
       - ./data:/app/data:rw
       - /dev:/dev:rw
@@ -106,19 +109,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  robot-client:
-    build: ./robot
-    network_mode: "host"
-    environment:
-      - ROBOT_SERVER_HOST=${ROBOT_SERVER_HOST}
-      - ROBOT_SERVER_PORT=${ROBOT_SERVER_PORT}
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - ROBOT_CLIENT_PORT=9000
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
 
 volumes:
   data:
