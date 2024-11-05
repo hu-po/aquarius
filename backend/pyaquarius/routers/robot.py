@@ -13,16 +13,18 @@ class RobotCommand(BaseModel):
 @router.post("/command")
 async def send_robot_command(cmd: RobotCommand) -> Dict[str, str]:
     """Send command to robot client"""
+    log.debug(f"Received robot command: {cmd.command}")
     try:
-        # Connect to robot client
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        log.debug("Connecting to robot-client:9000")
         sock.connect(("robot-client", 9000))
         
-        # Send command
+        log.debug(f"Sending command: {cmd.command}")
         sock.sendall(cmd.command.encode('utf-8'))
         
-        # Get response
+        log.debug("Waiting for response")
         response = sock.recv(1024).decode('utf-8')
+        log.debug(f"Received response: {response}")
         
         return {"message": f"Command sent: {response}"}
         
