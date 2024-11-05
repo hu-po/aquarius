@@ -109,7 +109,10 @@ services:
   robot-client:
     build: ./robot
     networks:
-      - default
+      default:
+        aliases:
+          - robot-client
+      host:
     environment:
       - ROBOT_SERVER_HOST=${ROBOT_SERVER_HOST}
       - ROBOT_SERVER_PORT=${ROBOT_SERVER_PORT}
