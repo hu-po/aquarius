@@ -153,6 +153,7 @@ class TeachingTest(Helper):
 
         while not False:
             with Raw(sys.stdin):
+                # TODO: replace this std input with socket communication to robot-client.py
                 key = sys.stdin.read(1)
                 if key == "q":
                     break
