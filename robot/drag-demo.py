@@ -8,10 +8,10 @@ import json
 import serial
 import serial.tools.list_ports
 
-from pymycobot.mycobot280 import MyCobot280
+from pymycobot.mycobot import MyCobot
 
 port: str
-mc: MyCobot280
+mc: MyCobot
 sp: int = 80
 debug: bool = False
 baud: int = 1000000
