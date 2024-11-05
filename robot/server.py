@@ -3,7 +3,8 @@ import logging
 import os
 import json
 import threading
-from typing import Optional
+import time
+from typing import Optional, Dict
 from pymycobot.mycobot import MyCobot
 import argparse
 
@@ -30,90 +31,154 @@ class RobotServer:
         self.record_thread: Optional[threading.Thread] = None
         self.play_thread: Optional[threading.Thread] = None
         self.path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "record.txt")
+        self.active_clients: Dict[str, int] = {}  # IP -> connection count
+        self.server_socket: Optional[socket.socket] = None
+        self.running = True
         
-    def initialize(self):
-        """Initialize MyCobot connection"""
-        try:
-            log.debug(f"Attempting to connect to robot on {SERIAL_PORT} at {BAUD_RATE} baud")
-            self.mc = MyCobot(SERIAL_PORT, BAUD_RATE, debug=DEBUG)
-            self.mc.power_on()
-            log.info("Robot initialized successfully")
-        except Exception as e:
-            log.error(f"Failed to initialize robot: {e}")
-            raise
+    def initialize_robot(self) -> bool:
+        """Initialize MyCobot connection with retry logic"""
+        retry_count = 0
+        while self.running:
+            try:
+                log.info(f"Attempting to connect to robot on {SERIAL_PORT}")
+                self.mc = MyCobot(SERIAL_PORT, BAUD_RATE, debug=DEBUG)
+                self.mc.power_on()
+                log.info("Robot initialized successfully")
+                return True
+            except Exception as e:
+                retry_count += 1
+                log.error(f"Failed to initialize robot (attempt {retry_count}): {e}")
+                if retry_count >= 3:
+                    log.error("Max robot initialization retries exceeded")
+                    return False
+                time.sleep(5)  # Wait before retry
+        return False
 
     def handle_command(self, command: str) -> str:
         """Handle incoming commands from client"""
+        if not self.mc:
+            return "Robot not initialized"
+            
         log.debug(f"Received command: {command}")
-        
-        if command == "q":
-            return "quit"
-        elif command == "r":
-            self.start_record()
-            return "Recording started"
-        elif command == "c":
-            self.stop_record()
-            return "Recording stopped"
-        elif command == "p":
-            if not self.playing:
-                self.play_once()
-                return "Playing once"
-            return "Already playing"
-        elif command == "P":
-            if not self.playing:
-                self.start_loop_play()
-                return "Loop play started"
+        try:
+            if command == "q":
+                return "quit"
+            elif command == "r":
+                self.start_record()
+                return "Recording started"
+            elif command == "c":
+                self.stop_record()
+                return "Recording stopped"
+            elif command == "p":
+                if not self.playing:
+                    self.play_once()
+                    return "Playing once"
+                return "Already playing"
+            elif command == "P":
+                if not self.playing:
+                    self.start_loop_play()
+                    return "Loop play started"
+                else:
+                    self.stop_loop_play()
+                    return "Loop play stopped"
+            elif command == "s":
+                self.save_recording()
+                return "Recording saved"
+            elif command == "l":
+                self.load_recording()
+                return "Recording loaded"
+            elif command == "f":
+                self.mc.release_all_servos()
+                return "Robot released"
             else:
-                self.stop_loop_play()
-                return "Loop play stopped"
-        elif command == "s":
-            self.save_recording()
-            return "Recording saved"
-        elif command == "l":
-            self.load_recording()
-            return "Recording loaded"
-        elif command == "f":
-            self.mc.release_all_servos()
-            return "Robot released"
-        else:
-            return f"Unknown command: {command}"
+                return f"Unknown command: {command}"
+        except Exception as e:
+            log.error(f"Error handling command {command}: {e}")
+            return f"Error: {str(e)}"
+
+    def handle_client(self, conn: socket.socket, addr: tuple):
+        """Handle individual client connection"""
+        client_ip = addr[0]
+        self.active_clients[client_ip] = self.active_clients.get(client_ip, 0) + 1
+        
+        try:
+            while self.running:
+                try:
+                    data = conn.recv(BUFFER_SIZE)
+                    if not data:
+                        break
+                        
+                    command = data.decode('utf-8').strip()
+                    response = self.handle_command(command)
+                    conn.sendall(response.encode('utf-8'))
+                    
+                    if response == "quit":
+                        break
+                except socket.timeout:
+                    continue
+                except Exception as e:
+                    log.error(f"Error handling client {client_ip}: {e}")
+                    break
+                    
+        finally:
+            conn.close()
+            self.active_clients[client_ip] -= 1
+            if self.active_clients[client_ip] <= 0:
+                del self.active_clients[client_ip]
+                log.info(f"Client {client_ip} disconnected")
 
     def start(self):
         """Start the robot server"""
-        self.initialize()
-        
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind((HOST, PORT))
-        server.listen(1)
-        log.info(f"Server listening on {HOST}:{PORT}")
+        if not self.initialize_robot():
+            log.error("Failed to initialize robot, exiting")
+            return
 
         try:
-            while True:
-                conn, addr = server.accept()
-                log.info(f"Connected by {addr}")
-                
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.server_socket.bind((HOST, PORT))
+            self.server_socket.listen(5)
+            self.server_socket.settimeout(1.0)  # Allow checking self.running
+            log.info(f"Server listening on {HOST}:{PORT}")
+
+            while self.running:
                 try:
-                    while True:
-                        data = conn.recv(BUFFER_SIZE)
-                        if not data:
-                            break
-                            
-                        command = data.decode('utf-8').strip()
-                        response = self.handle_command(command)
-                        conn.sendall(response.encode('utf-8'))
-                        
-                        if response == "quit":
-                            break
-                            
-                except Exception as e:
-                    log.error(f"Error handling client: {e}")
-                finally:
-                    conn.close()
+                    conn, addr = self.server_socket.accept()
+                    client_ip = addr[0]
                     
-        except KeyboardInterrupt:
-            log.info("Server shutting down")
+                    if client_ip not in self.active_clients:
+                        log.info(f"New client connected from {client_ip}")
+                    
+                    client_thread = threading.Thread(
+                        target=self.handle_client,
+                        args=(conn, addr),
+                        daemon=True
+                    )
+                    client_thread.start()
+                    
+                except socket.timeout:
+                    continue
+                except Exception as e:
+                    if self.running:
+                        log.error(f"Error accepting connection: {e}")
+                        time.sleep(1)
+                    
+        except Exception as e:
+            log.error(f"Server error: {e}")
         finally:
-            server.close()
+            self.cleanup()
+
+    def cleanup(self):
+        """Clean up resources"""
+        self.running = False
+        if self.server_socket:
+            self.server_socket.close()
+        if self.mc:
+            try:
+                self.mc.release_all_servos()
+            except:
+                pass
+        log.info("Server shutdown complete")
 
     # Implement the teaching functionality methods
     def start_record(self):
@@ -203,4 +268,9 @@ if __name__ == "__main__":
         DEBUG = True
         
     server = RobotServer()
-    server.start()
+    try:
+        server.start()
+    except KeyboardInterrupt:
+        log.info("Received shutdown signal")
+    finally:
+        server.cleanup()

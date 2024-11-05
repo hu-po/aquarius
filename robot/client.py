@@ -12,35 +12,52 @@ log = logging.getLogger(__name__)
 HOST = os.getenv('ROBOT_SERVER_HOST', '192.168.10.10')
 PORT = int(os.getenv('ROBOT_SERVER_PORT', '9000'))
 BUFFER_SIZE = 1024
-RECONNECT_DELAY = 5
+INITIAL_RETRY_DELAY = 1.0  # Start with 1 second delay
+MAX_RETRY_DELAY = 30.0    # Maximum delay between retries
+RETRY_BACKOFF = 2.0       # Multiply delay by this factor after each failure
+COMMAND_TIMEOUT = 10.0    # Seconds to wait for command response
 
 class RobotClient:
     def __init__(self):
         self.socket: Optional[socket.socket] = None
         self.connected = False
+        self.last_connect_attempt = 0
+        self.current_retry_delay = INITIAL_RETRY_DELAY
 
     def connect(self) -> bool:
-        """Connect to robot server"""
+        """Connect to robot server with exponential backoff"""
+        current_time = time.time()
+        time_since_last_attempt = current_time - self.last_connect_attempt
+        
+        if time_since_last_attempt < self.current_retry_delay:
+            time.sleep(self.current_retry_delay - time_since_last_attempt)
+            
+        self.last_connect_attempt = time.time()
+        
         try:
             if self.socket:
                 self.socket.close()
                 
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.settimeout(COMMAND_TIMEOUT)
             self.socket.connect((HOST, PORT))
             self.connected = True
+            self.current_retry_delay = INITIAL_RETRY_DELAY  # Reset delay on successful connection
             log.info(f"Connected to robot server at {HOST}:{PORT}")
             return True
             
         except Exception as e:
             log.error(f"Failed to connect to robot server: {e}")
             self.connected = False
+            # Implement exponential backoff
+            self.current_retry_delay = min(self.current_retry_delay * RETRY_BACKOFF, MAX_RETRY_DELAY)
+            log.info(f"Will retry in {self.current_retry_delay:.1f} seconds")
             return False
 
     def send_command(self, command: str) -> str:
-        """Send command to robot server"""
-        if not self.connected:
-            if not self.connect():
-                return "Not connected to robot server"
+        """Send command to robot server with automatic reconnection"""
+        if not self.connected and not self.connect():
+            return "Not connected to robot server"
 
         try:
             self.socket.sendall(command.encode('utf-8'))
@@ -48,6 +65,10 @@ class RobotClient:
             log.debug(f"Sent command '{command}', received: {response}")
             return response
             
+        except socket.timeout:
+            log.error("Command timed out")
+            self.connected = False
+            return "Command timed out"
         except Exception as e:
             log.error(f"Error sending command: {e}")
             self.connected = False
@@ -72,8 +93,6 @@ def main():
             if not client.connected:
                 log.info(f"Attempting to connect to robot server...")
                 if not client.connect():
-                    log.error(f"Connection failed, retrying in {RECONNECT_DELAY} seconds...")
-                    time.sleep(RECONNECT_DELAY)
                     continue
 
             try:
@@ -87,6 +106,11 @@ def main():
                 if command == 'q' or response == 'quit':
                     break
                     
+            except EOFError:
+                log.info("EOF received, attempting reconnection...")
+                client.connected = False
+            except KeyboardInterrupt:
+                break
             except Exception as e:
                 log.error(f"Error in command loop: {e}")
                 client.connected = False
