@@ -16,8 +16,8 @@ async def send_robot_command(cmd: RobotCommand) -> Dict[str, str]:
     log.debug(f"Received robot command: {cmd.command}")
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        log.debug("Connecting to robot-client:9000")
-        sock.connect(("robot-client", 9000))
+        log.debug("Connecting to localhost:9000")
+        sock.connect(("localhost", 9000))
         
         log.debug(f"Sending command: {cmd.command}")
         sock.sendall(cmd.command.encode('utf-8'))

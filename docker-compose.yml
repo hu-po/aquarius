@@ -108,15 +108,12 @@ services:
 
   robot-client:
     build: ./robot
-    networks:
-      default:
-        aliases:
-          - robot-client
-      host:
+    network_mode: "host"
     environment:
       - ROBOT_SERVER_HOST=${ROBOT_SERVER_HOST}
       - ROBOT_SERVER_PORT=${ROBOT_SERVER_PORT}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ROBOT_CLIENT_PORT=9000
     depends_on:
       backend:
         condition: service_healthy
