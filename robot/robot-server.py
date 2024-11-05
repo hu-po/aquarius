@@ -5,6 +5,7 @@ import json
 import threading
 from typing import Optional
 from pymycobot.mycobot import MyCobot
+import argparse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -33,6 +34,7 @@ class RobotServer:
     def initialize(self):
         """Initialize MyCobot connection"""
         try:
+            log.debug(f"Attempting to connect to robot on {SERIAL_PORT} at {BAUD_RATE} baud")
             self.mc = MyCobot(SERIAL_PORT, BAUD_RATE, debug=DEBUG)
             self.mc.power_on()
             log.info("Robot initialized successfully")
@@ -129,6 +131,7 @@ class RobotServer:
             angles = self.mc.get_encoders()
             speeds = self.mc.get_servo_speeds()
             gripper = self.mc.get_encoder(7)
+            log.debug(f"Recording state - Angles: {angles}, Speeds: {speeds}, Gripper: {gripper}")
             if angles and speeds:
                 self.record_list.append([angles, speeds, gripper, 0.1])
 
@@ -143,8 +146,11 @@ class RobotServer:
         """Play recorded movements once"""
         if self.record_list:
             self.playing = True
-            for record in self.record_list:
+            log.debug(f"Starting playback of {len(self.record_list)} recorded movements")
+            for i, record in enumerate(self.record_list):
                 angles, speeds, gripper, interval = record
+                log.debug(f"Playing movement {i+1}/{len(self.record_list)} - "
+                         f"Angles: {angles}, Speeds: {speeds}, Gripper: {gripper}")
                 self.mc.set_encoders_drag(angles, speeds)
                 self.mc.set_encoder(7, gripper)
             self.playing = False
@@ -173,6 +179,7 @@ class RobotServer:
     def save_recording(self):
         """Save recorded movements to file"""
         if self.record_list:
+            log.debug(f"Saving {len(self.record_list)} movements to {self.path}")
             with open(self.path, 'w') as f:
                 json.dump(self.record_list, f, indent=2)
             log.info(f"Recording saved to {self.path}")
@@ -180,10 +187,20 @@ class RobotServer:
     def load_recording(self):
         """Load recorded movements from file"""
         if os.path.exists(self.path):
+            log.debug(f"Loading recording from {self.path}")
             with open(self.path, 'r') as f:
                 self.record_list = json.load(f)
+            log.debug(f"Loaded {len(self.record_list)} movements")
             log.info(f"Recording loaded from {self.path}")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Robot Server with optional debug mode')
+    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
+    args = parser.parse_args()
+    
+    if args.debug:
+        log.setLevel(logging.DEBUG)
+        DEBUG = True
+        
     server = RobotServer()
     server.start()
