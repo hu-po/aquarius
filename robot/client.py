@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from typing import Optional
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -23,6 +24,25 @@ class RobotClient:
         self.connected = False
         self.last_connect_attempt = 0
         self.current_retry_delay = INITIAL_RETRY_DELAY
+        self.keep_alive_thread: Optional[threading.Thread] = None
+
+    def start_keep_alive(self):
+        """Start keep-alive thread to maintain connection"""
+        def keep_alive():
+            while self.connected:
+                try:
+                    # Send keep-alive ping every 30 seconds
+                    time.sleep(30)
+                    if self.connected:
+                        response = self.send_command('ping')
+                        if response != 'pong':
+                            self.connected = False
+                except:
+                    self.connected = False
+                    break
+                    
+        self.keep_alive_thread = threading.Thread(target=keep_alive, daemon=True)
+        self.keep_alive_thread.start()
 
     def connect(self) -> bool:
         """Connect to robot server with exponential backoff"""
@@ -40,16 +60,23 @@ class RobotClient:
                 
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(COMMAND_TIMEOUT)
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             self.socket.connect((HOST, PORT))
+            
+            # Verify connection with ping
+            response = self.send_command('ping')
+            if response != 'pong':
+                raise ConnectionError("Invalid ping response")
+                
             self.connected = True
-            self.current_retry_delay = INITIAL_RETRY_DELAY  # Reset delay on successful connection
+            self.current_retry_delay = INITIAL_RETRY_DELAY
+            self.start_keep_alive()
             log.info(f"Connected to robot server at {HOST}:{PORT}")
             return True
             
         except Exception as e:
             log.error(f"Failed to connect to robot server: {e}")
             self.connected = False
-            # Implement exponential backoff
             self.current_retry_delay = min(self.current_retry_delay * RETRY_BACKOFF, MAX_RETRY_DELAY)
             log.info(f"Will retry in {self.current_retry_delay:.1f} seconds")
             return False

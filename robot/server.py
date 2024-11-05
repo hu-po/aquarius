@@ -61,7 +61,9 @@ class RobotServer:
             
         log.debug(f"Received command: {command}")
         try:
-            if command == "q":
+            if command == "ping":
+                return "pong"
+            elif command == "q":
                 return "quit"
             elif command == "r":
                 self.start_record()
