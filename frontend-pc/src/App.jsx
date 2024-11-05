@@ -7,14 +7,14 @@ import './styles/components.css';
 function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
+      <Routes>
+        <Route element={<Layout />}>
           <Route path="/" element={<StreamsPage />} />
           <Route path="/analysis" element={<AnalysisPage />} />
           <Route path="/info" element={<InfoPage />} />
           <Route path="/robot" element={<RobotPage />} />
-        </Routes>
-      </Layout>
+        </Route>
+      </Routes>
     </Router>
   );
 }
