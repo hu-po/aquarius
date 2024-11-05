@@ -5,6 +5,7 @@ services:
       - default
     ports:
       - "8000:8000"
+      - "9000:9000"
     environment:
       # AI providers
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
