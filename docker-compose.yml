@@ -129,3 +129,5 @@ volumes:
 networks:
   default:
     name: aquarius-network
+  host:
+    external: true
