@@ -8,10 +8,10 @@ import json
 import serial
 import serial.tools.list_ports
 
-from pymycobot import MyCobot280
+from pymycobot.mycobot import MyCobot
 
 port: str
-mc: MyCobot280
+mc: MyCobot
 sp: int = 80
 debug: bool = False
 baud: int = 1000000
@@ -19,7 +19,7 @@ baud: int = 1000000
 def setup():
     global port, mc, debug, baud
     port = "/dev/ttyAMA0"
-    mc = MyCobot280(port, baud, debug=debug)
+    mc = MyCobot(port, baud, debug=debug)
     mc.power_on()
 
 
@@ -92,7 +92,7 @@ class TeachingTest(Helper):
             angles, speeds, gripper_value, interval_time = record
             #print(angles)
             self.mc.set_encoders_drag(angles, speeds)
-            self.mc.set_encoder(7, gripper_value, 80)
+            self.mc.set_encoder(7, 80)
             if i == 0:
                 time.sleep(3)
             i+=1
