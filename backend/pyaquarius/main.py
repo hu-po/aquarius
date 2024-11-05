@@ -1,12 +1,26 @@
-import asyncio
-import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict
 import logging
 from zoneinfo import ZoneInfo, available_timezones
 import cv2
 from pydantic import BaseModel
-from .robot import robot_client
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
+from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from contextlib import contextmanager
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+
+from .robot import RobotClient
+from .models import (
+    get_db, Image, Reading, AquariumStatus,
+    DBImage, DBReading, DBAIAnalysis, DBLife, LifeBase, Life,
+    RobotCommand
+)
+from .camera import CameraManager
+from .ai import ENABLED_MODELS, async_inference
 
 # Configure logging
 logging.basicConfig(
@@ -27,11 +41,6 @@ CORS_MAX_AGE = int(os.getenv('CORS_MAX_AGE', '3600'))
 # Tank parameters
 TANK_TEMP_MIN = float(os.getenv('TANK_TEMP_MIN', '75.0'))
 TANK_TEMP_MAX = float(os.getenv('TANK_TEMP_MAX', '82.0'))
-TANK_PH_MIN = float(os.getenv('TANK_PH_MIN', '6.5'))
-TANK_PH_MAX = float(os.getenv('TANK_PH_MAX', '7.5'))
-TANK_AMMONIA_MAX = float(os.getenv('TANK_AMMONIA_MAX', '0.25'))
-TANK_NITRITE_MAX = float(os.getenv('TANK_NITRITE_MAX', '0.25'))
-TANK_NITRATE_MAX = float(os.getenv('TANK_NITRATE_MAX', '20.0'))
 
 # Image settings
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')

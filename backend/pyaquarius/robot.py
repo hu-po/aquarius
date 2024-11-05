@@ -131,6 +131,3 @@ class RobotClient:
             except Exception as e:
                 log.error(f"Error closing connection: {e}")
         self.connected = False
-
-# Global robot client instance
-robot_client = RobotClient() 
