@@ -56,23 +56,38 @@ class RobotClient:
         
         try:
             if self.socket:
-                self.socket.close()
+                try:
+                    self.socket.close()
+                except:
+                    pass
                 
+            log.info(f"Attempting to connect to robot server at {HOST}:{PORT}")
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(COMMAND_TIMEOUT)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            
+            # Add connection timeout
+            self.socket.settimeout(5)  
             self.socket.connect((HOST, PORT))
             
-            # Verify connection with ping
-            response = self.send_command('ping')
-            if response != 'pong':
-                raise ConnectionError("Invalid ping response")
-                
-            self.connected = True
-            self.current_retry_delay = INITIAL_RETRY_DELAY
-            self.start_keep_alive()
-            log.info(f"Connected to robot server at {HOST}:{PORT}")
-            return True
+            # Verify connection with retries
+            max_ping_attempts = 3
+            for attempt in range(max_ping_attempts):
+                try:
+                    response = self.send_command('ping')
+                    if response == 'pong':
+                        self.connected = True
+                        self.current_retry_delay = INITIAL_RETRY_DELAY
+                        self.start_keep_alive()
+                        log.info(f"Connected to robot server at {HOST}:{PORT}")
+                        return True
+                    log.warning(f"Invalid ping response on attempt {attempt + 1}: {response}")
+                except Exception as e:
+                    log.warning(f"Ping attempt {attempt + 1} failed: {e}")
+                if attempt < max_ping_attempts - 1:
+                    time.sleep(1)
+                    
+            raise ConnectionError("Failed ping verification after multiple attempts")
             
         except Exception as e:
             log.error(f"Failed to connect to robot server: {e}")
