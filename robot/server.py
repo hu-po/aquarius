@@ -40,18 +40,25 @@ class RobotServer:
         retry_count = 0
         while self.running:
             try:
-                log.info(f"Attempting to connect to robot on {SERIAL_PORT}")
+                log.debug(f"Attempting to connect to robot on {SERIAL_PORT} at {BAUD_RATE} baud")
                 self.mc = MyCobot(SERIAL_PORT, BAUD_RATE, debug=DEBUG)
                 self.mc.power_on()
+                log.debug("Robot power on successful")
+                # Test basic movement
+                angles = self.mc.get_encoders()
+                log.debug(f"Current robot angles: {angles}")
+                if angles is None:
+                    raise Exception("Failed to read robot angles")
                 log.info("Robot initialized successfully")
                 return True
             except Exception as e:
                 retry_count += 1
-                log.error(f"Failed to initialize robot (attempt {retry_count}): {e}")
+                log.error(f"Failed to initialize robot (attempt {retry_count}): {e}", exc_info=True)
                 if retry_count >= 3:
                     log.error("Max robot initialization retries exceeded")
                     return False
-                time.sleep(5)  # Wait before retry
+                log.debug(f"Waiting 5 seconds before retry {retry_count + 1}")
+                time.sleep(5)
         return False
 
     def handle_command(self, command: str) -> str:

@@ -10,15 +10,15 @@ from .robot import robot_client
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG if os.getenv('LOG_LEVEL', 'INFO').upper() == 'DEBUG' else logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]'
 )
 
-# Set debug level specifically for pyaquarius module
+# Set debug level for all pyaquarius modules
 log = logging.getLogger(__name__)
 if os.getenv('LOG_LEVEL', 'INFO').upper() == 'DEBUG':
-    pyaquarius_logger = logging.getLogger('pyaquarius')
-    pyaquarius_logger.setLevel(logging.DEBUG)
+    for logger_name in ['pyaquarius', 'uvicorn', 'fastapi']:
+        logging.getLogger(logger_name).setLevel(logging.DEBUG)
 
 # CORS settings
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', '')

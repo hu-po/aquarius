@@ -56,6 +56,7 @@ class RobotClient:
         time_since_last_attempt = current_time - self.last_connect_attempt
         
         if time_since_last_attempt < self.current_retry_delay:
+            log.debug(f"Waiting {self.current_retry_delay - time_since_last_attempt:.2f}s before retry")
             time.sleep(self.current_retry_delay - time_since_last_attempt)
             
         self.last_connect_attempt = time.time()
@@ -63,11 +64,12 @@ class RobotClient:
         try:
             if self.socket:
                 try:
+                    log.debug("Closing existing socket connection")
                     self.socket.close()
-                except:
-                    pass
-                
-            log.info(f"Attempting to connect to robot server at {HOST}:{PORT}")
+                except Exception as e:
+                    log.debug(f"Error closing existing socket: {e}")
+                    
+            log.debug(f"Attempting to connect to robot server at {HOST}:{PORT}")
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(COMMAND_TIMEOUT)
             self.socket.connect((HOST, PORT))
@@ -76,6 +78,7 @@ class RobotClient:
             max_ping_attempts = 3
             for attempt in range(max_ping_attempts):
                 try:
+                    log.debug(f"Ping attempt {attempt + 1}")
                     response = self.send_command('ping')
                     if response == 'pong':
                         self.connected = True
@@ -83,17 +86,19 @@ class RobotClient:
                         self.start_keep_alive()
                         log.info(f"Connected to robot server at {HOST}:{PORT}")
                         return True
+                    log.debug(f"Unexpected ping response: {response}")
                 except Exception as e:
-                    log.warning(f"Ping attempt {attempt + 1} failed: {e}")
+                    log.debug(f"Ping attempt {attempt + 1} failed: {e}")
                 if attempt < max_ping_attempts - 1:
                     time.sleep(1)
                     
             raise ConnectionError("Failed ping verification")
             
         except Exception as e:
-            log.error(f"Connection failed: {e}")
+            log.error(f"Connection failed: {e}", exc_info=True)
             self.connected = False
             self.current_retry_delay = min(self.current_retry_delay * RETRY_BACKOFF, MAX_RETRY_DELAY)
+            log.debug(f"Next retry in {self.current_retry_delay:.2f}s")
             return False
 
     def send_command(self, command: str) -> str:
