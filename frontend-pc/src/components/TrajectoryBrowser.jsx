@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getTrajectories, loadTrajectory, saveTrajectory } from '../services/api';
 
 const TrajectoryBrowser = () => {
@@ -8,27 +8,12 @@ const TrajectoryBrowser = () => {
   const [selectedTrajectory, setSelectedTrajectory] = useState(null);
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [lastFetch, setLastFetch] = useState(0);
-  const FETCH_INTERVAL = 5000; // Only refresh every 5 seconds
 
-  useEffect(() => {
-    fetchTrajectories();
-    const interval = setInterval(() => {
-      const now = Date.now();
-      if (now - lastFetch >= FETCH_INTERVAL) {
-        fetchTrajectories();
-      }
-    }, FETCH_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [lastFetch]);
-
-  const fetchTrajectories = async () => {
+  const fetchTrajectories = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getTrajectories();
       setTrajectories(data?.trajectories || []);
-      setLastFetch(Date.now());
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -36,7 +21,13 @@ const TrajectoryBrowser = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchTrajectories();
+    const interval = setInterval(fetchTrajectories, 5000);
+    return () => clearInterval(interval);
+  }, [fetchTrajectories]);
 
   const handleLoad = async (name) => {
     try {

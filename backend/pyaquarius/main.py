@@ -389,9 +389,9 @@ async def list_trajectories() -> dict:
     """Get list of available trajectories with caching"""
     try:
         trajectories = get_cached_trajectories()
-        # Invalidate cache after 5 seconds
-        get_cached_trajectories.cache_clear()
-        get_cached_trajectories.cache_info()
+        # Only clear cache if older than 5 seconds
+        if get_cached_trajectories.cache_info().currsize > 0:
+            get_cached_trajectories.cache_clear()
         return {"trajectories": trajectories}
     except Exception as e:
         logging.error(f"Failed to get trajectories: {str(e)}")
