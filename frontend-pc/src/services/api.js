@@ -137,3 +137,30 @@ export const sendRobotCommand = async (command) => {
     handleApiError(error, 'Failed to send robot command');
   }
 };
+
+export const getTrajectories = async () => {
+  try {
+    const response = await api.get('/robot/trajectories');
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to fetch trajectories');
+  }
+};
+
+export const loadTrajectory = async (name) => {
+  try {
+    const response = await api.get(`/robot/trajectories/${name}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to load trajectory');
+  }
+};
+
+export const saveTrajectory = async (name) => {
+  try {
+    const response = await api.post(`/robot/trajectories/${name}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to save trajectory');
+  }
+};

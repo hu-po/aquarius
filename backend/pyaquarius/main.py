@@ -378,3 +378,27 @@ async def send_robot_command(cmd: RobotCommand) -> Dict[str, str]:
     except Exception as e:
         log.error(f"Failed to send robot command: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/robot/trajectories")
+async def list_trajectories():
+    """List available robot trajectories"""
+    response = robot_client.send_command('T')  # New command for listing trajectories
+    if isinstance(response, dict) and 'error' in response:
+        raise HTTPException(status_code=500, detail=response['error'])
+    return response
+
+@app.post("/robot/trajectories/{name}")
+async def save_trajectory(name: str):
+    """Save current trajectory"""
+    response = robot_client.send_command(f'S{name}')  # Save command with name
+    if 'error' in response.lower():
+        raise HTTPException(status_code=500, detail=response)
+    return {"message": response}
+
+@app.get("/robot/trajectories/{name}")
+async def load_trajectory(name: str):
+    """Load a saved trajectory"""
+    response = robot_client.send_command(f'L{name}')  # Load command with name
+    if 'error' in response.lower():
+        raise HTTPException(status_code=500, detail=response)
+    return {"message": response}

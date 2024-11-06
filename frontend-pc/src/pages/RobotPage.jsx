@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { sendRobotCommand } from '../services/api';
+import { TrajectoryBrowser } from '../components';
 
 const ROBOT_COMMANDS = [
   { id: 'f', label: '🔓', description: 'Release Robot' },
-  { id: 'r', label: '⏺️', description: 'Start Record' },
-  { id: 'c', label: '⏹️', description: 'Stop Record' },
+  { id: 'r', label: '⏺️', description: 'Start Recording' },
+  { id: 'c', label: '⏹️', description: 'Stop Recording' },
   { id: 'p', label: '▶️', description: 'Play Once' },
-  { id: 'P', label: '🔁', description: 'Loop Play/Stop' },
-  { id: 'q', label: '🛑', description: 'Quit' }
+  { id: 'P', label: '🔁', description: 'Loop Play/Stop' }
 ];
 
 const RobotPage = () => {
@@ -42,6 +42,7 @@ const RobotPage = () => {
           </button>
         ))}
       </div>
+      <TrajectoryBrowser />
       {status && (
         <div className={`status-message ${status.includes('Error') ? 'error' : 'success'}`}>
           {status}
