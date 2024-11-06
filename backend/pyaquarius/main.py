@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from contextlib import contextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from functools import lru_cache
 
 from .robot import RobotClient
 from .models import (
@@ -379,26 +380,43 @@ async def send_robot_command(cmd: RobotCommand) -> Dict[str, str]:
         log.error(f"Failed to send robot command: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/robot/trajectories")
-async def list_trajectories():
-    """List available robot trajectories"""
-    response = robot_client.send_command('T')  # New command for listing trajectories
-    if isinstance(response, dict) and 'error' in response:
-        raise HTTPException(status_code=500, detail=response['error'])
-    return response
+@lru_cache(maxsize=1)
+def get_cached_trajectories():
+    return robot_client.get_trajectories()
 
-@app.post("/robot/trajectories/{name}")
-async def save_trajectory(name: str):
-    """Save current trajectory"""
-    response = robot_client.send_command(f'S{name}')  # Save command with name
-    if 'error' in response.lower():
-        raise HTTPException(status_code=500, detail=response)
-    return {"message": response}
+@app.get("/robot/trajectories")
+async def list_trajectories() -> dict:
+    """Get list of available trajectories with caching"""
+    try:
+        trajectories = get_cached_trajectories()
+        # Invalidate cache after 5 seconds
+        get_cached_trajectories.cache_clear()
+        get_cached_trajectories.cache_info()
+        return {"trajectories": trajectories}
+    except Exception as e:
+        logging.error(f"Failed to get trajectories: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get trajectories")
 
 @app.get("/robot/trajectories/{name}")
-async def load_trajectory(name: str):
+async def load_trajectory(name: str) -> dict:
     """Load a saved trajectory"""
-    response = robot_client.send_command(f'L{name}')  # Load command with name
-    if 'error' in response.lower():
-        raise HTTPException(status_code=500, detail=response)
-    return {"message": response}
+    try:
+        response = robot_client.send_command(f'L{name}')
+        if 'error' in response.lower():
+            raise ValueError(response)
+        return {"message": f"Loaded trajectory: {name}"}
+    except Exception as e:
+        logging.error(f"Failed to load trajectory {name}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/robot/trajectories/{name}")
+async def save_trajectory(name: str) -> dict:
+    """Save current trajectory"""
+    try:
+        response = robot_client.send_command(f'S{name}')
+        if 'error' in response.lower():
+            raise ValueError(response)
+        return {"message": f"Saved trajectory: {name}"}
+    except Exception as e:
+        logging.error(f"Failed to save trajectory {name}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

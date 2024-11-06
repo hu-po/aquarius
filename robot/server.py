@@ -101,6 +101,9 @@ class RobotServer:
             elif command == "f":
                 self.mc.release_all_servos()
                 return "Robot released"
+            elif command == "t":
+                result = self.list_trajectories()
+                return json.dumps(result)
             else:
                 return f"Unknown command: {command}"
         except Exception as e:

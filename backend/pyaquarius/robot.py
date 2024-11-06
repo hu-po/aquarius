@@ -5,6 +5,7 @@ import time
 import threading
 from typing import Optional
 from contextlib import contextmanager
+import json
 
 log = logging.getLogger(__name__)
 
@@ -125,3 +126,26 @@ class RobotClient:
             except Exception:
                 pass
         self.connected = False
+
+    def get_trajectories(self) -> list:
+        """Get list of available trajectories from robot server"""
+        if not self.connected and not self.connect():
+            log.error("Failed to connect to robot server")
+            return []
+        
+        try:
+            response = self._send_raw('t')  # New command 't' for trajectory listing
+            try:
+                data = json.loads(response)
+                if 'trajectories' in data:
+                    return data['trajectories']
+                elif 'error' in data:
+                    log.error(f"Server error listing trajectories: {data['error']}")
+                    return []
+            except json.JSONDecodeError as e:
+                log.error(f"Failed to parse trajectories response: {e}")
+                return []
+        except Exception as e:
+            self.connected = False
+            log.error(f"Failed to get trajectories: {e}")
+            return []

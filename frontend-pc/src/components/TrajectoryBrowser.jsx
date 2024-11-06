@@ -8,19 +8,31 @@ const TrajectoryBrowser = () => {
   const [selectedTrajectory, setSelectedTrajectory] = useState(null);
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [lastFetch, setLastFetch] = useState(0);
+  const FETCH_INTERVAL = 5000; // Only refresh every 5 seconds
 
   useEffect(() => {
     fetchTrajectories();
-  }, []);
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now - lastFetch >= FETCH_INTERVAL) {
+        fetchTrajectories();
+      }
+    }, FETCH_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [lastFetch]);
 
   const fetchTrajectories = async () => {
     try {
       setLoading(true);
       const data = await getTrajectories();
-      setTrajectories(data.trajectories);
+      setTrajectories(data?.trajectories || []);
+      setLastFetch(Date.now());
       setError(null);
     } catch (err) {
       setError(err.message);
+      setTrajectories([]);
     } finally {
       setLoading(false);
     }
@@ -54,6 +66,8 @@ const TrajectoryBrowser = () => {
     }
   };
 
+  if (loading) return <div className="loading">Loading trajectories...</div>;
+
   return (
     <div className="trajectories-browser">
       <div className="save-trajectory">
@@ -73,19 +87,20 @@ const TrajectoryBrowser = () => {
       </div>
 
       <div className="trajectories-list">
-        {trajectories.map(traj => (
-          <div 
-            key={traj.name}
-            className={`trajectory-item ${selectedTrajectory === traj.name ? 'selected' : ''}`}
-            onClick={() => handleLoad(traj.name)}
-          >
-            <div className="trajectory-name">{traj.name}</div>
-            <div className="trajectory-info">
-              {traj.movements} movements • {new Date(traj.modified).toLocaleString()}
+        {trajectories?.length > 0 ? (
+          trajectories.map(traj => (
+            <div 
+              key={traj.name}
+              className={`trajectory-item ${selectedTrajectory === traj.name ? 'selected' : ''}`}
+              onClick={() => handleLoad(traj.name)}
+            >
+              <div className="trajectory-name">{traj.name}</div>
+              <div className="trajectory-info">
+                {traj.movements} movements • {new Date(traj.modified).toLocaleString()}
+              </div>
             </div>
-          </div>
-        ))}
-        {trajectories.length === 0 && (
+          ))
+        ) : (
           <div className="no-trajectories">No trajectories available</div>
         )}
       </div>
