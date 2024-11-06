@@ -56,7 +56,7 @@ services:
       - video
     privileged: true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthcheck"]
+      test: ["CMD", "curl", "-f", "http://${HOST_IP}:8000/healthcheck"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -67,11 +67,11 @@ services:
     build: 
       context: ./frontend-pc
       args:
-        - BACKEND_URL=http://localhost:8000
+        - BACKEND_URL=http://${HOST_IP}:8000
         - IMAGE_FETCH_INTERVAL=${IMAGE_FETCH_INTERVAL:-30000}
     network_mode: "host"
     environment:
-      - BACKEND_URL=http://localhost:8000
+      - BACKEND_URL=http://${HOST_IP}:8000
       - HOST=0.0.0.0
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
@@ -79,7 +79,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://${HOST_IP}:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -88,14 +88,14 @@ services:
     build: ./frontend-vr
     network_mode: "host"
     environment:
-      - BACKEND_URL=http://localhost:8000
+      - BACKEND_URL=http://${HOST_IP}:8000
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      test: ["CMD", "curl", "-f", "http://${HOST_IP}:3001"]
       interval: 30s
       timeout: 10s
       retries: 3
