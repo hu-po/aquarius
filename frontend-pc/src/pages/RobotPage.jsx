@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { sendRobotCommand } from '../services/api';
 
 const ROBOT_COMMANDS = [
-  { id: 'q', label: '🛑', description: 'Quit' },
+  { id: 'f', label: '🔓', description: 'Release Robot' },
   { id: 'r', label: '⏺️', description: 'Start Record' },
   { id: 'c', label: '⏹️', description: 'Stop Record' },
   { id: 'p', label: '▶️', description: 'Play Once' },
   { id: 'P', label: '🔁', description: 'Loop Play/Stop' },
-  { id: 's', label: '💾', description: 'Save' },
-  { id: 'l', label: '📂', description: 'Load' },
-  { id: 'f', label: '🔓', description: 'Release Robot' }
+  { id: 'q', label: '🛑', description: 'Quit' }
 ];
 
 const RobotPage = () => {
