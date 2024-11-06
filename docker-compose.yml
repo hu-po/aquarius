@@ -2,9 +2,6 @@ services:
   backend:
     build: ./backend
     network_mode: "host"
-    ports:
-      - "8000:8000"
-      - "9000:9000"
     environment:
       # AI providers
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
@@ -70,13 +67,11 @@ services:
     build: 
       context: ./frontend-pc
       args:
-        - BACKEND_URL=http://${HOST_IP}:8000
+        - BACKEND_URL=http://localhost:8000
         - IMAGE_FETCH_INTERVAL=${IMAGE_FETCH_INTERVAL:-30000}
     network_mode: "host"
-    ports:
-      - "3000:3000"
     environment:
-      - BACKEND_URL=http://${HOST_IP}:8000
+      - BACKEND_URL=http://localhost:8000
       - HOST=0.0.0.0
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
@@ -92,10 +87,8 @@ services:
   frontend-vr:
     build: ./frontend-vr
     network_mode: "host"
-    ports:
-      - "3001:3001"
     environment:
-      - BACKEND_URL=http://${HOST_IP}:8000
+      - BACKEND_URL=http://localhost:8000
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       backend:
