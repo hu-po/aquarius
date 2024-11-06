@@ -74,20 +74,31 @@ body {
 
 .stream-container {
     background: #1e293b;
-    padding: 1.5rem;
+    padding: 0;
     border-radius: 0.75rem;
     border: 1px solid #334155;
+    position: relative;
+    overflow: hidden;
 }
 
 .stream-header {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
     display: flex;
-    justify-content: flex-end;
-    margin-bottom: 1rem;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
 }
 
-.stream-header h2 {
+.stream-header h3 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 0.875rem;
+    color: #e2e8f0;
 }
 
 /* Camera stream */

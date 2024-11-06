@@ -87,7 +87,7 @@ export const StreamsPage = () => {
               onCapture={handleSingleCapture}
             />
             <div className="stream-header">
-              <h3> cam{device.index} </h3>
+              <h3>cam{device.index}</h3>
               <button 
                 className={`capture-button ${pausedDevices.has(device.index) ? 'capturing' : ''}`}
                 onClick={() => handleSingleCapture(device.index)}
