@@ -81,8 +81,13 @@ export const StreamsPage = () => {
       <div className="streams-grid">
         {devices.map(device => (
           <div key={device.index} className="stream-container">
+            <CameraStream
+              deviceIndex={device.index}
+              isPaused={pausedDevices.has(device.index)}
+              onCapture={handleSingleCapture}
+            />
             <div className="stream-header">
-              <h2>📷 cam{device.index}</h2>
+              <h3> cam{device.index} </h3>
               <button 
                 className={`capture-button ${pausedDevices.has(device.index) ? 'capturing' : ''}`}
                 onClick={() => handleSingleCapture(device.index)}
@@ -91,11 +96,6 @@ export const StreamsPage = () => {
                 {pausedDevices.has(device.index) ? '📸 ...' : '📸'}
               </button>
             </div>
-            <CameraStream
-              deviceIndex={device.index}
-              isPaused={pausedDevices.has(device.index)}
-              onCapture={handleSingleCapture}
-            />
           </div>
         ))}
       </div>
