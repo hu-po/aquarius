@@ -532,3 +532,29 @@ body {
     padding: 2rem;
     color: #94a3b8;
 }
+
+.config-debug {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #0f172a;
+    border-radius: 0.5rem;
+    border: 1px solid #334155;
+}
+
+.config-debug h2 {
+    margin: 0 0 1rem 0;
+    color: #e2e8f0;
+    font-size: 1rem;
+}
+
+.config-debug pre {
+    margin: 0;
+    padding: 0.5rem;
+    background: #1e293b;
+    border-radius: 0.375rem;
+    color: #94a3b8;
+    font-family: monospace;
+    font-size: 0.875rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
