@@ -189,15 +189,13 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
     if not os.path.exists(image_path):
         log.error(f"Image file not found at {image_path}")
         return f"Error: Image file not found"
-        
-    log.debug("Loading life identification prompt and CSV data")
-    # Read header from CSV file
-    with open(os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")) as f:
-        header = next(f).strip()
+    
+    expected_headers = ['emoji', 'common_name', 'scientific_name']
+    header_str = ','.join(expected_headers)
     
     prompt = f"""Return ONLY a CSV with fish, invertebrates, and plants identified in this underwater aquarium image.
 Use this EXACT format with these EXACT headers (no markdown, no extra text):
-{header}
+{header_str}
 
 Example row:
 🐠,Neon Tetra,Paracheirodon innesi"""
@@ -230,7 +228,6 @@ Example row:
             log.debug("Parsing CSV response")
             reader = csv.reader(response.strip().splitlines())
             headers = []
-            expected_headers = {'emoji', 'common_name', 'scientific_name'}
             
             for row in reader:
                 if not row or not any(row):  # Skip empty rows
