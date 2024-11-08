@@ -192,13 +192,14 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
     log.debug("Loading life identification prompt and CSV data")
     prompt = "Return ONLY a CSV with fish, invertebrates, and plants identified in this underwater aquarium image. Use this exact CSV format with these exact headers:\n"
     with open(os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")) as f:
-        header = next(f)
-        prompt += f"{header}\n"
+        prompt += next(f)
         prompt += f.read()
     
     log.debug(f"Calling {ai_model} API for life identification")
     response = await AI_MODEL_MAP[ai_model](prompt, image_path)
-    
+    # Hack to remove markdown code blocks
+    response = re.sub(r'```[^`]*```', '', response, flags=re.DOTALL)
+
     try:
         with get_db_session() as db:
             log.debug("Querying latest image from database")
@@ -217,17 +218,8 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
                 timestamp=datetime.now(timezone.utc)
             )
             db.add(analysis)
-            
             log.debug("Extracting CSV data from response")
-            # Extract CSV content from potential markdown code blocks
-            csv_content = response
-            if "```csv" in response:
-                csv_content = response.split("```csv")[1].split("```")[0].strip()
-            elif "```" in response:
-                csv_content = response.split("```")[1].strip()
-            
-            log.debug("Parsing CSV response")
-            reader = csv.reader(csv_content.splitlines())
+            reader = csv.reader(response.splitlines())
             headers = []
             for row in reader:
                 if row and any(row):  # Find first non-empty row as headers
