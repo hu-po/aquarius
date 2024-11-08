@@ -206,7 +206,7 @@ Example row:
     
     # Clean response
     response = re.sub(r'```[^`]*```', '', response, flags=re.DOTALL)
-    response = re.sub(r'^.*?(?=emoji,common_name,scientific_name|\p{Emoji})', '', response, flags=re.DOTALL | re.UNICODE)
+    response = re.sub(r'^.*?(?=emoji,common_name,scientific_name|[^\x00-\x7F])', '', response, flags=re.DOTALL)
     response = response.strip()
     
     try:
