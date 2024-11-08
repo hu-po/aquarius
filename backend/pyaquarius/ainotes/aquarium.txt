@@ -1,12 +1,21 @@
-to help you, here is more information on the freshwater aquarium:
-hardware:
+to help you, here is more information on the freshwater aquariums:
+tank 1:
  - 7-gallon ultra-clear rimless tank with low iron glass and a top glass canopy.
- - programmable LED light on an alternating daylight (6:30am to 6:30pm) and blue moonlight schedule.
- - UV canister filter
- - small silent air pump with bubble stone and clear tubing
+ - LED light on an alternating daylight (6:30am to 6:30pm) and blue moonlight schedule.
+ - air powered sponge filter
+ - bubble stone with clear tubing
  - submersible heater preset to 78°F
- - digital thermometer with LED digits
-substrate:
+ - bio-active sugar white sand substrate overtop a base of pea gravel river rocks
  - 6 red lava rocks with two holes each
- - bio-active sugar white sand substrate overtop a base of aq
- - pea gravel river rocks
+tank 2:
+ - 1.3 gallon rimless tank
+ - LED light
+ - air powered sponge filter 
+ - no substrate
+ - driftwood
+tank 3:
+- 1.3 gallon rimless tank
+- LED light
+- air powered sponge filter
+- no substrate
+- driftwood
