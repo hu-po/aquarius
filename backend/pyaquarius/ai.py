@@ -191,16 +191,23 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
         return f"Error: Image file not found"
         
     log.debug("Loading life identification prompt and CSV data")
-    prompt = "Return ONLY a CSV with fish, invertebrates, and plants identified in this underwater aquarium image. Use this exact CSV format with these exact headers:\n"
+    # Read header from CSV file
     with open(os.path.join(os.path.dirname(__file__), "ainotes", "life.csv")) as f:
-        prompt += next(f)
-        prompt += f.read()
+        header = next(f).strip()
+    
+    prompt = f"""Return ONLY a CSV with fish, invertebrates, and plants identified in this underwater aquarium image.
+Use this EXACT format with these EXACT headers (no markdown, no extra text):
+{header}
+
+Example row:
+🐠,Neon Tetra,Paracheirodon innesi"""
     
     log.debug(f"Calling {ai_model} API for life identification")
     response = await AI_MODEL_MAP[ai_model](prompt, image_path)
-    # Hack to remove markdown code blocks
+    # Remove any markdown code blocks or extra text
     response = re.sub(r'```[^`]*```', '', response, flags=re.DOTALL)
-
+    response = re.sub(r'^.*?(?=\b(?:emoji|common_name|scientific_name)\b)', '', response, flags=re.DOTALL)
+    
     try:
         with get_db_session() as db:
             log.debug("Querying latest image from database")
@@ -219,32 +226,46 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
                 timestamp=datetime.now(timezone.utc)
             )
             db.add(analysis)
-            log.debug("Extracting CSV data from response")
-            reader = csv.reader(response.splitlines())
+            
+            log.debug("Parsing CSV response")
+            reader = csv.reader(response.strip().splitlines())
             headers = []
+            expected_headers = {'emoji', 'common_name', 'scientific_name'}
+            
             for row in reader:
-                if row and any(row):  # Find first non-empty row as headers
-                    headers = [h.strip() for h in row if h.strip()]
-                    if all(expected in headers for expected in header.strip().split(',')):
-                        break
-            else:
-                log.error(f"Could not find valid headers in response")
+                if not row or not any(row):  # Skip empty rows
+                    continue
+                # Clean and validate headers
+                cleaned_row = [h.strip().lower() for h in row if h.strip()]
+                if all(h in cleaned_row for h in expected_headers):
+                    headers = row
+                    break
+            
+            if not headers:
+                log.error("No valid headers found in response")
                 raise ValueError("No valid headers found in response")
 
+            log.debug(f"Found headers: {headers}")
+            header_map = {h.strip().lower(): i for i, h in enumerate(headers)}
+            
             updates = 0
             for row in reader:
-                if len(row) >= 2 and any(row):  # Skip empty rows
-                    log.debug(f"Processing life record: {row}")
-                    emoji_idx = headers.index('emoji')
-                    life = db.query(DBLife).filter(DBLife.emoji == row[emoji_idx].strip()).first()
-                    if life:
-                        life.last_seen_at = datetime.now(timezone.utc)
-                        # Add image reference to the life's image_refs
-                        current_refs = json.loads(life.image_refs)
-                        if latest_image.id not in current_refs:
-                            current_refs.append(latest_image.id)
-                            life.image_refs = json.dumps(current_refs)
-                        updates += 1
+                if len(row) >= len(headers) and any(row):  # Skip empty rows
+                    try:
+                        emoji = row[header_map['emoji']].strip()
+                        log.debug(f"Processing life record with emoji: {emoji}")
+                        
+                        life = db.query(DBLife).filter(DBLife.emoji == emoji).first()
+                        if life:
+                            life.last_seen_at = datetime.now(timezone.utc)
+                            current_refs = json.loads(life.image_refs)
+                            if latest_image.id not in current_refs:
+                                current_refs.append(latest_image.id)
+                                life.image_refs = json.dumps(current_refs)
+                            updates += 1
+                    except (KeyError, IndexError) as e:
+                        log.error(f"Error processing row {row}: {str(e)}")
+                        continue
             
             log.info(f"Updated {updates} life records from {ai_model} analysis")
             return response
