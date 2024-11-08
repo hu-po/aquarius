@@ -16,7 +16,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY pyaquarius ./pyaquarius
-COPY .env.example .env
+COPY ../.env.example .env
 RUN mkdir -p /app/data && \
     chown -R appuser:appuser /app
 USER appuser
