@@ -96,8 +96,9 @@ flowchart TB
 ## TODO
 
 - [ ] unified config management through frontend menus, store in backend db
-- [ ] remove counting life, identification and last seen, with associated images
+- [ ] page to see associated images for each life
 - [ ] voting system for ai analysis to collect fine tuning data
+- [ ] human verification of associated images and each model response
 - [ ] robot set waypoints, load waypoints, each waypoint is a trajectory from home position
 - [ ] robot loops through waypoints, capture is triggered after each waypoint
 
