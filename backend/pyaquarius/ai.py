@@ -6,6 +6,7 @@ import os
 from datetime import datetime, timezone
 from functools import wraps
 from typing import Any, Callable, Dict, List
+import json
 
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
@@ -239,16 +240,17 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
 
             updates = 0
             for row in reader:
-                if len(row) >= 3 and any(row):  # Skip empty rows
+                if len(row) >= 2 and any(row):  # Skip empty rows
                     log.debug(f"Processing life record: {row}")
-                    # Find emoji column index
                     emoji_idx = headers.index('emoji')
-                    count_idx = headers.index('count')
-                    
                     life = db.query(DBLife).filter(DBLife.emoji == row[emoji_idx].strip()).first()
                     if life:
                         life.last_seen_at = datetime.now(timezone.utc)
-                        life.count = int(row[count_idx]) if row[count_idx].strip().isdigit() else 1
+                        # Add image reference to the life's image_refs
+                        current_refs = json.loads(life.image_refs)
+                        if latest_image.id not in current_refs:
+                            current_refs.append(latest_image.id)
+                            life.image_refs = json.dumps(current_refs)
                         updates += 1
             
             log.info(f"Updated {updates} life records from {ai_model} analysis")

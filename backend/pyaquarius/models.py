@@ -5,8 +5,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 from contextlib import contextmanager
+import json
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from sqlalchemy import Column, DateTime, Float, Index, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -110,22 +111,13 @@ class DBLife(BaseMixin, Base):
     scientific_name = Column(String)
     common_name = Column(String)
     emoji = Column(String)
-    count = Column(Integer)
-    introduced_at = Column(DateTime, default=datetime.utcnow)
     last_seen_at = Column(DateTime, default=datetime.utcnow)
+    image_refs = Column(String, default='[]')  # JSON string array of image IDs
 
 class LifeBase(BaseModel):
     scientific_name: str
     common_name: str
     emoji: str
-    count: int
-    
-class Life(LifeBase):
-    id: str = Field(default_factory=lambda: datetime.now().isoformat())
-    introduced_at: datetime = Field(default_factory=datetime.utcnow)
-    last_seen_at: datetime = Field(default_factory=datetime.utcnow)
-    class Config:
-        from_attributes = True
 
 class AquariumStatus(BaseModel):
     latest_images: Dict[int, Optional[Image]] = {}  # Map device_index to Image
@@ -151,8 +143,7 @@ def load_life_from_csv(db: Session) -> None:
                     id=datetime.now(timezone.utc).isoformat(),
                     emoji=row['emoji'],
                     common_name=row['common_name'],
-                    scientific_name=row['scientific_name'],
-                    count=int(row.get('count', 1))  # Default to 1 if not specified
+                    scientific_name=row['scientific_name']
                 )
                 db.add(db_life)
             db.commit()
@@ -187,3 +178,17 @@ def get_db_session():
         raise
     finally:
         session.close()
+
+class Life(LifeBase):
+    id: str = Field(default_factory=lambda: datetime.now().isoformat())
+    last_seen_at: datetime = Field(default_factory=datetime.utcnow)
+    image_refs: List[str] = Field(default_factory=list)
+    
+    class Config:
+        from_attributes = True
+        
+    @validator('image_refs', pre=True)
+    def parse_image_refs(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v

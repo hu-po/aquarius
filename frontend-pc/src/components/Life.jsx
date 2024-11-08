@@ -46,10 +46,10 @@ const Life = () => {
           {life.map(l => (
             <tr key={l.id}>
               <td>{l.emoji}</td>
-              <td>{l.count}</td>
               <td>{l.common_name}</td>
               <td>{l.scientific_name}</td>
-              <td>{formatLastSeen(l.last_seen_at)}</td>
+              <td>last seen {formatLastSeen(l.last_seen_at)}</td>
+              <td>{l.image_refs.length} sightings</td>
             </tr>
           ))}
         </tbody>
