@@ -93,6 +93,14 @@ flowchart TB
     style phone fill:#20c997,stroke:#0ca678
 ```
 
+## TODO
+
+- [ ] unified config management through frontend menus, store in backend db
+- [ ] remove counting life, identification and last seen, with associated images
+- [ ] voting system for ai analysis to collect fine tuning data
+- [ ] robot set waypoints, load waypoints, each waypoint is a trajectory from home position
+- [ ] robot loops through waypoints, capture is triggered after each waypoint
+
 ## Citation
 
 ```
