@@ -202,9 +202,11 @@ Example row:
     
     log.debug(f"Calling {ai_model} API for life identification")
     response = await AI_MODEL_MAP[ai_model](prompt, image_path)
-    # Remove any markdown code blocks or extra text
+    
+    # Clean response
     response = re.sub(r'```[^`]*```', '', response, flags=re.DOTALL)
-    response = re.sub(r'^.*?(?=\b(?:emoji|common_name|scientific_name)\b)', '', response, flags=re.DOTALL)
+    response = re.sub(r'^.*?(?=emoji,common_name,scientific_name|\p{Emoji})', '', response, flags=re.DOTALL | re.UNICODE)
+    response = response.strip()
     
     try:
         with get_db_session() as db:
@@ -226,30 +228,28 @@ Example row:
             db.add(analysis)
             
             log.debug("Parsing CSV response")
-            reader = csv.reader(response.strip().splitlines())
-            headers = []
-            
-            for row in reader:
-                if not row or not any(row):  # Skip empty rows
-                    continue
-                # Clean and validate headers
-                cleaned_row = [h.strip().lower() for h in row if h.strip()]
-                if all(h in cleaned_row for h in expected_headers):
-                    headers = row
-                    break
-            
-            if not headers:
-                log.error("No valid headers found in response")
-                raise ValueError("No valid headers found in response")
-
-            log.debug(f"Found headers: {headers}")
+            lines = [line.strip() for line in response.splitlines() if line.strip()]
+            if not lines:
+                raise ValueError("Empty response")
+                
+            # Check if first line contains headers
+            first_line = lines[0].lower()
+            if all(h in first_line for h in expected_headers):
+                headers = lines[0].split(',')
+                data_lines = lines[1:]
+            else:
+                # Use default headers if first line is data
+                headers = expected_headers
+                data_lines = lines
+                
             header_map = {h.strip().lower(): i for i, h in enumerate(headers)}
             
             updates = 0
-            for row in reader:
-                if len(row) >= len(headers) and any(row):  # Skip empty rows
+            for line in data_lines:
+                row = [col.strip() for col in line.split(',')]
+                if len(row) >= len(headers):
                     try:
-                        emoji = row[header_map['emoji']].strip()
+                        emoji = row[header_map['emoji']]
                         log.debug(f"Processing life record with emoji: {emoji}")
                         
                         life = db.query(DBLife).filter(DBLife.emoji == emoji).first()
