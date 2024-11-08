@@ -31,6 +31,11 @@ if [ ! -f .env ]; then
     sed -i "s@USER_ID=.*@USER_ID=${USER_ID}@" .env
     GROUP_ID=${GROUP_ID:-$(id -g)}
     sed -i "s@GROUP_ID=.*@GROUP_ID=${GROUP_ID}@" .env
+
+    # Copy .env to backend, frontends
+    cp .env backend/.env
+    cp .env frontend-pc/.env
+    cp .env frontend-vr/.env
 fi
 
 # Source the .env file

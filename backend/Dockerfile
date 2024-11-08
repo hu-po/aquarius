@@ -14,9 +14,9 @@ RUN useradd -m -u 1000 appuser && \
     usermod -a -G video appuser
 WORKDIR /app
 COPY requirements.txt .
+COPY .env .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY pyaquarius ./pyaquarius
-COPY ../.env.example .env
 RUN mkdir -p /app/data && \
     chown -R appuser:appuser /app
 USER appuser
