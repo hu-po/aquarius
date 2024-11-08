@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 AI_API_TIMEOUT: int = int(os.getenv('AI_API_TIMEOUT', '30'))
 AI_API_MAX_RETRIES: int = int(os.getenv('AI_API_MAX_RETRIES', '3'))
-AI_MAX_TOKENS: int = int(os.getenv('AI_MAX_TOKENS', '1000'))
+AI_MAX_TOKENS: int = int(os.getenv('AI_MAX_TOKENS', '256'))
 ENABLED_MODELS: List[str] = []
 
 try:
@@ -193,7 +193,8 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
     expected_headers = ['emoji', 'common_name', 'scientific_name']
     header_str = ','.join(expected_headers)
     
-    prompt = f"""Return ONLY a CSV with fish, invertebrates, and plants identified in this underwater aquarium image.
+    prompt = f"""Return ONLY a CSV with fish, invertebrates, and plants that are CLEARLY VISIBLE in this underwater aquarium image.
+Limit responses to 10 most confident identifications.
 Use this EXACT format with these EXACT headers (no markdown, no extra text):
 {header_str}
 
