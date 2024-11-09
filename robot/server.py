@@ -70,38 +70,66 @@ class RobotServer:
             
         log.debug(f"Received command: {command}")
         try:
+            # Basic commands
             if command == "ping":
                 return "pong"
             elif command == "q":
                 return "quit"
-            elif command == "r":
+            elif command == "h":
+                # New home command
+                self.mc.send_angles([0,0,0,0,0,0], 50)
+                return "Moving to home position"
+                
+            # Extract trajectory name if present
+            cmd = command[0]
+            traj_name = command[1:] if len(command) > 1 else None
+            
+            if cmd == "r":
                 self.start_record()
                 return "Recording started"
-            elif command == "c":
+            elif cmd == "c":
                 self.stop_record()
                 return "Recording stopped"
-            elif command == "p":
+            elif cmd == "p":
                 if not self.playing:
+                    if traj_name:
+                        if self.load_trajectory(traj_name):
+                            self.play_once()
+                            return f"Playing trajectory: {traj_name}"
+                        return f"Failed to load trajectory: {traj_name}"
                     self.play_once()
-                    return "Playing once"
+                    return "Playing current trajectory"
                 return "Already playing"
-            elif command == "P":
+            elif cmd == "P":
                 if not self.playing:
+                    if traj_name:
+                        if self.load_trajectory(traj_name):
+                            self.start_loop_play()
+                            return f"Loop playing trajectory: {traj_name}"
+                        return f"Failed to load trajectory: {traj_name}"
                     self.start_loop_play()
-                    return "Loop play started"
+                    return "Loop playing current trajectory"
                 else:
                     self.stop_loop_play()
                     return "Loop play stopped"
-            elif command == "s":
-                self.save_trajectory()
-                return "Trajectory saved"
-            elif command == "l":
-                self.load_trajectory()
-                return "Trajectory loaded"
-            elif command == "f":
+            elif cmd == "s":
+                if not traj_name:
+                    return "No trajectory name provided"
+                return self.save_trajectory(traj_name)
+            elif cmd == "l":
+                if not traj_name:
+                    return "No trajectory name provided"
+                if self.load_trajectory(traj_name):
+                    return f"Loaded trajectory: {traj_name}"
+                return f"Failed to load trajectory: {traj_name}"
+            elif cmd == "d":
+                if not traj_name:
+                    return "No trajectory name provided"
+                return self.delete_trajectory(traj_name)
+            elif cmd == "f":
                 self.mc.release_all_servos()
                 return "Robot released"
-            elif command == "t":
+            elif cmd == "t":
                 result = self.list_trajectories()
                 return json.dumps(result)
             else:
@@ -194,9 +222,8 @@ class RobotServer:
                 pass
         log.info("Server shutdown complete")
 
-    # Implement the teaching functionality methods
     def start_record(self):
-        """Start recording robot movements"""
+        """Start recording robot trajectory"""
         if not self.recording:
             self.trajectory = []
             self.recording = True
@@ -215,17 +242,17 @@ class RobotServer:
                 self.trajectory.append([angles, speeds, gripper, 0.1])
 
     def stop_record(self):
-        """Stop recording robot movements"""
+        """Stop recording last recorded trajectory"""
         if self.recording:
             self.recording = False
             self.record_thread.join()
             log.info("Recording stopped")
 
     def play_once(self):
-        """Play recorded movements once"""
+        """Play last recorded trajectory once"""
         if self.trajectory:
             self.playing = True
-            log.debug(f"Starting playback of {len(self.trajectory)} recorded movements")
+            log.debug(f"Starting playback of {len(self.trajectory)} steps")
             for i, record in enumerate(self.trajectory):
                 angles, speeds, gripper, interval = record
                 log.debug(f"Playing movement {i+1}/{len(self.trajectory)} - "
@@ -236,7 +263,7 @@ class RobotServer:
             log.info("Playback complete")
 
     def start_loop_play(self):
-        """Start loop playback of recorded movements"""
+        """Start loop playback of last recorded trajectory"""
         if not self.playing and self.trajectory:
             self.playing = True
             self.play_thread = threading.Thread(target=self._loop_play, daemon=True)
@@ -255,37 +282,50 @@ class RobotServer:
             self.play_thread.join()
             log.info("Loop playback stopped")
 
-    def save_trajectory(self):
-        """Save trajectory to file"""
+    def save_trajectory(self, name: str) -> str:
+        """Save last recorded trajectory to file with specific name"""
         if not self.trajectory:
             log.warning("No trajectory to save")
             return "No trajectory to save"
         
-        filepath = os.path.join(self.trajectories_dir, f"{datetime.now().isoformat()}.json")
+        filepath = os.path.join(self.trajectories_dir, f"{name}.json")
         try:
             with open(filepath, 'w') as f:
                 json.dump(self.trajectory, f, indent=2)
             log.info(f"Trajectory saved to {filepath}")
-            return "Trajectory saved successfully"
+            return f"Trajectory saved: {name}"
         except Exception as e:
             log.error(f"Failed to save trajectory: {e}")
             return f"Error saving trajectory: {str(e)}"
 
-    def load_trajectory(self):
-        """Load trajectory from file"""
-        filepath = os.path.join(self.trajectories_dir, f"{datetime.now().isoformat()}.json")
+    def load_trajectory(self, name: str) -> bool:
+        """Load last recorded trajectory from file with specific name"""
+        filepath = os.path.join(self.trajectories_dir, f"{name}.json")
         if not os.path.exists(filepath):
             log.warning(f"Trajectory file not found: {filepath}")
-            return "Trajectory file not found"
+            return False
         
         try:
             with open(filepath, 'r') as f:
                 self.trajectory = json.load(f)
-            log.info(f"Loaded trajectory with {len(self.trajectory)} movements")
-            return "Trajectory loaded successfully"
+            log.info(f"Loaded trajectory {name} with {len(self.trajectory)} steps")
+            return True
         except Exception as e:
             log.error(f"Failed to load trajectory: {e}")
-            return f"Error loading trajectory: {str(e)}"
+            return False
+
+    def delete_trajectory(self, name: str) -> str:
+        """Delete last recorded trajectory file"""
+        filepath = os.path.join(self.trajectories_dir, f"{name}.json")
+        if not os.path.exists(filepath):
+            return f"Trajectory not found: {name}"
+        
+        try:
+            os.remove(filepath)
+            return f"Deleted trajectory: {name}"
+        except Exception as e:
+            log.error(f"Failed to delete trajectory: {e}")
+            return f"Error deleting trajectory: {str(e)}"
 
     def list_trajectories(self):
         """List available trajectory files"""
@@ -295,11 +335,8 @@ class RobotServer:
                 if filename.endswith('.json'):
                     filepath = os.path.join(self.trajectories_dir, filename)
                     stat = os.stat(filepath)
-                    with open(filepath) as f:
-                        movements = len(json.load(f))
                     files.append({
                         'name': filename[:-5],  # Remove .json
-                        'movements': movements,
                         'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
                     })
             return {'trajectories': files}

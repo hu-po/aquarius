@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from contextlib import contextmanager
 import json
+import re
 
 from pydantic import BaseModel, Field, validator
 from sqlalchemy import Column, DateTime, Float, Index, Integer, String, create_engine
@@ -126,8 +127,20 @@ class AquariumStatus(BaseModel):
     location: str = Field(default=os.getenv('TANK_LOCATION', 'Austin, TX'))
     timezone: str = Field(default=os.getenv('TANK_TIMEZONE', 'America/Chicago'))
 
+class Trajectory(BaseModel):
+    name: str
+    modified: datetime
+    selected: bool = False
+
+    @validator('name')
+    def validate_name(cls, v):
+        if not re.match(r'^[a-zA-Z0-9_-]{1,64}$', v):
+            raise ValueError('Invalid trajectory name. Use only letters, numbers, underscore, or dash (max 64 chars)')
+        return v
+
 class RobotCommand(BaseModel):
     command: str = Field(description="Robot command (q/r/c/p/P/s/l/f)")
+    trajectory_name: Optional[str] = None
 
 def load_life_from_csv(db: Session) -> None:
     log = logging.getLogger(__name__)

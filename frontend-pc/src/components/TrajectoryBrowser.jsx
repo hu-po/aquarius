@@ -86,9 +86,6 @@ const TrajectoryBrowser = () => {
               onClick={() => handleLoad(traj.name)}
             >
               <div className="trajectory-name">{traj.name}</div>
-              <div className="trajectory-info">
-                {traj.movements} movements • {new Date(traj.modified).toLocaleString()}
-              </div>
             </div>
           ))
         ) : (

@@ -4,7 +4,7 @@ from typing import List, Optional, Dict
 import logging
 from zoneinfo import ZoneInfo, available_timezones
 import cv2
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,12 +14,13 @@ from contextlib import contextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from functools import lru_cache
+import json
 
 from .robot import RobotClient
 from .models import (
     get_db, Image, Reading, AquariumStatus,
     DBImage, DBReading, DBAIAnalysis, DBLife, LifeBase, Life,
-    RobotCommand
+    RobotCommand, Trajectory
 )
 from .camera import CameraManager
 from .ai import ENABLED_MODELS, async_inference
@@ -374,49 +375,61 @@ async def send_robot_command(cmd: RobotCommand) -> Dict[str, str]:
     """Send command to robot client"""
     log.debug(f"Received robot command: {cmd.command}")
     try:
-        response = robot_client.send_command(cmd.command)
+        if cmd.trajectory_name:
+            response = robot_client.send_command(cmd.command, cmd.trajectory_name)
+        else:
+            response = robot_client.send_command(cmd.command)
         return {"message": f"Command sent: {response}"}
     except Exception as e:
         log.error(f"Failed to send robot command: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@lru_cache(maxsize=1)
-def get_cached_trajectories():
-    return robot_client.get_trajectories()
-
 @app.get("/robot/trajectories")
-async def list_trajectories() -> dict:
-    """Get list of available trajectories with caching"""
+async def list_trajectories() -> Dict[str, List[Trajectory]]:
+    """Get list of available trajectories"""
     try:
-        trajectories = get_cached_trajectories()
-        # Only clear cache if older than 5 seconds
-        if get_cached_trajectories.cache_info().currsize > 0:
-            get_cached_trajectories.cache_clear()
-        return {"trajectories": trajectories}
+        trajectories = robot_client.get_trajectories()
+        trajectory_models = [
+            Trajectory(name=t['name'], modified=datetime.fromisoformat(t['modified'])) 
+            for t in trajectories
+        ]
+        return {"trajectories": trajectory_models}
     except Exception as e:
-        logging.error(f"Failed to get trajectories: {str(e)}")
+        log.error(f"Failed to get trajectories: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get trajectories")
 
 @app.get("/robot/trajectories/{name}")
-async def load_trajectory(name: str) -> dict:
+async def load_trajectory(name: str) -> Dict[str, str]:
     """Load a saved trajectory"""
     try:
-        response = robot_client.send_command(f'L{name}')
+        response = robot_client.send_command('l', name)
         if 'error' in response.lower():
             raise ValueError(response)
         return {"message": f"Loaded trajectory: {name}"}
     except Exception as e:
-        logging.error(f"Failed to load trajectory {name}: {str(e)}")
+        log.error(f"Failed to load trajectory {name}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/robot/trajectories/{name}")
-async def save_trajectory(name: str) -> dict:
+async def save_trajectory(name: str) -> Dict[str, str]:
     """Save current trajectory"""
     try:
-        response = robot_client.send_command(f'S{name}')
+        response = robot_client.send_command('s', name)
         if 'error' in response.lower():
             raise ValueError(response)
         return {"message": f"Saved trajectory: {name}"}
     except Exception as e:
-        logging.error(f"Failed to save trajectory {name}: {str(e)}")
+        log.error(f"Failed to save trajectory {name}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/robot/trajectories/{name}")
+async def delete_trajectory(name: str) -> Dict[str, str]:
+    """Delete a saved trajectory"""
+    try:
+        response = robot_client.send_command('d', name)
+        if 'error' in response.lower():
+            raise ValueError(response)
+        return {"message": f"Deleted trajectory: {name}"}
+    except Exception as e:
+        log.error(f"Failed to delete trajectory {name}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

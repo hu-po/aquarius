@@ -106,12 +106,15 @@ class RobotClient:
         except Exception as e:
             raise ConnectionError(f"Send failed: {e}")
 
-    def send_command(self, command: str) -> str:
+    def send_command(self, command: str, trajectory_name: Optional[str] = None) -> str:
+        """Send command to robot server with optional trajectory name"""
         if not self.connected and not self.connect():
             return "Not connected to robot server"
 
         try:
-            response = self._send_raw(command)
+            # Combine command with trajectory name if provided
+            full_command = f"{command}{trajectory_name if trajectory_name else ''}"
+            response = self._send_raw(full_command)
             return response
         except Exception as e:
             self.connected = False
