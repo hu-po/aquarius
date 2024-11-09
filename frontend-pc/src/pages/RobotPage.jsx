@@ -3,11 +3,11 @@ import { sendRobotCommand } from '../services/api';
 import { TrajectoryBrowser } from '../components';
 
 const ROBOT_COMMANDS = [
+  { id: 'h', label: '🏠', description: 'Go Home' },
   { id: 'f', label: '🔓', description: 'Release Robot' },
   { id: 'r', label: '⏺️', description: 'Start Recording' },
   { id: 'c', label: '⏹️', description: 'Stop Recording' },
-  { id: 'p', label: '▶️', description: 'Play Once' },
-  { id: 'P', label: '🔁', description: 'Loop Play/Stop' }
+  { id: 'p', label: '▶️', description: 'Play Once' }
 ];
 
 const RobotPage = () => {

@@ -8,7 +8,7 @@ from contextlib import contextmanager
 import json
 import re
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, constr
 from sqlalchemy import Column, DateTime, Float, Index, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -141,6 +141,9 @@ class Trajectory(BaseModel):
 class RobotCommand(BaseModel):
     command: str = Field(description="Robot command (q/r/c/p/P/s/l/f)")
     trajectory_name: Optional[str] = None
+
+class TrajectoryName(BaseModel):
+    name: constr(min_length=1, max_length=64, pattern=r'^[a-zA-Z0-9_-]+$')
 
 def load_life_from_csv(db: Session) -> None:
     log = logging.getLogger(__name__)
