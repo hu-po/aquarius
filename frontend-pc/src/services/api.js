@@ -164,3 +164,12 @@ export const saveTrajectory = async (name) => {
     handleApiError(error, 'Failed to save trajectory');
   }
 };
+
+export const deleteTrajectory = async (name) => {
+  try {
+    const response = await api.delete(`/robot/trajectories/${name}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to delete trajectory');
+  }
+};
