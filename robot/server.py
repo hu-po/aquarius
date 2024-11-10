@@ -36,6 +36,10 @@ class RobotServer:
         self.active_clients: Dict[str, int] = {}
         self.server_socket: Optional[socket.socket] = None
         self.running = True
+        self.home_position = [0, 0, 0, 0, 0, 0]
+        self.home_tolerance = 5  # degrees tolerance when returning to home
+        self.home_speed = 50  # speed percentage when returning to home
+        self.home_wait = 3  # seconds to wait when returning to home
         
     def initialize_robot(self) -> bool:
         """Initialize MyCobot connection with retry logic"""
@@ -76,9 +80,19 @@ class RobotServer:
             elif command == "q":
                 return "quit"
             elif command == "h":
-                # New home command
-                self.mc.send_angles([0,0,0,0,0,0], 50)
-                return "Moving to home position"
+                self.mc.send_angles(self.home_position, self.home_speed)
+                return "go to home"
+            elif command == "H":
+                try:
+                    current_angles = self.mc.get_angles()
+                    if not current_angles:
+                        return "Failed to get current angles"
+                    self.home_position = current_angles
+                    log.info(f"Home position set to: {current_angles}")
+                    return "set home position"
+                except Exception as e:
+                    log.error(f"Error setting home position: {str(e)}")
+                    return f"Failed to set home position: {str(e)}"
                 
             # Extract trajectory name if present
             cmd = command[0]
@@ -248,39 +262,57 @@ class RobotServer:
             self.record_thread.join()
             log.info("Recording stopped")
 
+    def _check_home_position(self) -> bool:
+        """Verify robot is at home position"""    
+        current_angles = self.mc.get_angles()
+        if not current_angles:
+            log.error("Failed to get current angles")
+            return False
+            
+        for current, target in zip(current_angles, self.home_position):
+            if abs(current - target) > self.home_tolerance:
+                log.error(f"Joint not at home position. Current: {current_angles}, Expected: {home_angles}")
+                return False
+                
+        return True
+
+    def return_to_home(self) -> bool:
+        """Return robot to home position"""
+        try:
+            self.mc.send_angles(self.home_position, self.home_speed)
+            time.sleep(self.home_wait)
+            
+            if not self._check_home_position():
+                raise Exception("Failed to reach home position")
+            log.info("Successfully returned to home position")
+            return True
+        except Exception as e:
+            log.error(f"Error returning to home: {str(e)}")
+            return False
+
     def play_once(self):
         """Play last recorded trajectory once"""
         if self.trajectory:
             self.playing = True
             log.debug(f"Starting playback of {len(self.trajectory)} steps")
-            for i, record in enumerate(self.trajectory):
-                angles, speeds, gripper, interval = record
-                log.debug(f"Playing movement {i+1}/{len(self.trajectory)} - "
-                         f"Angles: {angles}, Speeds: {speeds}, Gripper: {gripper}")
-                self.mc.set_encoders_drag(angles, speeds)
-                self.mc.set_encoder(7, gripper)
+            try:
+                for i, record in enumerate(self.trajectory):
+                    angles, speeds, _, interval = record
+                    log.debug(f"Playing movement {i+1}/{len(self.trajectory)} - "
+                             f"Angles: {angles}, Speeds: {speeds}")
+                    self.mc.set_encoders_drag(angles, speeds)
+                    time.sleep(interval)
+                
+                if not self.return_to_home():
+                    raise Exception("Failed to return to home position after playback")
+                    
+            except Exception as e:
+                log.error(f"Playback error: {str(e)}")
+                self.playing = False
+                raise
+                
             self.playing = False
             log.info("Playback complete")
-
-    def start_loop_play(self):
-        """Start loop playback of last recorded trajectory"""
-        if not self.playing and self.trajectory:
-            self.playing = True
-            self.play_thread = threading.Thread(target=self._loop_play, daemon=True)
-            self.play_thread.start()
-            log.info("Loop playback started")
-
-    def _loop_play(self):
-        """Loop playback thread"""
-        while self.playing:
-            self.play_once()
-
-    def stop_loop_play(self):
-        """Stop loop playback"""
-        if self.playing:
-            self.playing = False
-            self.play_thread.join()
-            log.info("Loop playback stopped")
 
     def save_trajectory(self, name: str) -> str:
         """Save last recorded trajectory to file with specific name"""
@@ -343,6 +375,17 @@ class RobotServer:
         except Exception as e:
             log.error(f"Failed to list trajectories: {e}")
             return {'error': str(e)}
+
+    def play_trajectories(self, trajectory_list):
+        """Play multiple trajectories sequentially"""
+        if not trajectory_list:
+            return
+        log.debug(f"Starting playback of {len(self.trajectories)} trajectories")
+        
+        for traj in trajectory_list:
+            log.debug(f"Playing trajectory: {traj}")
+            self.load_trajectory(traj)
+            self.play_once()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Robot Server with optional debug mode')

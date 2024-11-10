@@ -4,6 +4,7 @@ import { TrajectoryBrowser } from '../components';
 
 const ROBOT_COMMANDS = [
   { id: 'h', label: '🏠', description: 'Go Home' },
+  { id: 'H', label: '📍', description: 'Set Home' },
   { id: 'f', label: '🔓', description: 'Release Robot' },
   { id: 'r', label: '⏺️', description: 'Start Recording' },
   { id: 'c', label: '⏹️', description: 'Stop Recording' },
