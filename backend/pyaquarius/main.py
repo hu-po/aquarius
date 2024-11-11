@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import logging
 from zoneinfo import ZoneInfo, available_timezones
 import cv2
