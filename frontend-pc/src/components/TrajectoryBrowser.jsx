@@ -74,12 +74,14 @@ const TrajectoryBrowser = () => {
     }
   };
 
-  const handleLoopPlay = async () => {
+  const handlePlay = async () => {
     if (selectedTrajectories.size === 0) return;
     try {
       setPlaying(true);
-      const trajectoryNames = Array.from(selectedTrajectories);
-      await sendRobotCommand('P', trajectoryNames);
+      await sendRobotCommand({
+        command: 'P',
+        trajectory_name: Array.from(selectedTrajectories)
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -107,9 +109,9 @@ const TrajectoryBrowser = () => {
           {saving ? '💾 ...' : '💾 Save'}
         </button>
         <button
-          onClick={handleLoopPlay}
+          onClick={handlePlay}
           disabled={selectedTrajectories.size === 0 || playing}
-          className="loop-button"
+          className="play-button"
         >
           {playing ? '🔄 Playing...' : '🔄 Play Selected'}
         </button>

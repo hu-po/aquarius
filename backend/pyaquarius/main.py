@@ -374,14 +374,7 @@ def validate_timezone(tz: str) -> str:
 async def send_command(command: RobotCommand) -> Dict[str, str]:
     """Send command to robot"""
     try:
-        if command.command == 'P' and command.trajectoryName:
-            # Split comma-separated trajectory names
-            trajectory_list = command.trajectoryName.split(',')
-            response = robot_client.play_trajectories(trajectory_list)
-        else:
-            response = robot_client.send_command(command.command, command.trajectoryName)
-        if 'error' in response.lower():
-            raise ValueError(response)
+        response = robot_client.send_command(command.command, command.trajectory_name)
         return {"message": response}
     except Exception as e:
         log.error(f"Failed to send command: {str(e)}")
