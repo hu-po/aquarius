@@ -44,6 +44,8 @@ services:
       - SCAN_CAMERA_ID=${SCAN_CAMERA_ID}
       - SCAN_ENABLED=${SCAN_ENABLED}
       - SCAN_INTERVAL=${SCAN_INTERVAL}
+      - SCAN_SLEEP_TIME=${SCAN_SLEEP_TIME}
+      - SCAN_TRAJECTORIES=${SCAN_TRAJECTORIES}
     volumes:
       - ./data:/app/data:rw
       - /dev:/dev:rw
