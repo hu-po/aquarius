@@ -22,6 +22,7 @@ BUFFER_SIZE = 1024
 SERIAL_PORT = "/dev/ttyAMA0"
 BAUD_RATE = 1000000
 DEBUG = False
+HOME_POSITION = [0, -15.11, 112.41, 92.02, 15.2, 0]
 
 class RobotServer:
     def __init__(self):
@@ -36,7 +37,7 @@ class RobotServer:
         self.active_clients: Dict[str, int] = {}
         self.server_socket: Optional[socket.socket] = None
         self.running = True
-        self.home_position = [-0.43, -28.65, 112.76, 90.17, -0.79, 0.61]
+        self.home_position = HOME_POSITION
         self.home_speed = 50  # speed percentage when returning to home
         
     def initialize_robot(self) -> bool:
