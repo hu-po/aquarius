@@ -428,18 +428,17 @@ async def robot_scan(
             robot_client.send_command('p', trajectory)
             await asyncio.sleep(SCAN_SLEEP_TIME)
             capture_result = await capture_image(device_index)
-            if capture_result:
-                ai_responses = await async_inference(
-                    ENABLED_MODELS,
-                    ['identify_life'],
-                    capture_result['filepath']
-                )
-                results.append({
-                    'trajectory': trajectory,
-                    'filepath': capture_result['filepath'],
-                    'analysis': ai_responses
-                })
             robot_client.send_command('h') # return home
+            ai_responses = await async_inference(
+                ENABLED_MODELS,
+                ['identify_life'],
+                capture_result['filepath']
+            )
+            results.append({
+                'trajectory': trajectory,
+                'filepath': capture_result['filepath'],
+                'analysis': ai_responses
+            })
 
         robot_client.send_command('h') # return home
         robot_client.send_command('f') # release robot
