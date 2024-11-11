@@ -127,12 +127,9 @@ export const Analyze = async (models, analyses) => {
   }
 };
 
-export const sendRobotCommand = async (command, trajectoryName) => {
+export const sendRobotCommand = async (commandData) => {
   try {
-    const response = await api.post('/robot/command', {
-      command: command,
-      trajectoryName: Array.isArray(trajectoryName) ? trajectoryName.join(',') : trajectoryName
-    });
+    const response = await api.post('/robot/command', commandData);
     return response.data;
   } catch (error) {
     handleApiError(error, 'Failed to send robot command');

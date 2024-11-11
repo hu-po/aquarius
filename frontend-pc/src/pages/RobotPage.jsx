@@ -18,7 +18,10 @@ const RobotPage = () => {
   const handleCommand = async (command) => {
     setLoading(true);
     try {
-      const response = await sendRobotCommand(command);
+      const response = await sendRobotCommand({
+        command: command,
+        trajectory_name: null
+      });
       setStatus(`Success: ${response.message}`);
     } catch (error) {
       setStatus(`Error: ${error.message}`);
