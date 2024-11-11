@@ -429,14 +429,3 @@ async def delete_trajectory(name: str) -> Dict[str, str]:
     except Exception as e:
         log.error(f"Failed to delete trajectory {name}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/robot/trajectories/play")
-async def play_trajectories(names: List[str]) -> Dict[str, str]:
-    """Play multiple trajectories sequentially"""
-    try:
-        for name in names:
-            await send_robot_command(RobotCommand(command='P', trajectory_name=name))
-        return {"message": f"Playing trajectories: {', '.join(names)}"}
-    except Exception as e:
-        log.error(f"Failed to play trajectories: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))

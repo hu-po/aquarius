@@ -80,7 +80,7 @@ const TrajectoryBrowser = () => {
       setPlaying(true);
       await sendRobotCommand({
         command: 'P',
-        trajectory_name: Array.from(selectedTrajectories)
+        trajectory_name: JSON.stringify(Array.from(selectedTrajectories))
       });
     } catch (err) {
       setError(err.message);
