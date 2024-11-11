@@ -390,7 +390,7 @@ class RobotServer:
         """Play multiple trajectories sequentially"""
         if not trajectory_list:
             return
-        log.debug(f"Starting playback of {len(self.trajectories)} trajectories")
+        log.debug(f"Starting playback of {len(trajectory_list)} trajectories")
         
         for traj in trajectory_list:
             log.debug(f"Playing trajectory: {traj}")
