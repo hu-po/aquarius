@@ -21,7 +21,7 @@ from .robot import RobotClient
 from .models import (
     get_db, Image, Reading, AquariumStatus,
     DBImage, DBReading, DBAIAnalysis, DBLife, LifeBase, Life,
-    RobotCommand, Trajectory
+    RobotCommand, Trajectory, ScanState
 )
 from .camera import CameraManager
 from .ai import ENABLED_MODELS, async_inference
@@ -451,7 +451,7 @@ async def robot_scan(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/robot/scan/toggle")
-async def toggle_scan(state: ScanState, background_tasks: BackgroundTasks) -> Dict[str, bool]:
+async def toggle_scan(state: ScanState) -> Dict[str, bool]:
     """Toggle the scheduled scan behavior."""
     global SCAN_ENABLED, scheduler
     try:
