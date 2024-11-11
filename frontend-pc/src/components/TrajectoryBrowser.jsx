@@ -79,7 +79,7 @@ const TrajectoryBrowser = () => {
     try {
       setPlaying(true);
       const trajectoryNames = Array.from(selectedTrajectories);
-      await api.post('/robot/trajectories/play', { names: trajectoryNames });
+      await sendRobotCommand('P', trajectoryNames);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -91,7 +91,7 @@ const TrajectoryBrowser = () => {
 
   return (
     <div className="trajectories-browser">
-      <div className="save-trajectory">
+      <div className="trajectory-controls">
         <input
           type="text"
           value={newName}
@@ -106,15 +106,12 @@ const TrajectoryBrowser = () => {
         >
           {saving ? '💾 ...' : '💾 Save'}
         </button>
-      </div>
-
-      <div className="trajectory-controls">
         <button
           onClick={handleLoopPlay}
           disabled={selectedTrajectories.size === 0 || playing}
           className="loop-button"
         >
-          {playing ? '🔄 Playing...' : '🔄 Loop Selected'}
+          {playing ? '🔄 Playing...' : '🔄 Play Selected'}
         </button>
         <button
           onClick={handleDelete}

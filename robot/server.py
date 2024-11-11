@@ -36,7 +36,7 @@ class RobotServer:
         self.active_clients: Dict[str, int] = {}
         self.server_socket: Optional[socket.socket] = None
         self.running = True
-        self.home_position = [0, 0, 0, 0, 0, 0]
+        self.home_position = [-0.43, -28.65, 112.76, 90.17, -0.79, 0.61]
         self.home_tolerance = 100  # degrees tolerance when returning to home
         self.home_speed = 50  # speed percentage when returning to home
         self.home_wait = 3  # seconds to wait when returning to home

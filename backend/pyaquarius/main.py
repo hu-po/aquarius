@@ -371,17 +371,20 @@ def validate_timezone(tz: str) -> str:
         return "UTC"
 
 @app.post("/robot/command")
-async def send_robot_command(cmd: RobotCommand) -> Dict[str, str]:
-    """Send command to robot client"""
-    log.debug(f"Received robot command: {cmd.command}")
+async def send_command(command: RobotCommand) -> Dict[str, str]:
+    """Send command to robot"""
     try:
-        if cmd.trajectory_name:
-            response = robot_client.send_command(cmd.command, cmd.trajectory_name)
+        if command.command == 'P' and command.trajectoryName:
+            # Split comma-separated trajectory names
+            trajectory_list = command.trajectoryName.split(',')
+            response = robot_client.play_trajectories(trajectory_list)
         else:
-            response = robot_client.send_command(cmd.command)
-        return {"message": f"Command sent: {response}"}
+            response = robot_client.send_command(command.command, command.trajectoryName)
+        if 'error' in response.lower():
+            raise ValueError(response)
+        return {"message": response}
     except Exception as e:
-        log.error(f"Failed to send robot command: {e}")
+        log.error(f"Failed to send command: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/robot/trajectories")

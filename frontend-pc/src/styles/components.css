@@ -469,6 +469,21 @@ body {
     display: flex;
     gap: 1rem;
     margin: 1rem 0;
+    align-items: center;
+}
+
+.trajectory-controls input {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: white;
+}
+
+.trajectory-controls input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .loop-button, .delete-button {

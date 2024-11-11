@@ -127,10 +127,11 @@ export const Analyze = async (models, analyses) => {
   }
 };
 
-export const sendRobotCommand = async (command) => {
+export const sendRobotCommand = async (command, trajectoryName) => {
   try {
     const response = await api.post('/robot/command', {
-      command: command
+      command: command,
+      trajectoryName: Array.isArray(trajectoryName) ? trajectoryName.join(',') : trajectoryName
     });
     return response.data;
   } catch (error) {
