@@ -81,43 +81,22 @@ app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 camera_manager = CameraManager()
 robot_client = RobotClient()
 
-CAPTURE_INTERVAL = int(os.getenv('CAPTURE_INTERVAL', '10'))
-CAPTURE_ENABLED = os.getenv('CAPTURE_ENABLED', 'true').lower() == 'true'
+SCAN_CAMERA_ID = int(os.getenv('SCAN_CAMERA_ID', '0'))
+SCAN_INTERVAL = int(os.getenv('SCAN_INTERVAL', '10'))
+SCAN_ENABLED = os.getenv('SCAN_ENABLED', 'true').lower() == 'true'
+SCAN_TRAJECTORIES = os.getenv('SCAN_TRAJECTORIES', 'a,b').split(',')
+SCAN_SLEEP_TIME = int(os.getenv('SCAN_SLEEP_TIME', '5'))
 
-async def scheduled_capture():
-    """Capture images from all active cameras on schedule."""
-    log.debug("Starting scheduled capture")
+async def scheduled_scan():
+    """Run automated scan with configured parameters."""
+    log.debug("Starting scheduled scan")
     try:
-        for device in camera_manager.devices.values():
-            if device.is_active and not device.is_capturing:
-                log.debug(f"Capturing from device {device.index}")
-                was_streaming = device.is_streaming
-                await device.stop_stream()
-                result = await camera_manager.capture_image(device)
-                if not result:
-                    log.error(f"Scheduled capture failed for device {device.index}")
-                else:
-                    filepath, width, height, file_size = result
-                    log.debug(f"Scheduled capture successful for device {device.index}")
-                    with get_db_session() as db:
-                        image = DBImage(
-                            id=datetime.now(timezone.utc).isoformat(),
-                            filepath=filepath,
-                            width=width,
-                            height=height,
-                            file_size=file_size,
-                            timestamp=datetime.now(timezone.utc),
-                            device_index=device.index
-                        )
-                        db.add(image)
-                        log.debug(f"Image record created in database with id {image.id}")
-                
-                # Restart stream if it was streaming before
-                if was_streaming:
-                    await device.start_stream()
-                    log.debug(f"Restarted stream for device {device.index}")
+        await robot_scan(
+            device_index=SCAN_CAMERA_ID,
+            trajectories=SCAN_TRAJECTORIES
+        )
     except Exception as e:
-        log.error(f"Scheduled capture error: {str(e)}", exc_info=True)
+        log.error(f"Scheduled scan failed: {e}")
 
 @contextmanager
 def get_db_session():
@@ -136,13 +115,13 @@ def get_db_session():
 async def startup_event():
     await camera_manager.initialize()
     
-    if CAPTURE_ENABLED:
-        log.info(f"Starting scheduled capture every {CAPTURE_INTERVAL} seconds")
+    if SCAN_ENABLED:
+        log.info(f"Starting scan every {SCAN_INTERVAL} seconds")
         scheduler = AsyncIOScheduler()
         scheduler.add_job(
-            scheduled_capture,
-            trigger=IntervalTrigger(seconds=CAPTURE_INTERVAL),
-            id='scheduled_capture',
+            scheduled_scan,
+            trigger=IntervalTrigger(seconds=SCAN_INTERVAL),
+            id='scheduled_scan',
             replace_existing=True
         )
         scheduler.start()
@@ -431,15 +410,35 @@ async def delete_trajectory(name: str) -> Dict[str, str]:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/robot/scan")
-async def robot_scan():
-    """Scan for life in the aquarium.
+async def robot_scan(
+    device_index: int,
+    trajectories: List[str],
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """Execute robot trajectories while capturing and analyzing images."""
+    results = []
+    try:
+        for trajectory in trajectories:
+            robot_client.send_command('p', trajectory)
+            await asyncio.sleep(SCAN_SLEEP_TIME)
+            capture_result = await capture_image(device_index)
+            if capture_result:
+                ai_responses = await async_inference(
+                    ENABLED_MODELS,
+                    ['identify_life'],
+                    capture_result['filepath']
+                )
+                results.append({
+                    'trajectory': trajectory,
+                    'filepath': capture_result['filepath'],
+                    'analysis': ai_responses
+                })
 
-    device = config.robot_camera_id
-    for trajectory in selected_trajectories:
-        robot_client.send_command('p', trajectory)
-        await capture_image(device) # take picture at the end of the trajectory
-        await async_inference(model, analysis, image_path) # analyze the image
-    robot_client.send_command('h') # return to home
-    robot_client.send_command('r') # release robot
-    """
-    pass
+        robot_client.send_command('h') # return home
+        robot_client.send_command('f') # release robot
+        return {"scans": results}
+        
+    except Exception as e:
+        log.error(f"Scan error: {e}")
+        robot_client.send_command('f') # release robot
+        raise HTTPException(status_code=500, detail=str(e))
