@@ -118,15 +118,19 @@ class RobotServer:
             elif cmd == "P":
                 if not self.playing:
                     if traj_name:
-                        if self.load_trajectory(traj_name):
-                            self.start_loop_play()
-                            return f"Loop playing trajectory: {traj_name}"
-                        return f"Failed to load trajectory: {traj_name}"
-                    self.start_loop_play()
-                    return "Loop playing current trajectory"
-                else:
-                    self.stop_loop_play()
-                    return "Loop play stopped"
+                        try:
+                            traj_list = json.loads(traj_name)  # Expect JSON array of trajectory names
+                            if not isinstance(traj_list, list):
+                                return "Invalid trajectory list format"
+                            self.play_trajectories(traj_list)
+                            return f"Playing trajectories: {', '.join(traj_list)}"
+                        except json.JSONDecodeError:
+                            return "Invalid trajectory list format"
+                        except Exception as e:
+                            log.error(f"Error playing trajectories: {e}")
+                            return f"Error: {str(e)}"
+                    return "No trajectories provided"
+                return "Already playing"
             elif cmd == "s":
                 if not traj_name:
                     return "No trajectory name provided"

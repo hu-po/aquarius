@@ -78,10 +78,8 @@ const TrajectoryBrowser = () => {
     if (selectedTrajectories.size === 0) return;
     try {
       setPlaying(true);
-      for (const name of selectedTrajectories) {
-        await loadTrajectory(name);
-        await sendRobotCommand('P');
-      }
+      const trajectoryNames = Array.from(selectedTrajectories);
+      await api.post('/robot/trajectories/play', { names: trajectoryNames });
     } catch (err) {
       setError(err.message);
     } finally {

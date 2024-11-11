@@ -3,7 +3,7 @@ import logging
 import os
 import time
 import threading
-from typing import Optional
+from typing import Optional, List
 from contextlib import contextmanager
 import json
 
@@ -152,3 +152,14 @@ class RobotClient:
             self.connected = False
             log.error(f"Failed to get trajectories: {e}")
             return []
+
+    def play_trajectories(self, names: List[str]) -> str:
+        """Send multiple trajectories to play"""
+        if not self.connected and not self.connect():
+            return "Not connected to robot server"
+        try:
+            json_names = json.dumps(names)
+            return self.send_command('P', json_names)
+        except Exception as e:
+            self.connected = False
+            return f"Error: {str(e)}"
