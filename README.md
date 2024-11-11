@@ -99,8 +99,8 @@ flowchart TB
 - [ ] page to see associated images for each life
 - [ ] voting system for ai analysis to collect fine tuning data
 - [ ] human verification of associated images and each model response
-- [ ] robot set waypoints, load waypoints, each waypoint is a trajectory from home position
-- [ ] robot loops through waypoints, capture is triggered after each waypoint
+- [ ] sort life.csv based on last seen
+- [ ] temperature measurements during scan, maybe a separate function?
 
 ## Citation
 
