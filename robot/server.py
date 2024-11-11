@@ -4,7 +4,7 @@ import os
 import json
 import threading
 import time
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from pymycobot.mycobot import MyCobot
 import argparse
 from datetime import datetime
@@ -37,9 +37,7 @@ class RobotServer:
         self.server_socket: Optional[socket.socket] = None
         self.running = True
         self.home_position = [-0.43, -28.65, 112.76, 90.17, -0.79, 0.61]
-        self.home_tolerance = 100  # degrees tolerance when returning to home
         self.home_speed = 50  # speed percentage when returning to home
-        self.home_wait = 3  # seconds to wait when returning to home
         
     def initialize_robot(self) -> bool:
         """Initialize MyCobot connection with retry logic"""
@@ -119,11 +117,15 @@ class RobotServer:
                 if not self.playing:
                     if traj_name:
                         try:
-                            traj_list = json.loads(traj_name)  # Expect JSON array of trajectory names
-                            if not isinstance(traj_list, list):
+                            trajectory_list = json.loads(traj_name)  # Expect JSON array of trajectory names
+                            if not isinstance(trajectory_list, list):
                                 return "Invalid trajectory list format"
-                            self.play_trajectories(traj_list)
-                            return f"Playing trajectories: {', '.join(traj_list)}"
+                            log.debug(f"Starting playback of {len(trajectory_list)} trajectories")
+                            for traj in trajectory_list:
+                                log.debug(f"Playing trajectory: {traj}")
+                                self.load_trajectory(traj)
+                                self.play_once()
+                            return f"Playing trajectories: {', '.join(trajectory_list)}"
                         except json.JSONDecodeError:
                             return "Invalid trajectory list format"
                         except Exception as e:
@@ -267,43 +269,6 @@ class RobotServer:
             self.record_thread.join()
             log.info("Recording stopped")
 
-    def _check_home_position(self, max_retries: int = 3) -> bool:
-        """Verify robot is at home position with retries"""    
-        for attempt in range(max_retries):
-            try:
-                current_angles = self.mc.get_angles()
-                if not current_angles:
-                    log.error(f"Failed to get current angles (attempt {attempt + 1}/{max_retries})")
-                    time.sleep(0.5)
-                    continue
-                    
-                for current, target in zip(current_angles, self.home_position):
-                    if abs(current - target) > self.home_tolerance:
-                        log.error(f"Joint not at home position. Current: {current_angles}, Expected: {self.home_position}")
-                        return False
-                        
-                return True
-                
-            except Exception as e:
-                log.error(f"Error checking home position (attempt {attempt + 1}/{max_retries}): {str(e)}")
-                time.sleep(0.5)
-                
-        return False
-
-    def return_to_home(self) -> bool:
-        """Return robot to home position"""
-        try:
-            self.mc.set_encoders_drag(self.home_position, self.home_speed)
-            time.sleep(self.home_wait)
-            
-            if not self._check_home_position():
-                raise Exception("Failed to reach home position")
-            log.info("Successfully returned to home position")
-            return True
-        except Exception as e:
-            log.error(f"Error returning to home: {str(e)}")
-            return False
-
     def play_once(self):
         """Play last recorded trajectory once"""
         if not self.trajectory:
@@ -386,18 +351,6 @@ class RobotServer:
             log.error(f"Failed to list trajectories: {e}")
             return {'error': str(e)}
 
-    def play_trajectories(self, trajectory_list):
-        """Play multiple trajectories sequentially"""
-        if not trajectory_list:
-            return
-        log.debug(f"Starting playback of {len(trajectory_list)} trajectories")
-        
-        for traj in trajectory_list:
-            log.debug(f"Playing trajectory: {traj}")
-            self.load_trajectory(traj)
-            self.play_once()
-        if not self.return_to_home():
-            raise Exception("Failed to return to home position after playback")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Robot Server with optional debug mode')
