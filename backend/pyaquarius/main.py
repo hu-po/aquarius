@@ -88,6 +88,8 @@ SCAN_ENABLED = os.getenv('SCAN_ENABLED', 'true').lower() == 'true'
 SCAN_TRAJECTORIES = os.getenv('SCAN_TRAJECTORIES', 'a,b').split(',')
 SCAN_SLEEP_TIME = int(os.getenv('SCAN_SLEEP_TIME', '5'))
 
+scheduler: Optional[AsyncIOScheduler] = None
+
 async def scheduled_scan():
     """Run automated scan with configured parameters."""
     log.debug("Starting scheduled scan")
@@ -114,11 +116,13 @@ def get_db_session():
 
 @app.on_event("startup")
 async def startup_event():
+    """Initialize camera manager and scheduler on startup."""
+    global scheduler
     await camera_manager.initialize()
     
+    scheduler = AsyncIOScheduler()
     if SCAN_ENABLED:
         log.info(f"Starting scan every {SCAN_INTERVAL} seconds")
-        scheduler = AsyncIOScheduler()
         scheduler.add_job(
             scheduled_scan,
             trigger=IntervalTrigger(seconds=SCAN_INTERVAL),
@@ -299,7 +303,8 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
         latest_images=latest_images,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
         alerts=list(set(alerts)),
-        timezone=validate_timezone(os.getenv('TANK_TIMEZONE', 'UTC'))
+        timezone=validate_timezone(os.getenv('TANK_TIMEZONE', 'UTC')),
+        scan_enabled=SCAN_ENABLED
     )
 
 @app.get("/images")
@@ -434,6 +439,7 @@ async def robot_scan(
                     'filepath': capture_result['filepath'],
                     'analysis': ai_responses
                 })
+            robot_client.send_command('h') # return home
 
         robot_client.send_command('h') # return home
         robot_client.send_command('f') # release robot
@@ -442,4 +448,32 @@ async def robot_scan(
     except Exception as e:
         log.error(f"Scan error: {e}")
         robot_client.send_command('f') # release robot
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/robot/scan/toggle")
+async def toggle_scan(state: ScanState, background_tasks: BackgroundTasks) -> Dict[str, bool]:
+    """Toggle the scheduled scan behavior."""
+    global SCAN_ENABLED, scheduler
+    try:
+        SCAN_ENABLED = state.enabled
+        
+        if scheduler:
+            if state.enabled:
+                log.info(f"Starting scan every {SCAN_INTERVAL} seconds")
+                scheduler.add_job(
+                    scheduled_scan,
+                    trigger=IntervalTrigger(seconds=SCAN_INTERVAL),
+                    id='scheduled_scan',
+                    replace_existing=True
+                )
+                scheduler.start()
+            else:
+                log.info("Stopping scheduled scan")
+                scheduler.remove_job('scheduled_scan')
+                scheduler.shutdown()
+                scheduler = AsyncIOScheduler()
+        
+        return {"enabled": SCAN_ENABLED}
+    except Exception as e:
+        log.error(f"Failed to toggle scan: {e}")
         raise HTTPException(status_code=500, detail=str(e))

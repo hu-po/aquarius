@@ -171,3 +171,12 @@ export const deleteTrajectory = async (name) => {
     handleApiError(error, 'Failed to delete trajectory');
   }
 };
+
+export const toggleScan = async (enabled) => {
+  try {
+    const response = await api.post('/robot/scan/toggle', { enabled });
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to toggle scan');
+  }
+};

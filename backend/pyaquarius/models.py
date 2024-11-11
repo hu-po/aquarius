@@ -121,11 +121,11 @@ class LifeBase(BaseModel):
     emoji: str
 
 class AquariumStatus(BaseModel):
-    latest_images: Dict[int, Optional[Image]] = {}  # Map device_index to Image
-    latest_reading: Optional[Reading] = None
-    alerts: List[str] = []
-    location: str = Field(default=os.getenv('TANK_LOCATION', 'Austin, TX'))
-    timezone: str = Field(default=os.getenv('TANK_TIMEZONE', 'America/Chicago'))
+    latest_images: Dict[int, Image]
+    latest_reading: Optional[Reading]
+    alerts: List[str]
+    timezone: str
+    scan_enabled: bool = False
 
 class Trajectory(BaseModel):
     name: str
@@ -144,6 +144,9 @@ class RobotCommand(BaseModel):
 
 class TrajectoryName(BaseModel):
     name: constr(min_length=1, max_length=64, pattern=r'^[a-zA-Z0-9_-]+$')
+
+class ScanState(BaseModel):
+    enabled: bool
 
 def load_life_from_csv(db: Session) -> None:
     log = logging.getLogger(__name__)
