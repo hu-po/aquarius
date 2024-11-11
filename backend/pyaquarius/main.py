@@ -429,3 +429,17 @@ async def delete_trajectory(name: str) -> Dict[str, str]:
     except Exception as e:
         log.error(f"Failed to delete trajectory {name}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/robot/scan")
+async def robot_scan():
+    """Scan for life in the aquarium.
+
+    device = config.robot_camera_id
+    for trajectory in selected_trajectories:
+        robot_client.send_command('p', trajectory)
+        await capture_image(device) # take picture at the end of the trajectory
+        await async_inference(model, analysis, image_path) # analyze the image
+    robot_client.send_command('h') # return to home
+    robot_client.send_command('r') # release robot
+    """
+    pass
