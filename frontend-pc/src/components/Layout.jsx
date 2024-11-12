@@ -5,15 +5,12 @@ import { getStatus, toggleScan } from '../services/api';
 export const Layout = () => {
   const [status, setStatus] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [scanEnabled, setScanEnabled] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadStatus = async () => {
       try {
         const statusData = await getStatus();
         setStatus(statusData);
-        setScanEnabled(statusData?.scan_enabled || false);
       } catch (err) {
         console.error('Failed to load status:', err);
       }
@@ -31,18 +28,6 @@ export const Layout = () => {
     };
   }, []);
 
-  const handleToggleScan = async () => {
-    setLoading(true);
-    try {
-      await toggleScan(!scanEnabled);
-      setScanEnabled(!scanEnabled);
-    } catch (err) {
-      console.error('Failed to toggle scan:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="app-container">
       <nav className="main-nav">
@@ -59,14 +44,6 @@ export const Layout = () => {
           <NavLink to="/robot" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             🤖
           </NavLink>
-          <button
-            onClick={handleToggleScan}
-            disabled={loading}
-            className={`scan-toggle ${scanEnabled ? 'active' : ''}`}
-            title={`Scheduled scan is ${scanEnabled ? 'enabled' : 'disabled'}`}
-          >
-            {loading ? '⏳' : scanEnabled ? '🔍' : '⏹️'}
-          </button>
         </div>
         <div className="tank-info">
           <span className="location">📍 {status?.location || "Location not set"}</span>
