@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AIAnalysis } from '../components';
+import { AnalysisControl } from '../components';
 import AnalysisHistory from '../components/AnalysisHistory';
 import { getAnalysisHistory } from '../services/api';
 
@@ -30,7 +30,7 @@ export const AnalysisPage = () => {
 
   return (
     <div className="analysis-page">
-      <AIAnalysis 
+      <AnalysisControl 
         onAnalysisComplete={handleNewAnalysis}
         latestImage={latestImage}
         setLatestImage={setLatestImage}

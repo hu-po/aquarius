@@ -12,7 +12,7 @@ const ANALYSES = [
   { id: 'estimate_temperature', label: '🌡️ get temp' }
 ];
 
-const AIAnalysis = ({ onAnalysisComplete }) => {
+const AnalysisControl = ({ onAnalysisComplete }) => {
   const [selectedModels, setSelectedModels] = useState(new Set(['claude', 'gpt', 'gemini']));
   const [selectedAnalyses, setSelectedAnalyses] = useState(new Set(['identify_life']));
   const [loading, setLoading] = useState(false);
@@ -128,4 +128,4 @@ const AIAnalysis = ({ onAnalysisComplete }) => {
   );
 };
 
-export default AIAnalysis;
+export default AnalysisControl;
