@@ -53,8 +53,6 @@ class DBImage(BaseMixin, Base):
     width = Column(Integer)
     height = Column(Integer)
     file_size = Column(Integer)
-    water_level = Column(Float, nullable=True)
-    fish_count = Column(Integer, nullable=True)
 
 class DBReading(BaseMixin, Base):
     __tablename__ = "readings"
@@ -174,6 +172,7 @@ def load_life_from_csv(db: Session) -> None:
 Base.metadata.create_all(bind=engine)
 Index('idx_readings_timestamp', DBReading.timestamp)
 Index('idx_images_timestamp', DBImage.timestamp)
+Index('idx_life_last_seen_at', DBLife.last_seen_at)
 
 with SessionLocal() as db:
     load_life_from_csv(db)
