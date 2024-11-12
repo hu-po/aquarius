@@ -7,7 +7,7 @@ const ROBOT_COMMANDS = [
   { id: 'go-home', label: '🏠', description: 'Go Home', row: 'top' },
   { id: 'set-home', label: '📍', description: 'Set Home', row: 'top' },
   // Middle row - emergency
-  { id: 'release', label: '🔴', description: 'E-Stop', row: 'middle' },
+  { id: 'e-stop', label: '🔴', description: 'E-Stop', row: 'middle' },
   // Bottom row - recording
   { id: 'start-recording', label: '⏺️', description: 'Record', row: 'bottom' },
   { id: 'stop-recording', label: '⏹️', description: 'End Record', row: 'bottom' },
@@ -21,7 +21,9 @@ const RobotPage = () => {
   const handleCommand = async (command) => {
     setLoading(true);
     try {
-      if (command === 'release') {
+      if (command === 'e-stop') {
+        await sendRobotCommand({ command: 'f', trajectory_name: null });
+      } else if (command === 'start-recording') {
         // Release robot before recording
         await sendRobotCommand({ command: 'f', trajectory_name: null });
         await sendRobotCommand({ command: 'r', trajectory_name: null });
