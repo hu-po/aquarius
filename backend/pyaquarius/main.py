@@ -321,7 +321,7 @@ async def get_readings_history(hours: int = 24, db: Session = Depends(get_db)) -
 @app.get("/life")
 async def get_life(db: Session = Depends(get_db)) -> List[Life]:
     """Get all life in the aquarium."""
-    life = db.query(DBLife).order_by(DBLife.common_name).all()
+    life = db.query(DBLife).order_by(DBLife.last_seen_at.desc()).all()
     return [Life.from_orm(l) for l in life]
 
 @app.post("/life")
