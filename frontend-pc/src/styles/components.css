@@ -578,22 +578,25 @@ body {
 
 .scan-toggle {
     background: none;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
+    border: 2px solid #334155;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
     cursor: pointer;
     transition: all 0.2s;
     color: #94a3b8;
+    font-weight: 500;
 }
 
 .scan-toggle:hover:not(:disabled) {
     color: #e2e8f0;
     background: #334155;
+    border-color: #475569;
 }
 
 .scan-toggle.active {
     color: #e2e8f0;
     background: #334155;
+    border-color: #3b82f6;
 }
 
 .scan-toggle:disabled {
@@ -615,6 +618,8 @@ body {
 
 .analysis-page {
   padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
   width: 100%;
 }
 
@@ -628,26 +633,13 @@ body {
 }
 
 .controls-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  justify-content: center;
   gap: 2rem;
   margin-bottom: 1.5rem;
 }
 
 .model-toggles,
 .analysis-toggles {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.controls-buttons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.analyze-button,
-.scan-toggle {
-  min-width: 120px;
+  min-width: 200px;
 }

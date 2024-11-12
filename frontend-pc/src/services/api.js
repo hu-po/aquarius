@@ -104,7 +104,10 @@ export const updateLife = async (id, life) => {
 
 export const Analyze = async (models, analyses) => {
   try {
-    const response = await api.post(`/analyze/${models}/${analyses}`, null, {
+    const encodedModels = encodeURIComponent(models);
+    const encodedAnalyses = encodeURIComponent(analyses);
+    
+    const response = await api.post(`/analyze/${encodedModels}/${encodedAnalyses}`, null, {
       timeout: ANALYSIS_TIMEOUT
     });
     

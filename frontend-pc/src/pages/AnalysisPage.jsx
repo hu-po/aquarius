@@ -24,7 +24,7 @@ export const AnalysisPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleNewAnalysis = async (image, results) => {
+  const handleNewAnalysis = async () => {
     await fetchAnalysisHistory();
   };
 

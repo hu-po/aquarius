@@ -222,12 +222,13 @@ async def capture_image(device_index: int):
 
 @app.post("/analyze/{ai_models}/{analyses}")
 async def analyze(ai_models: str, analyses: str):
-    log.debug(f"Received analysis request - models: {ai_models}, analyses: {analyses}")
+    # FastAPI automatically decodes URL parameters
+    ai_models_list = ai_models.split(',')
+    analyses_list = analyses.split(',')
+    
+    log.debug(f"Received analysis request - models: {ai_models_list}, analyses: {analyses_list}")
+    
     try:
-        ai_models_list = ai_models.split(',')
-        analyses_list = analyses.split(',')
-        
-        log.debug(f"Validating requested models: {ai_models_list} against enabled models: {ENABLED_MODELS}")
         invalid_models = [m for m in ai_models_list if m not in ENABLED_MODELS]
         if invalid_models:
             log.error(f"Invalid AI models requested: {invalid_models}")
@@ -274,7 +275,7 @@ async def analyze(ai_models: str, analyses: str):
     except HTTPException:
         raise
     except Exception as e:
-        log.error(f"Unexpected error in analysis: {str(e)}", exc_info=True)
+        log.error(f"Analysis error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/healthcheck")
