@@ -82,48 +82,52 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
 
   return (
     <div className="controls-section">
-      <div className="model-toggles">
-        {AI_MODELS.map(model => (
-          <label key={model.id} className="toggle-label">
-            <input
-              type="checkbox"
-              checked={selectedModels.has(model.id)}
-              onChange={() => handleModelToggle(model.id)}
-            />
-            {model.label}
-          </label>
-        ))}
+      <div className="controls-layout">
+        <div className="model-toggles">
+          {AI_MODELS.map(model => (
+            <label key={model.id} className="toggle-label">
+              <input
+                type="checkbox"
+                checked={selectedModels.has(model.id)}
+                onChange={() => handleModelToggle(model.id)}
+              />
+              {model.label}
+            </label>
+          ))}
+        </div>
+
+        <div className="analysis-toggles">
+          {ANALYSES.map(analysis => (
+            <label key={analysis.id} className="toggle-label">
+              <input
+                type="checkbox"
+                checked={selectedAnalyses.has(analysis.id)}
+                onChange={() => handleAnalysisToggle(analysis.id)}
+              />
+              {analysis.label}
+            </label>
+          ))}
+        </div>
       </div>
 
-      <div className="analysis-toggles">
-        {ANALYSES.map(analysis => (
-          <label key={analysis.id} className="toggle-label">
-            <input
-              type="checkbox"
-              checked={selectedAnalyses.has(analysis.id)}
-              onChange={() => handleAnalysisToggle(analysis.id)}
-            />
-            {analysis.label}
-          </label>
-        ))}
+      <div className="controls-buttons">
+        <button
+          className={`analyze-button ${loading ? 'analyzing' : ''}`}
+          onClick={handleAnalyze}
+          disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
+        >
+          {loading ? '🧠 ... ⏳' : '🧠'}
+        </button>
+
+        <button
+          onClick={handleToggleScan}
+          disabled={scanLoading}
+          className={`scan-toggle ${scanEnabled ? 'active' : ''}`}
+          title={`Scheduled scan is ${scanEnabled ? 'enabled' : 'disabled'}`}
+        >
+          {scanLoading ? '⏳' : scanEnabled ? '🔍 Auto Scan On' : '⏹️ Auto Scan Off'}
+        </button>
       </div>
-
-      <button
-        className={`analyze-button ${loading ? 'analyzing' : ''}`}
-        onClick={handleAnalyze}
-        disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
-      >
-        {loading ? '🧠 ... ⏳' : '🧠'}
-      </button>
-
-      <button
-        onClick={handleToggleScan}
-        disabled={scanLoading}
-        className={`scan-toggle ${scanEnabled ? 'active' : ''}`}
-        title={`Scheduled scan is ${scanEnabled ? 'enabled' : 'disabled'}`}
-      >
-        {scanLoading ? '⏳' : scanEnabled ? '🔍 Auto Scan On' : '⏹️ Auto Scan Off'}
-      </button>
     </div>
   );
 };
