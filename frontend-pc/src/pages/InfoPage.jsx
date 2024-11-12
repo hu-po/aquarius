@@ -1,5 +1,5 @@
 import React from 'react';
-import { Life, Stats, ConfigViewer } from '../components';
+import { LifeTable, Stats, ConfigViewer } from '../components';
 
 export const InfoPage = () => {
   return (
@@ -11,7 +11,7 @@ export const InfoPage = () => {
         </div>
         <div className="life-section">
           <h2>life.csv</h2>
-          <Life />
+          <LifeTable />
         </div>
         <div className="config-section">
           <h2>.env</h2>

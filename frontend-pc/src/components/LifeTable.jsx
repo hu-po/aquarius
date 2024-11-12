@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getLife } from '../services/api';
 
-const Life = () => {
+const LifeTable = () => {
   const [life, setLife] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,4 +58,4 @@ const Life = () => {
   );
 };
 
-export default Life; 
+export default LifeTable; 
