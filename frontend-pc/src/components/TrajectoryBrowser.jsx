@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef } from 'react';
 import { getTrajectories, saveTrajectory, deleteTrajectory, sendRobotCommand } from '../services/api';
 
-const TrajectoryBrowser = ({ onFocusInput }) => {
+const TrajectoryBrowser = forwardRef((props, ref) => {
   const [trajectories, setTrajectories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -118,6 +118,11 @@ const TrajectoryBrowser = ({ onFocusInput }) => {
     }
   };
 
+  // Expose focusInput method via ref
+  React.useImperativeHandle(ref, () => ({
+    focusInput
+  }));
+
   if (loading) return <div className="loading">Loading trajectories...</div>;
 
   return (
@@ -194,6 +199,6 @@ const TrajectoryBrowser = ({ onFocusInput }) => {
       {error && <div className="error-message">{error}</div>}
     </div>
   );
-};
+});
 
 export default TrajectoryBrowser; 
