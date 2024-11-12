@@ -3,12 +3,11 @@ import { sendRobotCommand } from '../services/api';
 import { TrajectoryBrowser } from '../components';
 
 const ROBOT_COMMANDS = [
-  { id: 'h', label: '🏠', description: 'Go Home' },
-  { id: 'H', label: '📍', description: 'Set Home' },
-  { id: 'f', label: '🔓', description: 'Release Robot' },
-  { id: 'r', label: '⏺️', description: 'Start Recording' },
-  { id: 'c', label: '⏹️', description: 'Stop Recording' },
-  { id: 'p', label: '▶️', description: 'Play Once' }
+  { id: 'go-home', label: '🏠', description: 'Go Home' },
+  { id: 'set-home', label: '📍', description: 'Set Home' },
+  { id: 'release', label: '🔓', description: 'Release' },
+  { id: 'start-recording', label: '⏺️', description: 'Record' },
+  { id: 'stop-recording', label: '⏹️', description: 'End Record' },
 ];
 
 const RobotPage = () => {
@@ -19,16 +18,24 @@ const RobotPage = () => {
   const handleCommand = async (command) => {
     setLoading(true);
     try {
-      if (command === 'r') {
+      if (command === 'release') {
         // Release robot before recording
         await sendRobotCommand({ command: 'f', trajectory_name: null });
         await sendRobotCommand({ command: 'r', trajectory_name: null });
-      } else if (command === 'c') {
+      } else if (command === 'stop-recording') {
         await sendRobotCommand({ command: 'c', trajectory_name: null });
-        // Focus input after stopping recording
+        // Go home after stopping recording
+        await sendRobotCommand({ command: 'h', trajectory_name: null });
+        // Focus input after stopping recording and going home
         setTimeout(() => trajectoryBrowserRef.current?.focusInput(), 100);
+      } else if (command === 'go-home') {
+        await sendRobotCommand({ command: 'h', trajectory_name: null });
+        // Release robot after going home
+        await sendRobotCommand({ command: 'f', trajectory_name: null });
+      } else if (command === 'set-home') {
+        await sendRobotCommand({ command: 'H', trajectory_name: null });
       } else {
-        await sendRobotCommand({ command, trajectory_name: null });
+        setStatus(`Error: Unknown robot command ${command}`);
       }
       setStatus(`Success: Command executed`);
     } catch (error) {
