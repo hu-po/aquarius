@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getTrajectories, loadTrajectory, saveTrajectory, deleteTrajectory, sendRobotCommand } from '../services/api';
+import { getTrajectories, saveTrajectory, deleteTrajectory, sendRobotCommand } from '../services/api';
 
 const TrajectoryBrowser = () => {
   const [trajectories, setTrajectories] = useState([]);

@@ -379,18 +379,6 @@ async def list_trajectories() -> Dict[str, List[Trajectory]]:
         log.error(f"Failed to get trajectories: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get trajectories")
 
-@app.get("/robot/trajectories/{name}")
-async def load_trajectory(name: str) -> Dict[str, str]:
-    """Load a saved trajectory"""
-    try:
-        response = robot_client.send_command('l', name)
-        if 'error' in response.lower():
-            raise ValueError(response)
-        return {"message": f"Loaded trajectory: {name}"}
-    except Exception as e:
-        log.error(f"Failed to load trajectory {name}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/robot/trajectories/{name}")
 async def save_trajectory(name: str) -> Dict[str, str]:
     """Save current trajectory"""

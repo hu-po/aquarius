@@ -145,15 +145,6 @@ export const getTrajectories = async () => {
   }
 };
 
-export const loadTrajectory = async (name) => {
-  try {
-    const response = await api.get(`/robot/trajectories/${name}`);
-    return response.data;
-  } catch (error) {
-    handleApiError(error, 'Failed to load trajectory');
-  }
-};
-
 export const saveTrajectory = async (name) => {
   try {
     const response = await api.post(`/robot/trajectories/${name}`);
