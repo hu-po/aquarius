@@ -28,7 +28,6 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
         console.error('Failed to load status:', err);
       }
     };
-
     loadStatus();
     const statusInterval = setInterval(loadStatus, 30000);
     return () => clearInterval(statusInterval);
@@ -81,53 +80,45 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
   };
 
   return (
-    <div className="trajectories-browser">
-      <div className="analysis-options">
-        <div className="options-grid">
-          <div className="options-column">
-            <h3>AI Models</h3>
-            {AI_MODELS.map(model => (
-              <label key={model.id} className="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={selectedModels.has(model.id)}
-                  onChange={() => handleModelToggle(model.id)}
-                />
-                {model.label}
-              </label>
-            ))}
-          </div>
-
-          <div className="options-column">
-            <h3>Analysis Types</h3>
-            {ANALYSES.map(analysis => (
-              <label key={analysis.id} className="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={selectedAnalyses.has(analysis.id)}
-                  onChange={() => handleAnalysisToggle(analysis.id)}
-                />
-                {analysis.label}
-              </label>
-            ))}
-          </div>
+    <div className="analysis-control">
+      <div className="checkbox-grid">
+        <div className="checkbox-column">
+          {AI_MODELS.map(model => (
+            <label key={model.id}>
+              <input
+                type="checkbox"
+                checked={selectedModels.has(model.id)}
+                onChange={() => handleModelToggle(model.id)}
+              />
+              {model.label}
+            </label>
+          ))}
+        </div>
+        <div className="checkbox-column">
+          {ANALYSES.map(analysis => (
+            <label key={analysis.id}>
+              <input
+                type="checkbox"
+                checked={selectedAnalyses.has(analysis.id)}
+                onChange={() => handleAnalysisToggle(analysis.id)}
+              />
+              {analysis.label}
+            </label>
+          ))}
         </div>
       </div>
-
-      <div className="trajectory-actions">
+      <div className="button-row">
         <button
-          className={`play-button ${loading ? 'analyzing' : ''}`}
+          className={loading ? 'loading' : ''}
           onClick={handleAnalyze}
           disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
         >
           {loading ? '🧠 ... ⏳' : '🧠 Analyze'}
         </button>
-
         <button
           onClick={handleToggleScan}
           disabled={scanLoading}
-          className={`scan-toggle ${scanEnabled ? 'active' : ''}`}
-          title={`Scheduled scan is ${scanEnabled ? 'enabled' : 'disabled'}`}
+          className={scanEnabled ? 'active' : ''}
         >
           {scanLoading ? '🔍 ... ⏳' : scanEnabled ? '🔍 Auto Scan On ✅' : '🔍 Auto Scan Off ❌'}
         </button>

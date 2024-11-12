@@ -422,11 +422,18 @@ async def robot_scan(
             await asyncio.sleep(SCAN_SLEEP_TIME)
             capture_result = await capture_image(device_index)
             robot_client.send_command('h') # return home
-            ai_responses = await async_inference(
-                ENABLED_MODELS,
-                ['identify_life'],
-                capture_result['filepath']
-            )
+            if 'temp' in trajectory:
+                ai_responses = await async_inference(
+                    ENABLED_MODELS,
+                    ['estimate_temperature'],
+                    capture_result['filepath']
+                )
+            else:
+                ai_responses = await async_inference(
+                    ENABLED_MODELS,
+                    ['identify_life'],
+                    capture_result['filepath']
+                )
             results.append({
                 'trajectory': trajectory,
                 'filepath': capture_result['filepath'],
