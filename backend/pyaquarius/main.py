@@ -21,7 +21,7 @@ from .robot import RobotClient
 from .models import (
     get_db, Image, Reading, AquariumStatus,
     DBImage, DBReading, DBAIAnalysis, DBLife, LifeBase, Life,
-    RobotCommand, Trajectory, ScanState
+    RobotCommand, Trajectory, ScanState, AIAnalysis
 )
 from .camera import CameraManager
 from .ai import ENABLED_MODELS, async_inference
