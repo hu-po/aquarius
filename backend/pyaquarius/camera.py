@@ -14,8 +14,6 @@ CAMERA_WIDTH = int(os.getenv('CAMERA_WIDTH', '1280'))
 CAMERA_HEIGHT = int(os.getenv('CAMERA_HEIGHT', '720'))
 CAMERA_MAX_IMAGES = int(os.getenv('CAMERA_MAX_IMAGES', '1000'))
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
-CAMERA_DEVICE_READ_ATTEMPTS = int(os.getenv('CAMERA_DEVICE_READ_ATTEMPTS', '3'))
-CAMERA_DEVICE_RETRY_DELAY = float(os.getenv('CAMERA_DEVICE_RETRY_DELAY', '200')) / 1000  # Convert ms to seconds
 CAMERA_STREAM_TOGGLE_DELAY = float(os.getenv('CAMERA_STREAM_TOGGLE_DELAY', '200')) / 1000  # Convert ms to seconds
 
 class CameraDevice:

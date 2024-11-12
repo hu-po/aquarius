@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-const DEFAULT_TIMEOUT = import.meta.env.VITE_API_TIMEOUT || 10000;
-const CAPTURE_TIMEOUT = import.meta.env.VITE_CAPTURE_TIMEOUT || 30000;
-const ANALYSIS_TIMEOUT = import.meta.env.VITE_ANALYSIS_TIMEOUT || 60000;
-const STREAM_RESUME_TIMEOUT = import.meta.env.VITE_STREAM_RESUME_TIMEOUT || 200;
+const DEFAULT_TIMEOUT = import.meta.env.API_TIMEOUT || 10000;
+const CAPTURE_TIMEOUT = import.meta.env.CAPTURE_TIMEOUT || 30000;
+const ANALYSIS_TIMEOUT = import.meta.env.ANALYSIS_TIMEOUT || 60000;
+const STREAM_RESUME_TIMEOUT = import.meta.env.STREAM_RESUME_TIMEOUT || 200;
 
 const api = axios.create({
   baseURL: BASE_URL,
