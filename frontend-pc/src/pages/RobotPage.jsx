@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { sendRobotCommand } from '../services/api';
-import { TrajectoryBrowser } from '../components';
+import { sendRobotCommand, captureImage } from '../services/api';
+import { TrajectoryBrowser, CameraStream } from '../components';
 
 const ROBOT_COMMANDS = [
   // Top row - movement controls
@@ -17,6 +17,17 @@ const RobotPage = () => {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const trajectoryBrowserRef = useRef();
+  const [isPaused, setIsPaused] = useState(false);
+
+  const handleCapture = async (deviceIndex) => {
+    try {
+      setStatus('Capturing image...');
+      await captureImage(deviceIndex);
+      setStatus('Image captured successfully');
+    } catch (error) {
+      setStatus(`Error capturing image: ${error.message}`);
+    }
+  };
 
   const handleCommand = async (command) => {
     setLoading(true);
@@ -52,6 +63,13 @@ const RobotPage = () => {
 
   return (
     <div className="robot-page">
+      <div className="camera-container">
+        <CameraStream
+          deviceIndex={0} // Using SCAN_CAMERA_ID=0
+          isPaused={isPaused}
+          onCapture={handleCapture}
+        />
+      </div>
       <div className="robot-grid">
         <div className="robot-row top">
           {ROBOT_COMMANDS.filter(cmd => cmd.row === 'top').map(cmd => (
