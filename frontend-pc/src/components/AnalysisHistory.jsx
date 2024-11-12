@@ -3,6 +3,7 @@ import { getAnalysisHistory } from '../services/api';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 const POLL_INTERVAL = import.meta.env.VITE_ANALYSIS_POLL_INTERVAL || 10000;
+const CAMERA_IMG_TYPE = import.meta.env.VITE_CAMERA_IMG_TYPE || 'jpg';
 
 const formatTimestamp = (timestamp) => {
   return new Date(timestamp).toLocaleTimeString('en-US', {
@@ -57,7 +58,7 @@ const AnalysisHistory = () => {
         <div key={group.image_id} className="history-group">
           <div className="history-image">
             <img 
-              src={`${BACKEND_URL}/images/${group.image_id}`}
+              src={`${BACKEND_URL}/images/${group.image_id}.${CAMERA_IMG_TYPE}`}
               alt={`Analysis from ${new Date(group.timestamp).toLocaleString()}`}
               className="history-thumbnail"
             />

@@ -185,8 +185,12 @@ async def capture_image(device_index: int):
         log.debug(f"Stopping stream on device {device_index}")
         await device.stop_stream()
         
+        # Generate filename first
+        image_id = datetime.now(timezone.utc).isoformat()
+        filename = f"{image_id}.{CAMERA_IMG_TYPE}"
+        
         log.debug(f"Initiating capture on device {device_index}")
-        result = await camera_manager.capture_image(device)
+        result = await camera_manager.capture_image(device, filename)
         if not result:
             log.error(f"Capture failed for device {device_index}")
             raise HTTPException(status_code=500, detail=f"Failed to capture from camera {device_index}")
@@ -196,7 +200,7 @@ async def capture_image(device_index: int):
         
         with get_db_session() as db:
             image = DBImage(
-                id=datetime.now(timezone.utc).isoformat(),
+                id=image_id,
                 filepath=filepath,
                 width=width,
                 height=height,
@@ -215,7 +219,6 @@ async def capture_image(device_index: int):
         
     except Exception as e:
         log.error(f"Capture error: {str(e)}", exc_info=True)
-        # Attempt to restart stream on error if it was streaming
         if was_streaming:
             await device.start_stream()
         raise HTTPException(status_code=500, detail=str(e))

@@ -92,7 +92,7 @@ class CameraManager:
     def get_device(self, index: int) -> Optional[CameraDevice]:
         return self.devices.get(index)
 
-    async def capture_image(self, device: CameraDevice) -> Optional[str]:
+    async def capture_image(self, device: CameraDevice, filename: str) -> Optional[tuple[str, int, int, int]]:
         log.debug(f"Starting image capture from device {device.index}")
         if device.is_streaming:
             log.debug(f"Stopping stream on device {device.index} before capture")
@@ -124,7 +124,6 @@ class CameraManager:
                     log.error(f"All capture attempts failed for device {device.index}")
                     return None
 
-                filename = f"capture_{datetime.now(timezone.utc).isoformat()}.{CAMERA_IMG_TYPE}"
                 filepath = os.path.join(IMAGES_DIR, filename)
                 
                 log.debug(f"Saving captured image to {filepath}")
