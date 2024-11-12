@@ -42,6 +42,7 @@ const RobotPage = () => {
         await sendRobotCommand({ command: 'c', trajectory_name: null });
         // Go home after stopping recording
         await sendRobotCommand({ command: 'h', trajectory_name: null });
+        await sendRobotCommand({ command: 'r', trajectory_name: null });
         // Focus input after stopping recording and going home
         setTimeout(() => trajectoryBrowserRef.current?.focusInput(), 100);
       } else if (command === 'go-home') {
