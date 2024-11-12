@@ -21,6 +21,7 @@ Use the scripts in `scripts` to start the services on the master robot node, the
 ./scripts/start.sh debug # start with debug logging
 ./scripts/stop.sh # stops services
 ./scripts/clean.sh # CAUTION: removes all local data
+./scripts/stop.sh && ./scripts/clean.sh # wipe
 # start robot on mycobot 280 pi
 ./scripts/start-robot.sh
 # start robot server (on robot)
