@@ -3,25 +3,26 @@ services:
     build: ./backend
     network_mode: "host"
     environment:
-      # AI providers
+      # AI provider keys
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # AI analysis settings
       - AI_API_TIMEOUT=${AI_API_TIMEOUT}
       - AI_API_MAX_RETRIES=${AI_API_MAX_RETRIES}
       - AI_MAX_TOKENS=${AI_MAX_TOKENS}
       # tank information
-      - TANK_LOCATION=${TANK_LOCATION}
-      - TANK_TIMEZONE=${TANK_TIMEZONE}
       - TANK_TEMP_MIN=${TANK_TEMP_MIN}
       - TANK_TEMP_MAX=${TANK_TEMP_MAX}
-      # app settings, data directories
+      # compute node settings
+      - LOCATION=${LOCATION}
+      - TIMEZONE=${TIMEZONE}
       - DATA_DIR=${DATA_DIR}
       - IMAGES_DIR=${IMAGES_DIR}
       - DATABASE_DIR=${DATABASE_DIR}
       - DATABASE_URL=${DATABASE_URL}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      # CORS
+      # security settings
       - CORS_ORIGINS=${CORS_ORIGINS}
       - CORS_MAX_AGE=${CORS_MAX_AGE}
       # camera devices

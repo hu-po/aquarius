@@ -40,7 +40,7 @@ flowchart TB
     robot_arm["🦾 Robot Arm"] --- aquarium1
     robot_arm --- aquarium2
     
-    subgraph Edge["AGX Orin (192.168.x.x)"]
+    subgraph Compute["AGX Orin (192.168.x.x)"]
         backend["backend"]
         fe_pc["frontend-pc"]
         fe_vr["frontend-vr"]
@@ -75,8 +75,8 @@ flowchart TB
     style camera2 fill:#e6e6e6,stroke:#666666
     style robot_arm fill:#ffcc80,stroke:#ff8c00
 
-    %% Edge computing node
-    style Edge fill:#f8f9fa,stroke:#495057
+    %% Compute node
+    style Compute fill:#f8f9fa,stroke:#495057
     style backend fill:#28a745,stroke:#1e7e34,color:#ffffff
     style fe_pc fill:#007bff,stroke:#0056b3,color:#ffffff
     style fe_vr fill:#6610f2,stroke:#520dc2,color:#ffffff

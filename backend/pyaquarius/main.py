@@ -303,7 +303,8 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
         latest_images=latest_images,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
         alerts=list(set(alerts)),
-        timezone=validate_timezone(os.getenv('TANK_TIMEZONE', 'UTC')),
+        timezone=validate_timezone(os.getenv('TIMEZONE', 'UTC')),
+        location=os.getenv('LOCATION', 'Unknown'),
         scan_enabled=SCAN_ENABLED
     )
 
