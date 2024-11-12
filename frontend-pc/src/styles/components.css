@@ -643,3 +643,80 @@ body {
 .analysis-toggles {
   min-width: 200px;
 }
+
+.analysis-options {
+  margin-bottom: 1.5rem;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.options-column {
+  background: #1e293b;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #334155;
+}
+
+.options-column h3 {
+  margin: 0 0 1rem 0;
+  color: #e2e8f0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-radius: 0.375rem;
+}
+
+.toggle-label:hover {
+  background: #334155;
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+
+.trajectory-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.play-button, .scan-toggle {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.play-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+}
+
+.scan-toggle {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 2px solid #334155;
+}
+
+.scan-toggle.active {
+  background: #334155;
+  border-color: #3b82f6;
+  color: white;
+}

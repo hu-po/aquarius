@@ -81,42 +81,46 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
   };
 
   return (
-    <div className="controls-section">
-      <div className="controls-layout">
-        <div className="model-toggles">
-          {AI_MODELS.map(model => (
-            <label key={model.id} className="toggle-label">
-              <input
-                type="checkbox"
-                checked={selectedModels.has(model.id)}
-                onChange={() => handleModelToggle(model.id)}
-              />
-              {model.label}
-            </label>
-          ))}
-        </div>
+    <div className="trajectories-browser">
+      <div className="analysis-options">
+        <div className="options-grid">
+          <div className="options-column">
+            <h3>AI Models</h3>
+            {AI_MODELS.map(model => (
+              <label key={model.id} className="toggle-label">
+                <input
+                  type="checkbox"
+                  checked={selectedModels.has(model.id)}
+                  onChange={() => handleModelToggle(model.id)}
+                />
+                {model.label}
+              </label>
+            ))}
+          </div>
 
-        <div className="analysis-toggles">
-          {ANALYSES.map(analysis => (
-            <label key={analysis.id} className="toggle-label">
-              <input
-                type="checkbox"
-                checked={selectedAnalyses.has(analysis.id)}
-                onChange={() => handleAnalysisToggle(analysis.id)}
-              />
-              {analysis.label}
-            </label>
-          ))}
+          <div className="options-column">
+            <h3>Analysis Types</h3>
+            {ANALYSES.map(analysis => (
+              <label key={analysis.id} className="toggle-label">
+                <input
+                  type="checkbox"
+                  checked={selectedAnalyses.has(analysis.id)}
+                  onChange={() => handleAnalysisToggle(analysis.id)}
+                />
+                {analysis.label}
+              </label>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="controls-buttons">
+      <div className="trajectory-actions">
         <button
-          className={`analyze-button ${loading ? 'analyzing' : ''}`}
+          className={`play-button ${loading ? 'analyzing' : ''}`}
           onClick={handleAnalyze}
           disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
         >
-          {loading ? '🧠 ... ⏳' : '🧠'}
+          {loading ? '🧠 ... ⏳' : '🧠 Analyze'}
         </button>
 
         <button
@@ -125,7 +129,7 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
           className={`scan-toggle ${scanEnabled ? 'active' : ''}`}
           title={`Scheduled scan is ${scanEnabled ? 'enabled' : 'disabled'}`}
         >
-          {scanLoading ? '⏳' : scanEnabled ? '🔍 Auto Scan On' : '⏹️ Auto Scan Off'}
+          {scanLoading ? '🔍 ... ⏳' : scanEnabled ? '🔍 Auto Scan On ✅' : '🔍 Auto Scan Off ❌'}
         </button>
       </div>
     </div>
