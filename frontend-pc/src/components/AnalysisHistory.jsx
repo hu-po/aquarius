@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getAnalysisHistory } from '../services/api';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-const POLL_INTERVAL = 10000; // 10 seconds
+const POLL_INTERVAL = import.meta.env.VITE_ANALYSIS_POLL_INTERVAL || 10000;
 
 const formatTimestamp = (timestamp) => {
   return new Date(timestamp).toLocaleTimeString('en-US', {
