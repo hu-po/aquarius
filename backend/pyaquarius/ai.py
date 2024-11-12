@@ -194,7 +194,7 @@ async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
     header_str = ','.join(expected_headers)
     
     prompt = f"""Return ONLY a CSV with fish, invertebrates, and plants that are CLEARLY VISIBLE in this underwater aquarium image.
-Limit responses to 10 most confident identifications.
+Limit responses to 4 most confident identifications.
 Use this EXACT format with these EXACT headers (no markdown, no extra text):
 {header_str}
 
