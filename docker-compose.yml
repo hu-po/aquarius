@@ -78,6 +78,7 @@ services:
       args:
         - BACKEND_URL=http://${HOST_IP}:8000
         - IMAGE_FETCH_INTERVAL=${IMAGE_FETCH_INTERVAL:-30000}
+        - TRAJECTORY_FETCH_INTERVAL=${TRAJECTORY_FETCH_INTERVAL:-30000}
     network_mode: "host"
     environment:
       - BACKEND_URL=http://${HOST_IP}:8000

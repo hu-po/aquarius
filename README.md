@@ -25,6 +25,7 @@ Use the scripts in `scripts` to start the services on the master robot node, the
 ./scripts/start-robot.sh
 # start robot server (on robot)
 sudo python3 robot/server.py --debug # start with debug logging
+sudo rm -rf robot/trajectories/ # clear local trajectories
 ```
 
 <!-- ## Video
@@ -93,15 +94,6 @@ flowchart TB
     style phone fill:#20c997,stroke:#0ca678
 ```
 
-## TODO
-
-- [ ] unified config management through frontend menus, store in backend db
-- [ ] page to see associated images for each life
-- [ ] voting system for ai analysis to collect fine tuning data
-- [ ] human verification of associated images and each model response
-- [ ] sort life.csv based on last seen
-- [ ] temperature measurements during scan, maybe a separate function?
-
 ## Citation
 
 ```
@@ -112,3 +104,13 @@ flowchart TB
   url={https://github.com/hu-po/aquarius}
 }
 ```
+
+## TODO
+
+- [ ] unified config management through frontend menus, store in backend db
+- [ ] page to see associated images for each life
+- [ ] voting system for ai analysis to collect fine tuning data
+- [ ] human verification of associated images and each model response
+- [ ] sort life.csv based on last seen
+- [ ] temperature measurements during scan, maybe a separate function?
+- [ ] links and back of the envelope calculation of cost per day, api?

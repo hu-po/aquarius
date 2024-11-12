@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { sendRobotCommand } from '../services/api';
 import { TrajectoryBrowser } from '../components';
 
@@ -14,15 +14,23 @@ const ROBOT_COMMANDS = [
 const RobotPage = () => {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const trajectoryBrowserRef = useRef();
 
   const handleCommand = async (command) => {
     setLoading(true);
     try {
-      const response = await sendRobotCommand({
-        command: command,
-        trajectory_name: null
-      });
-      setStatus(`Success: ${response.message}`);
+      if (command === 'r') {
+        // Release robot before recording
+        await sendRobotCommand({ command: 'f', trajectory_name: null });
+        await sendRobotCommand({ command: 'r', trajectory_name: null });
+      } else if (command === 'c') {
+        await sendRobotCommand({ command: 'c', trajectory_name: null });
+        // Focus input after stopping recording
+        setTimeout(() => trajectoryBrowserRef.current?.focusInput(), 100);
+      } else {
+        await sendRobotCommand({ command, trajectory_name: null });
+      }
+      setStatus(`Success: Command executed`);
     } catch (error) {
       setStatus(`Error: ${error.message}`);
     } finally {
@@ -46,7 +54,7 @@ const RobotPage = () => {
           </button>
         ))}
       </div>
-      <TrajectoryBrowser />
+      <TrajectoryBrowser ref={trajectoryBrowserRef} />
       {status && (
         <div className={`status-message ${status.includes('Error') ? 'error' : 'success'}`}>
           {status}

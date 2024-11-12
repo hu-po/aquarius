@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getTrajectories, saveTrajectory, deleteTrajectory, sendRobotCommand } from '../services/api';
 
-const TrajectoryBrowser = () => {
+const TrajectoryBrowser = ({ onFocusInput }) => {
   const [trajectories, setTrajectories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -9,6 +9,9 @@ const TrajectoryBrowser = () => {
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const inputRef = useRef(null);
+
+  const TRAJECTORY_FETCH_INTERVAL = import.meta.env.VITE_TRAJECTORY_FETCH_INTERVAL || 30000;
 
   const fetchTrajectories = useCallback(async () => {
     try {
@@ -26,9 +29,9 @@ const TrajectoryBrowser = () => {
 
   useEffect(() => {
     fetchTrajectories();
-    const interval = setInterval(fetchTrajectories, 5000);
+    const interval = setInterval(fetchTrajectories, TRAJECTORY_FETCH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchTrajectories]);
+  }, [fetchTrajectories, TRAJECTORY_FETCH_INTERVAL]);
 
   const handleToggleSelect = (name) => {
     setSelectedTrajectories(prev => {
@@ -89,16 +92,30 @@ const TrajectoryBrowser = () => {
     }
   };
 
+  const focusInput = () => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && newName.trim()) {
+      handleSave();
+    }
+  };
+
   if (loading) return <div className="loading">Loading trajectories...</div>;
 
   return (
     <div className="trajectories-browser">
       <div className="trajectory-controls">
         <input
+          ref={inputRef}
           type="text"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          placeholder="New trajectory name"
+          onKeyPress={handleKeyPress}
+          placeholder="{tank}{text_description}"
           disabled={saving}
         />
         <button 
