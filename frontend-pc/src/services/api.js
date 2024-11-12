@@ -171,3 +171,8 @@ export const toggleScan = async (enabled) => {
     handleApiError(error, 'Failed to toggle scan');
   }
 };
+
+export const getAnalysisHistory = async (limit = 10) => {
+  const response = await axios.get(`${BASE_URL}/analyses?limit=${limit}`);
+  return response.data;
+};

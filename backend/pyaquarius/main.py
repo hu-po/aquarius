@@ -465,3 +465,12 @@ async def toggle_scan(state: ScanState) -> Dict[str, bool]:
     except Exception as e:
         log.error(f"Failed to toggle scan: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/analyses")
+async def get_analyses(limit: int = 5):
+    with get_db_session() as db:
+        analyses = (db.query(DBAIAnalysis)
+                   .order_by(DBAIAnalysis.timestamp.desc())
+                   .limit(limit)
+                   .all())
+        return [AIAnalysis.from_orm(analysis) for analysis in analyses]

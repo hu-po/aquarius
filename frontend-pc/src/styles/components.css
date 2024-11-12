@@ -649,3 +649,37 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.analysis-history {
+  margin-top: 2rem;
+  max-height: 600px;
+  overflow-y: auto;
+  background: #1e293b;
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+  padding: 1.5rem;
+}
+
+.history-item {
+  padding: 1.5rem;
+  border-bottom: 1px solid #334155;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1.5rem;
+}
+
+.history-image {
+  position: relative;
+}
+
+.history-image img {
+  width: 100%;
+  border-radius: 0.5rem;
+}
+
+.history-timestamp {
+  margin-top: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  text-align: center;
+}
