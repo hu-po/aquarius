@@ -10,6 +10,7 @@ const TrajectoryBrowser = ({ onFocusInput }) => {
   const [saving, setSaving] = useState(false);
   const [playing, setPlaying] = useState(false);
   const inputRef = useRef(null);
+  const prevTrajectoriesRef = useRef([]);
 
   const TRAJECTORY_FETCH_INTERVAL = import.meta.env.VITE_TRAJECTORY_FETCH_INTERVAL || 30000;
 
@@ -18,6 +19,19 @@ const TrajectoryBrowser = ({ onFocusInput }) => {
       setLoading(true);
       const data = await getTrajectories();
       setTrajectories(data?.trajectories || []);
+      
+      // Auto-select newly added trajectories
+      const currentNames = new Set(prevTrajectoriesRef.current.map(t => t.name));
+      const newTrajectories = (data?.trajectories || []).filter(t => !currentNames.has(t.name));
+      if (newTrajectories.length > 0) {
+        setSelectedTrajectories(prev => {
+          const next = new Set(prev);
+          newTrajectories.forEach(t => next.add(t.name));
+          return next;
+        });
+      }
+      
+      prevTrajectoriesRef.current = data?.trajectories || [];
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -125,20 +139,6 @@ const TrajectoryBrowser = ({ onFocusInput }) => {
         >
           {saving ? '💾 ...' : '💾 Save'}
         </button>
-        <button
-          onClick={handlePlay}
-          disabled={selectedTrajectories.size === 0 || playing}
-          className="play-button"
-        >
-          {playing ? '🔄 Playing...' : '🔄 Play Selected'}
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={selectedTrajectories.size === 0 || loading}
-          className="delete-button"
-        >
-          🗑️ Delete Selected
-        </button>
       </div>
 
       <div className="trajectories-table">
@@ -172,6 +172,23 @@ const TrajectoryBrowser = ({ onFocusInput }) => {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="trajectory-actions">
+        <button
+          onClick={handlePlay}
+          disabled={selectedTrajectories.size === 0 || playing}
+          className="play-button"
+        >
+          {playing ? '▶️ playing...' : '▶️ play'}
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={selectedTrajectories.size === 0 || loading}
+          className="delete-button"
+        >
+          🗑️ delete
+        </button>
       </div>
 
       {error && <div className="error-message">{error}</div>}

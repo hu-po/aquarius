@@ -3,11 +3,14 @@ import { sendRobotCommand } from '../services/api';
 import { TrajectoryBrowser } from '../components';
 
 const ROBOT_COMMANDS = [
-  { id: 'go-home', label: '🏠', description: 'Go Home' },
-  { id: 'set-home', label: '📍', description: 'Set Home' },
-  { id: 'release', label: '🔓', description: 'Release' },
-  { id: 'start-recording', label: '⏺️', description: 'Record' },
-  { id: 'stop-recording', label: '⏹️', description: 'End Record' },
+  // Top row - movement controls
+  { id: 'go-home', label: '🏠', description: 'Go Home', row: 'top' },
+  { id: 'set-home', label: '📍', description: 'Set Home', row: 'top' },
+  // Middle row - emergency
+  { id: 'release', label: '🔴', description: 'E-Stop', row: 'middle' },
+  // Bottom row - recording
+  { id: 'start-recording', label: '⏺️', description: 'Record', row: 'bottom' },
+  { id: 'stop-recording', label: '⏹️', description: 'End Record', row: 'bottom' },
 ];
 
 const RobotPage = () => {
@@ -48,18 +51,48 @@ const RobotPage = () => {
   return (
     <div className="robot-page">
       <div className="robot-grid">
-        {ROBOT_COMMANDS.map(cmd => (
-          <button
-            key={cmd.id}
-            className={`robot-button ${loading ? 'disabled' : ''}`}
-            onClick={() => handleCommand(cmd.id)}
-            disabled={loading}
-            title={cmd.description}
-          >
-            <span className="emoji">{cmd.label}</span>
-            <span className="description">{cmd.description}</span>
-          </button>
-        ))}
+        <div className="robot-row top">
+          {ROBOT_COMMANDS.filter(cmd => cmd.row === 'top').map(cmd => (
+            <button
+              key={cmd.id}
+              className={`robot-button ${loading ? 'disabled' : ''}`}
+              onClick={() => handleCommand(cmd.id)}
+              disabled={loading}
+              title={cmd.description}
+            >
+              <span className="emoji">{cmd.label}</span>
+              <span className="description">{cmd.description}</span>
+            </button>
+          ))}
+        </div>
+        <div className="robot-row middle">
+          {ROBOT_COMMANDS.filter(cmd => cmd.row === 'middle').map(cmd => (
+            <button
+              key={cmd.id}
+              className={`robot-button emergency ${loading ? 'disabled' : ''}`}
+              onClick={() => handleCommand(cmd.id)}
+              disabled={loading}
+              title={cmd.description}
+            >
+              <span className="emoji">{cmd.label}</span>
+              <span className="description">{cmd.description}</span>
+            </button>
+          ))}
+        </div>
+        <div className="robot-row bottom">
+          {ROBOT_COMMANDS.filter(cmd => cmd.row === 'bottom').map(cmd => (
+            <button
+              key={cmd.id}
+              className={`robot-button ${loading ? 'disabled' : ''}`}
+              onClick={() => handleCommand(cmd.id)}
+              disabled={loading}
+              title={cmd.description}
+            >
+              <span className="emoji">{cmd.label}</span>
+              <span className="description">{cmd.description}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <TrajectoryBrowser ref={trajectoryBrowserRef} />
       {status && (

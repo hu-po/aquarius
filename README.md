@@ -26,7 +26,7 @@ Use the scripts in `scripts` to start the services on the master robot node, the
 ./scripts/start-robot.sh
 # start robot server (on robot)
 sudo python3 robot/server.py --debug # start with debug logging
-sudo rm -rf robot/trajectories/ # clear local trajectories
+git pull && sudo rm -rf robot/trajectories/ # clear local trajectories
 ```
 
 <!-- ## Video
