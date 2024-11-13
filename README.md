@@ -118,3 +118,4 @@ flowchart TB
 - [ ] play trajectory backwards for collision avoidance
 - [ ] use megalithic corner overlap style to reduce thermometers
 - [ ] spray paint robot arm green
+- [ ] trajectories should be managed on compute node, robot just plays

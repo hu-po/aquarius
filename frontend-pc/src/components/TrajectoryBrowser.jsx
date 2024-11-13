@@ -99,14 +99,6 @@ const TrajectoryBrowser = forwardRef((props, ref) => {
         command: 'P',
         trajectory_name: JSON.stringify(Array.from(selectedTrajectories))
       });
-      await sendRobotCommand({
-        command: 'h',
-        trajectory_name: null
-      });
-      await sendRobotCommand({
-        command: 'f',
-        trajectory_name: null
-      });
     } catch (err) {
       setError(err.message);
     } finally {

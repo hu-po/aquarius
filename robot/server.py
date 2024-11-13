@@ -82,7 +82,7 @@ class RobotServer:
             elif command == "h":
                 self.mc.send_angles(self.home_position, self.home_speed)
                 time.sleep(HOME_SLEEP)
-                return "go to home"
+                return "go to home and release" + self.handle_command('f')
             elif command == "H":
                 try:
                     current_angles = self.mc.get_angles()
@@ -101,8 +101,9 @@ class RobotServer:
             traj_name = command[1:] if len(command) > 1 else None
             
             if cmd == "r":
+                _str = "before recording, release robot" + self.handle_command('f')
                 self.start_record()
-                return "Recording started"
+                return _str + ", recording started"
             elif cmd == "c":
                 self.stop_record()
                 return "Recording stopped"
@@ -113,8 +114,8 @@ class RobotServer:
                             self.play_once()
                             return f"Playing trajectory: {traj_name}"
                         return f"Failed to load trajectory: {traj_name}"
-                    self.play_once()
-                    return "Playing current trajectory"
+                    _str = "Playing current trajectory"
+                    return _str + " and now returning home" + self.handle_command('h')
                 return "Already playing"
             elif cmd == "P":
                 if not self.playing:
@@ -128,7 +129,8 @@ class RobotServer:
                                 log.debug(f"Playing trajectory: {traj}")
                                 self.load_trajectory(traj)
                                 self.play_once()
-                            return f"Playing trajectories: {', '.join(trajectory_list)}"
+                            _str = f"Playing trajectories {', '.join(trajectory_list)}"
+                            return _str + " and now returning home" + self.handle_command('h')
                         except json.JSONDecodeError:
                             return "Invalid trajectory list format"
                         except Exception as e:
@@ -152,7 +154,7 @@ class RobotServer:
                 return self.delete_trajectory(traj_name)
             elif cmd == "f":
                 self.mc.release_all_servos()
-                return "Robot released"
+                return "releasing robot"
             elif cmd == "t":
                 result = self.list_trajectories()
                 return json.dumps(result)
