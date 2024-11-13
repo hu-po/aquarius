@@ -26,7 +26,7 @@ Use the scripts in `scripts` to start the services on the master robot node, the
 ./scripts/start-robot.sh
 # start robot server (on robot)
 sudo python3 robot/server.py --debug # start with debug logging
-sudo pkill python* && git pull && sudo rm -rf robot/trajectories/ # wipe
+git pull && sudo pkill python* && sudo rm -rf robot/trajectories/ # wipe
 ```
 
 <!-- ## Video
@@ -115,3 +115,5 @@ flowchart TB
 - [ ] sort life.csv based on last seen
 - [ ] temperature measurements during scan, maybe a separate function?
 - [ ] links and back of the envelope calculation of cost per day, api?
+- [ ] play trajectory backwards for collision avoidance
+- [ ] use megalithic corner overlap style to reduce thermometers

@@ -13,11 +13,12 @@ HOST = os.getenv('ROBOT_SERVER_HOST', '192.168.1.33')
 PORT = int(os.getenv('ROBOT_SERVER_PORT', '9000'))
 BUFFER_SIZE = int(os.getenv('ROBOT_SERVER_BUFFER_SIZE', '1024'))
 INITIAL_RETRY_DELAY = float(os.getenv('ROBOT_SERVER_INITIAL_RETRY_DELAY', '1.0'))
-MAX_RETRY_DELAY = float(os.getenv('ROBOT_SERVER_MAX_RETRY_DELAY', '30.0'))
-RETRY_BACKOFF = float(os.getenv('ROBOT_SERVER_RETRY_BACKOFF', '2.0'))
-COMMAND_TIMEOUT = float(os.getenv('ROBOT_SERVER_COMMAND_TIMEOUT', '10.0'))
+MAX_RETRY_DELAY = float(os.getenv('ROBOT_SERVER_MAX_RETRY_DELAY', '10.0'))
+RETRY_BACKOFF = float(os.getenv('ROBOT_SERVER_RETRY_BACKOFF', '1.0'))
+COMMAND_TIMEOUT = float(os.getenv('ROBOT_SERVER_COMMAND_TIMEOUT', '8.0'))
 MAX_CONNECT_ATTEMPTS = int(os.getenv('ROBOT_SERVER_MAX_CONNECT_ATTEMPTS', '3'))
-KEEP_ALIVE_INTERVAL = float(os.getenv('ROBOT_SERVER_KEEP_ALIVE_INTERVAL', '30.0'))
+KEEP_ALIVE_INTERVAL = float(os.getenv('ROBOT_SERVER_KEEP_ALIVE_INTERVAL', '10.0'))
+ROBOT_RAW_CMD_MAX_RETRY = int(os.getenv('ROBOT_RAW_CMD_MAX_RETRY', '3'))
 
 class RobotClient:
     def __init__(self):
@@ -100,11 +101,26 @@ class RobotClient:
             return False
 
     def _send_raw(self, command: str) -> str:
-        try:
-            self.socket.sendall(command.encode('utf-8'))
-            return self.socket.recv(BUFFER_SIZE).decode('utf-8')
-        except Exception as e:
-            raise ConnectionError(f"Send failed: {e}")
+        """Send raw command to robot server with retries"""
+        last_error = None
+        
+        for attempt in range(ROBOT_RAW_CMD_MAX_RETRY):
+            try:
+                self.socket.sendall(command.encode('utf-8'))
+                response = self.socket.recv(BUFFER_SIZE).decode('utf-8')
+                if response:
+                    return response
+                log.warning(f"Empty response on attempt {attempt + 1}/{ROBOT_RAW_CMD_MAX_RETRY}")
+            except Exception as e:
+                last_error = e
+                log.warning(f"Send attempt {attempt + 1}/{ROBOT_RAW_CMD_MAX_RETRY} failed: {e}")
+                if attempt < ROBOT_RAW_CMD_MAX_RETRY - 1:
+                    time.sleep(0.5 * (attempt + 1))  # Exponential backoff
+                    continue
+                break
+                
+        self.connected = False
+        raise ConnectionError(f"Send failed after {ROBOT_RAW_CMD_MAX_RETRY} attempts: {last_error}")
 
     def send_command(self, command: str, trajectory_name: Optional[str] = None) -> str:
         """Send command to robot server with optional trajectory name"""
@@ -137,17 +153,30 @@ class RobotClient:
             return []
         
         try:
-            response = self._send_raw('t')  # New command 't' for trajectory listing
+            response = self._send_raw('t')
+            if not response or response.isspace():
+                log.warning("Empty response from robot server")
+                return []
+            
             try:
                 data = json.loads(response)
+                if not isinstance(data, dict):
+                    log.error("Invalid response format - expected dictionary")
+                    return []
+                
                 if 'trajectories' in data:
                     return data['trajectories']
                 elif 'error' in data:
                     log.error(f"Server error listing trajectories: {data['error']}")
                     return []
+                else:
+                    log.error("Response missing required fields")
+                    return []
+                
             except json.JSONDecodeError as e:
                 log.error(f"Failed to parse trajectories response: {e}")
                 return []
+            
         except Exception as e:
             self.connected = False
             log.error(f"Failed to get trajectories: {e}")
