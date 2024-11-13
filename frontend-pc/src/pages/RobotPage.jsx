@@ -13,7 +13,7 @@ const ROBOT_COMMANDS = [
   { id: 'stop-recording', label: '⏹️', description: 'End Record', row: 'bottom' },
 ];
 
-const SCAN_CAMERA_ID = parseInt(process.env.REACT_APP_SCAN_CAMERA_ID ?? 0);
+const SCAN_CAMERA_ID = parseInt(import.meta.env.VITE_SCAN_CAMERA_ID ?? 0);
 
 const RobotPage = () => {
   const [status, setStatus] = useState('');
