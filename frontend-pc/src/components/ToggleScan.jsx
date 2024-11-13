@@ -39,7 +39,7 @@ const ToggleScan = () => {
       >
         <div className={`rocker-switch ${scanEnabled ? 'on' : 'off'}`}>
           <div className="switch-state off">
-            <span>📡</span>
+            <span>💤</span>
             <span>OFF</span>
           </div>
           <div className="switch-state on">
