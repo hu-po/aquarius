@@ -47,6 +47,9 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
     const img = imgRef.current;
     if (!img) return;
 
+    // Add loading="eager" to prioritize loading
+    img.loading = 'eager';
+    
     // Create a new URL with timestamp to prevent caching
     const streamUrl = `${getStreamUrl(deviceIndex)}?t=${Date.now()}`;
     img.src = streamUrl;

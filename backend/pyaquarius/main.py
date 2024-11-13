@@ -151,11 +151,18 @@ async def get_devices():
 
 @app.get("/camera/{device_index}/stream")
 async def stream_camera(device_index: int, request: Request):
-    """Stream camera feed as MJPEG with proper cleanup."""
     device = camera_manager.get_device(device_index)
     if not device:
         log.error(f"No camera found with index {device_index}")
         raise HTTPException(status_code=404, detail=f"Camera {device_index} not found")
+    
+    # Add response headers for better streaming
+    headers = {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Connection': 'close',
+    }
     
     async def cleanup(generator):
         try:
@@ -167,11 +174,12 @@ async def stream_camera(device_index: int, request: Request):
         except Exception as e:
             log.error(f"Stream error: {str(e)}", exc_info=True)
         finally:
-            log.info(f"Cleaning up camera {device_index} stream")
+            await device.stop_stream()
     
     return StreamingResponse(
         cleanup(camera_manager.generate_frames(device)),
-        media_type='multipart/x-mixed-replace; boundary=frame'
+        media_type='multipart/x-mixed-replace; boundary=frame',
+        headers=headers
     )
 
 @app.post("/capture/{device_index}")

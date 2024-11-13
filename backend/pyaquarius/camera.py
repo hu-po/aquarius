@@ -14,7 +14,7 @@ CAMERA_WIDTH = int(os.getenv('CAMERA_WIDTH', '1280'))
 CAMERA_HEIGHT = int(os.getenv('CAMERA_HEIGHT', '720'))
 CAMERA_MAX_IMAGES = int(os.getenv('CAMERA_MAX_IMAGES', '1000'))
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
-CAMERA_STREAM_TOGGLE_DELAY = float(os.getenv('CAMERA_STREAM_TOGGLE_DELAY', '200')) / 1000  # Convert ms to seconds
+CAMERA_STREAM_TOGGLE_DELAY = float(os.getenv('CAMERA_STREAM_TOGGLE_DELAY', '50')) / 1000  # Convert ms to seconds
 
 class CameraDevice:
     def __init__(self, index: int, path: str, width: int = CAMERA_WIDTH, height: int = CAMERA_HEIGHT):
@@ -35,9 +35,11 @@ class CameraDevice:
             if self.is_streaming:
                 self.is_streaming = False
                 if self.cap:
+                    was_active = self.cap.isOpened()
                     self.cap.release()
                     self.cap = None
-                    await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
+                    if was_active:
+                        await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
                     log.debug(f"Stream stopped for device {self.index}")
 
     async def start_stream(self):
@@ -46,7 +48,6 @@ class CameraDevice:
             async with self.lock:
                 if not self.is_streaming:
                     self.is_streaming = True
-                    await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
                     log.debug(f"Stream started for device {self.index}")
 
 class CameraManager:
@@ -161,13 +162,27 @@ class CameraManager:
                     log.error(f"Failed to open camera device {device.path}")
                     return
 
+                # Optimize camera settings
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
                 cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
                 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
                 cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
+                cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+                cap.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+                
                 device.is_streaming = True
                 device.cap = cap
 
+                # Pre-allocate buffer for better performance
+                frame_time = 1/CAMERA_FPS
+                last_frame = 0
+
             while device.is_streaming and not device.is_capturing:
+                current_time = asyncio.get_event_loop().time()
+                if current_time - last_frame < frame_time:
+                    await asyncio.sleep(0)  # Yield to other tasks but don't force delay
+                    continue
+
                 ret, frame = cap.read()
                 if not ret:
                     log.error(f"Failed to read frame from {device.path}")
@@ -179,11 +194,10 @@ class CameraManager:
                            b'Content-Type: image/jpeg\r\n\r\n' + 
                            buffer.tobytes() + 
                            b'\r\n')
+                    last_frame = current_time
                 except Exception as e:
                     log.error(f"Frame encoding error: {str(e)}")
                     break
-
-                await asyncio.sleep(1/CAMERA_FPS)
 
         except Exception as e:
             log.error(f"Stream error: {str(e)}", exc_info=True)
