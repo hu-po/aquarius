@@ -793,3 +793,29 @@ body {
 .life-table tr:hover {
   background: #1e293b;
 }
+
+/* Hide scrollbars while maintaining scroll functionality */
+.main-content,
+.info-page,
+.analysis-page {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.main-content::-webkit-scrollbar,
+.info-page::-webkit-scrollbar,
+.analysis-page::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
+}
+
+/* For any other scrollable containers */
+.trajectories-table,
+.life-table {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.trajectories-table::-webkit-scrollbar,
+.life-table::-webkit-scrollbar {
+  display: none;
+}
