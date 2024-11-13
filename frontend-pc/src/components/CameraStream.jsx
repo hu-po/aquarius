@@ -40,58 +40,43 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
     if (isPaused) {
       if (imgRef.current) {
         imgRef.current.src = '';
-        imgRef.current.onerror = null;
-        imgRef.current.onload = null;
       }
       return;
     }
 
-    const maxRetries = 5;
-    const retryDelay = 1000;
-    let retryTimeout;
-    
-    const setupStream = () => {
-      if (!mountedRef.current || !imgRef.current) return;
-      
-      imgRef.current.onerror = () => {
-        if (!mountedRef.current) return;
-        
-        setError('Stream connection failed');
-        if (retryCount < maxRetries) {
-          retryTimeout = setTimeout(() => {
-            if (!mountedRef.current) return;
-            setRetryCount(prev => prev + 1);
-            if (imgRef.current && !isPaused) {
-              const timestamp = Date.now();
-              const streamUrl = `${getStreamUrl(deviceIndex)}?t=${timestamp}`;
-              imgRef.current.src = streamUrl;
-            }
-          }, retryDelay);
-        }
-      };
-      
-      imgRef.current.onload = () => {
-        if (!mountedRef.current) return;
-        setError(null);
-        setRetryCount(0);
-      };
+    const img = imgRef.current;
+    if (!img) return;
 
-      const timestamp = Date.now();
-      const streamUrl = `${getStreamUrl(deviceIndex)}?t=${timestamp}`;
-      imgRef.current.src = streamUrl;
+    // Create a new URL with timestamp to prevent caching
+    const streamUrl = `${getStreamUrl(deviceIndex)}?t=${Date.now()}`;
+    img.src = streamUrl;
+
+    const handleError = () => {
+      if (!mountedRef.current) return;
+      setError('Stream connection failed');
+      if (retryCount < 3) {
+        setTimeout(() => {
+          if (mountedRef.current && !isPaused) {
+            setRetryCount(prev => prev + 1);
+            img.src = `${getStreamUrl(deviceIndex)}?t=${Date.now()}`;
+          }
+        }, 1000);
+      }
     };
-    
-    setupStream();
-    
+
+    const handleLoad = () => {
+      if (!mountedRef.current) return;
+      setError(null);
+      setRetryCount(0);
+    };
+
+    img.addEventListener('error', handleError);
+    img.addEventListener('load', handleLoad);
+
     return () => {
-      if (retryTimeout) {
-        clearTimeout(retryTimeout);
-      }
-      if (imgRef.current) {
-        imgRef.current.src = '';
-        imgRef.current.onerror = null;
-        imgRef.current.onload = null;
-      }
+      img.removeEventListener('error', handleError);
+      img.removeEventListener('load', handleLoad);
+      img.src = '';
     };
   }, [deviceIndex, retryCount, isPaused]);
 

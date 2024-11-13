@@ -146,7 +146,6 @@ class CameraManager:
                     cap.release()
 
     async def generate_frames(self, device: CameraDevice) -> AsyncGenerator[bytes, None]:
-        """Generate video frames with proper resource management."""
         if not device:
             log.error("No camera device provided")
             return
@@ -156,32 +155,33 @@ class CameraManager:
             await asyncio.sleep(1)
 
         try:
-            cap = cv2.VideoCapture(device.path)
-            if not cap.isOpened():
-                log.error(f"Failed to open camera device {device.path}")
-                return
-
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
-            cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
-
             async with device.lock:
+                cap = cv2.VideoCapture(device.path)
+                if not cap.isOpened():
+                    log.error(f"Failed to open camera device {device.path}")
+                    return
+
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
+                cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
                 device.is_streaming = True
                 device.cap = cap
 
             while device.is_streaming and not device.is_capturing:
-                async with device.lock:
-                    ret, frame = cap.read()
-                    if not ret:
-                        log.error(f"Failed to read frame from {device.path}")
-                        continue
+                ret, frame = cap.read()
+                if not ret:
+                    log.error(f"Failed to read frame from {device.path}")
+                    continue
 
-                    try:
-                        _, buffer = cv2.imencode(f'.{CAMERA_IMG_TYPE}', frame)
-                        yield b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n'
-                    except Exception as e:
-                        log.error(f"Frame encoding error: {str(e)}")
-                        break
+                try:
+                    _, buffer = cv2.imencode(f'.{CAMERA_IMG_TYPE}', frame)
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + 
+                           buffer.tobytes() + 
+                           b'\r\n')
+                except Exception as e:
+                    log.error(f"Frame encoding error: {str(e)}")
+                    break
 
                 await asyncio.sleep(1/CAMERA_FPS)
 

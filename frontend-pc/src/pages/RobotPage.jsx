@@ -13,6 +13,8 @@ const ROBOT_COMMANDS = [
   { id: 'stop-recording', label: '⏹️', description: 'End Record', row: 'bottom' },
 ];
 
+const SCAN_CAMERA_ID = parseInt(process.env.REACT_APP_SCAN_CAMERA_ID ?? 0);
+
 const RobotPage = () => {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,16 +26,6 @@ const RobotPage = () => {
       setIsPaused(true);
     };
   }, []);
-
-  const handleCapture = async (deviceIndex) => {
-    try {
-      setStatus('Capturing image...');
-      await captureImage(deviceIndex);
-      setStatus('Image captured successfully');
-    } catch (error) {
-      setStatus(`Error capturing image: ${error.message}`);
-    }
-  };
 
   const handleCommand = async (command) => {
     setLoading(true);
@@ -65,9 +57,8 @@ const RobotPage = () => {
     <div className="robot-page">
       <div className="camera-container">
         <CameraStream
-          deviceIndex={0} // Using SCAN_CAMERA_ID=0
+          deviceIndex={SCAN_CAMERA_ID}
           isPaused={isPaused}
-          onCapture={handleCapture}
         />
       </div>
       <div className="robot-grid">
