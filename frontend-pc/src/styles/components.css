@@ -729,10 +729,17 @@ body {
 }
 
 .location-time .location,
+.location-time .date,
 .location-time .time {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   color: #94a3b8;
   font-size: 1rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.location-time .error-text {
+  color: #ef4444;
 }
