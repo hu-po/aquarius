@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, AsyncGenerator
 import logging
 import cv2
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 
 log = logging.getLogger(__name__)
 

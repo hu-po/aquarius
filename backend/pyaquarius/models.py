@@ -139,6 +139,7 @@ class AquariumStatus(BaseModel):
     latest_reading: Optional[Reading]
     alerts: List[str]
     timezone: str
+    location: str
     scan_enabled: bool = False
 
 class Trajectory(BaseModel):

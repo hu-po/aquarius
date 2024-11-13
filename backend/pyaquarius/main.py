@@ -2,7 +2,6 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any
 import logging
-from zoneinfo import ZoneInfo, available_timezones
 import cv2
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
@@ -45,6 +44,8 @@ CORS_MAX_AGE = int(os.getenv('CORS_MAX_AGE', '3600'))
 # location
 LOCATION = os.getenv('LOCATION', 'Unknown')
 log.debug(f"Current location from env: {LOCATION}")
+TIMEZONE = os.getenv('TIMEZONE', 'UTC')
+log.debug(f"Current timezone from env: {TIMEZONE}")
 
 # Tank parameters
 TANK_TEMP_MIN = float(os.getenv('TANK_TEMP_MIN', '75.0'))
@@ -312,7 +313,7 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
         latest_images=latest_images,
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
         alerts=list(set(alerts)),
-        timezone=validate_timezone(os.getenv('TIMEZONE', 'UTC')),
+        timezone=TIMEZONE,
         location=LOCATION,
         scan_enabled=SCAN_ENABLED
     )
@@ -356,14 +357,6 @@ async def update_life(life_id: str, life: LifeBase, db: Session = Depends(get_db
     db_life.last_seen_at = datetime.now(timezone.utc)
     db.commit()
     return Life.from_orm(db_life)
-
-def validate_timezone(tz: str) -> str:
-    try:
-        ZoneInfo(tz)
-        return tz
-    except Exception:
-        log.warning(f"Invalid timezone {tz}, falling back to UTC")
-        return "UTC"
 
 @app.post("/robot/command")
 async def send_command(command: RobotCommand) -> Dict[str, str]:

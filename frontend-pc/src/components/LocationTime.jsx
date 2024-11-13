@@ -31,17 +31,21 @@ const LocationTime = () => {
     };
   }, []);
 
+  if (!status) return <div>Loading...</div>;
+
   return (
     <div className="location-time">
       <span className="location">
-        📍 {status?.location || "Location not set"}
+        📍 {status.location || "Location not set"}
         {error && <span className="error-text"> ({error})</span>}
       </span>
-      <span className="time">🕒 {currentTime.toLocaleString('en-US', { 
-        timeZone: status?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-        dateStyle: 'medium',
-        timeStyle: 'medium'
-      })}</span>
+      <span className="time">
+        🕒 {currentTime.toLocaleString('en-US', { 
+          timeZone: status.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+          dateStyle: 'medium',
+          timeStyle: 'medium'
+        })}
+      </span>
     </div>
   );
 };
