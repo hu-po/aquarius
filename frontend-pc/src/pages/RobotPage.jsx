@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { sendRobotCommand, captureImage } from '../services/api';
 import { TrajectoryBrowser, CameraStream } from '../components';
 
@@ -21,11 +21,17 @@ const RobotPage = () => {
   const trajectoryBrowserRef = useRef();
   const [isPaused, setIsPaused] = useState(false);
 
-  useEffect(() => {
-    return () => {
-      setIsPaused(true);
-    };
-  }, []);
+  const handleCapture = async () => {
+    setIsPaused(true);
+    try {
+      await captureImage(SCAN_CAMERA_ID);
+      setStatus('Success: Image captured');
+    } catch (error) {
+      setStatus(`Error: ${error.message}`);
+    } finally {
+      setIsPaused(false);
+    }
+  };
 
   const handleCommand = async (command) => {
     setLoading(true);
@@ -44,6 +50,7 @@ const RobotPage = () => {
         await sendRobotCommand({ command: 'H', trajectory_name: null });
       } else {
         setStatus(`Error: Unknown robot command ${command}`);
+        return;
       }
       setStatus(`Success: Command executed`);
     } catch (error) {
@@ -59,6 +66,7 @@ const RobotPage = () => {
         <CameraStream
           deviceIndex={SCAN_CAMERA_ID}
           isPaused={isPaused}
+          onCapture={handleCapture}
         />
       </div>
       <div className="robot-grid">
