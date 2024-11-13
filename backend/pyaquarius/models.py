@@ -58,7 +58,8 @@ class DBReading(BaseMixin, Base):
     __tablename__ = "readings"
     id = Column(String, primary_key=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    temperature = Column(Float)
+    temperature_f = Column(Float)
+    temperature_c = Column(Float)
     image_id = Column(String, nullable=True)
 
 class DBAIAnalysis(BaseMixin, Base):
@@ -95,8 +96,21 @@ class Image(ImageBase):
         from_attributes = True
 
 class ReadingBase(BaseModel):
-    temperature: float = Field(ge=32, le=120)
+    temperature_f: float = Field(ge=32, le=120, description="Temperature in Fahrenheit")
+    temperature_c: float = Field(ge=0, le=49, description="Temperature in Celsius")
     image_id: Optional[str] = None
+
+    @validator('temperature_c', pre=True)
+    def validate_celsius(cls, v, values):
+        if v is None and 'temperature_f' in values:
+            return (values['temperature_f'] - 32) * 5/9
+        return v
+
+    @validator('temperature_f', pre=True)
+    def validate_fahrenheit(cls, v, values):
+        if v is None and 'temperature_c' in values:
+            return (values['temperature_c'] * 9/5) + 32
+        return v
 
 class Reading(ReadingBase):
     id: str = Field(default_factory=lambda: datetime.now().isoformat())

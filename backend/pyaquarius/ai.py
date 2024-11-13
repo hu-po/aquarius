@@ -274,17 +274,15 @@ Example row:
 
 async def async_estimate_temperature(ai_model: str, image_path: str) -> Dict[str, str]:
     """Estimate temperature from image and update database."""
-    prompt = "Estimate the temperature of the water in this underwater image of an aquarium. Use the red digital submersible thermometer visible in the image.\n"
+    prompt = "Estimate the temperature of the water in this underwater image of an aquarium. Use the red digital submersible thermometer visible in the image. Return both Fahrenheit and Celsius values.\n"
     response = await AI_MODEL_MAP[ai_model](prompt, image_path)
     
     try:
         with get_db_session() as db:
-            # Get latest image
             latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
             if not latest_image:
                 raise ValueError("No images found in database")
             
-            # Create AI analysis record
             analysis = DBAIAnalysis(
                 id=datetime.now(timezone.utc).isoformat(),
                 image_id=latest_image.id,
@@ -295,20 +293,23 @@ async def async_estimate_temperature(ai_model: str, image_path: str) -> Dict[str
             )
             db.add(analysis)
             
-            # Try to extract temperature value from response
-            import re
-            temp_match = re.search(r'(\d+\.?\d*)\s*[°℉F]', response)
-            if temp_match:
-                temp = float(temp_match.group(1))
-                # Create reading record
+            # Extract temperature values
+            temp_f_match = re.search(r'(\d+\.?\d*)\s*[°℉F]', response)
+            temp_c_match = re.search(r'(\d+\.?\d*)\s*[°℃C]', response)
+            
+            if temp_f_match or temp_c_match:
+                temp_f = float(temp_f_match.group(1)) if temp_f_match else None
+                temp_c = float(temp_c_match.group(1)) if temp_c_match else None
+                
                 reading = DBReading(
                     id=datetime.now(timezone.utc).isoformat(),
-                    temperature=temp,
+                    temperature_f=temp_f,
+                    temperature_c=temp_c,
                     image_id=latest_image.id,
                     timestamp=datetime.now(timezone.utc)
                 )
                 db.add(reading)
-                log.info(f"Added temperature reading: {temp}°F from {ai_model}")
+                log.info(f"Added temperature reading: {temp_f}°F / {temp_c}°C from {ai_model}")
             
             return response
             
