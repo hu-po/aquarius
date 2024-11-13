@@ -28,16 +28,27 @@ class CameraDevice:
         self.is_capturing = False
         self.is_active = False
         self.cap = None
+        self._initialize()
+    
+    def _initialize(self) -> None:
+        try:
+            self.cap = cv2.VideoCapture(self.path)
+            if not self.cap.isOpened():
+                log.error(f"Failed to initialize camera {self.index} at {self.path}")
+                return
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+            self.is_active = True
+            log.debug(f"Camera {self.index} initialized successfully")
+        except Exception as e:
+            log.error(f"Camera {self.index} initialization error: {str(e)}")
 
     async def stop_stream(self):
         """Safely stop any active stream."""
         async with self.lock:
             if self.is_streaming:
                 self.is_streaming = False
-                if self.cap and self.cap.isOpened():
-                    self.cap.release()
-                    self.cap = None
-                    await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
+                await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
                 log.debug(f"Stream stopped for device {self.index}")
 
     async def start_stream(self):
@@ -45,13 +56,27 @@ class CameraDevice:
         if not self.is_capturing:
             async with self.lock:
                 if not self.is_streaming:
-                    self.is_streaming = True
-                    self.cap = cv2.VideoCapture(self.path)
-                    if not self.cap.isOpened():
-                        log.error(f"Failed to open camera device {self.path}")
-                        self.is_streaming = False
+                    if not self.cap or not self.cap.isOpened():
+                        self._initialize()
+                    if not self.is_active:
+                        log.error(f"Failed to start stream - camera {self.index} not active")
                         return
+                    self.is_streaming = True
                     log.debug(f"Stream started for device {self.index}")
+
+    async def get_frame(self):
+        """Get a single frame from the camera."""
+        if not self.cap or not self.cap.isOpened():
+            self._initialize()
+        if not self.is_active:
+            return None
+            
+        ret, frame = self.cap.read()
+        if not ret:
+            log.error(f"Failed to read frame from camera {self.index}")
+            return None
+            
+        return frame
 
 class CameraManager:
     def __init__(self):
@@ -160,49 +185,30 @@ class CameraManager:
 
         try:
             async with device.lock:
-                cap = cv2.VideoCapture(device.path)
-                if not cap.isOpened():
-                    log.error(f"Failed to open camera device {device.path}")
-                    return
+                if not device.is_streaming:
+                    device.is_streaming = True
+                    log.debug(f"Stream started for device {device.index}")
 
                 target_dim = min(CAMERA_MAX_DIM, device.width, device.height)
                 scale = min(target_dim/device.width, target_dim/device.height)
                 new_width = int(device.width * scale)
                 new_height = int(device.height * scale)
-                
-                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, new_width)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, new_height)
-                cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
-                cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-                
-                # Verify the camera accepted our settings
-                actual_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                actual_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                if actual_width != new_width or actual_height != new_height:
-                    log.warning(f"Camera {device.index} did not accept requested dimensions. Using: {actual_width}x{actual_height}")
-                
-                device.is_streaming = True
-                device.cap = cap
-                frame_time = 1/CAMERA_FPS
-                last_frame = 0
 
             while device.is_streaming and not device.is_capturing:
-                current_time = asyncio.get_event_loop().time()
-                if current_time - last_frame < frame_time:
-                    await asyncio.sleep(0)
-                    continue
-
-                ret, frame = cap.read()
-                if not ret:
-                    log.error(f"Failed to read frame from {device.path}")
+                frame = await device.get_frame()
+                if frame is None:
+                    log.error(f"Failed to get frame from {device.path}")
                     continue
 
                 try:
+                    # Resize frame if needed
+                    if new_width != device.width or new_height != device.height:
+                        frame = cv2.resize(frame, (new_width, new_height))
+
                     _, buffer = cv2.imencode(f'.{CAMERA_IMG_TYPE}', frame)
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-                    last_frame = current_time
+                    await asyncio.sleep(1/CAMERA_FPS)  # Control frame rate
                 except Exception as e:
                     log.error(f"Frame encoding error: {str(e)}")
                     continue
@@ -211,9 +217,6 @@ class CameraManager:
             log.error(f"Stream error: {str(e)}", exc_info=True)
         finally:
             device.is_streaming = False
-            if cap:
-                cap.release()
-            device.cap = None
 
     async def _cleanup_old_images(self) -> None:
         """Remove old images when exceeding maximum count."""
