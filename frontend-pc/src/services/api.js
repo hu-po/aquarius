@@ -179,3 +179,12 @@ export const getAnalysisHistory = async (limit = 10) => {
   const response = await axios.get(`${BASE_URL}/analyses?limit=${limit}`);
   return response.data;
 };
+
+export const getReadingsHistory = async (hours = 24) => {
+  try {
+    const response = await api.get(`/readings/history?hours=${hours}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error, 'Failed to fetch readings history');
+  }
+};
