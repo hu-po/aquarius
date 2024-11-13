@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Analyze } from '../services/api';
-import ToggleScan from './ToggleScan';
 
 const AI_MODELS = [
   { id: 'claude', label: '🔮 claude' },
@@ -53,11 +52,11 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
   };
 
   return (
-    <div className="analysis-control">
-      <div className="checkbox-grid">
-        <div className="checkbox-column">
+    <div className="controls-section">
+      <div className="options-grid">
+        <div className="options-column">
           {AI_MODELS.map(model => (
-            <label key={model.id}>
+            <label key={model.id} className="toggle-label">
               <input
                 type="checkbox"
                 checked={selectedModels.has(model.id)}
@@ -67,9 +66,9 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
             </label>
           ))}
         </div>
-        <div className="checkbox-column">
+        <div className="options-column">
           {ANALYSES.map(analysis => (
-            <label key={analysis.id}>
+            <label key={analysis.id} className="toggle-label">
               <input
                 type="checkbox"
                 checked={selectedAnalyses.has(analysis.id)}
@@ -80,16 +79,13 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
           ))}
         </div>
       </div>
-      <div className="button-row">
-        <button
-          className={loading ? 'loading' : ''}
-          onClick={handleAnalyze}
-          disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
-        >
-          {loading ? '🧠 ... ⏳' : '🧠 Analyze'}
-        </button>
-        <ToggleScan />
-      </div>
+      <button
+        className={`analyze-button ${loading ? 'analyzing' : ''}`}
+        onClick={handleAnalyze}
+        disabled={loading || selectedModels.size === 0 || selectedAnalyses.size === 0}
+      >
+        {loading ? '🧠 ... ⏳' : '🧠 Analyze'}
+      </button>
     </div>
   );
 };
