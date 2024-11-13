@@ -12,8 +12,10 @@ export const AnalysisPage = () => {
 
   return (
     <div className="analysis-page">
-      <AnalysisControl onAnalysisComplete={handleAnalysisComplete} />
-      <AnalysisHistory key={analysisComplete ? 'refresh' : 'normal'} />
+      <div className="analysis-content">
+        <AnalysisControl onAnalysisComplete={handleAnalysisComplete} />
+        <AnalysisHistory key={analysisComplete ? 'refresh' : 'normal'} />
+      </div>
     </div>
   );
 };
