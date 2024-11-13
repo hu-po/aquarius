@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { sendRobotCommand, captureImage } from '../services/api';
 import { TrajectoryBrowser, CameraStream } from '../components';
 
@@ -18,6 +18,12 @@ const RobotPage = () => {
   const [loading, setLoading] = useState(false);
   const trajectoryBrowserRef = useRef();
   const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      setIsPaused(true);
+    };
+  }, []);
 
   const handleCapture = async (deviceIndex) => {
     try {

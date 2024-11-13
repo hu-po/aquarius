@@ -7,17 +7,36 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
   const [retryCount, setRetryCount] = useState(0);
   const [isCapturing, setIsCapturing] = useState(false);
   const imgRef = useRef(null);
+  const mountedRef = useRef(true);
+  
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (imgRef.current) {
+        imgRef.current.src = '';
+        imgRef.current.onerror = null;
+        imgRef.current.onload = null;
+      }
+      setError(null);
+      setRetryCount(0);
+    };
+  }, []);
   
   const handleCapture = async () => {
     setIsCapturing(true);
     try {
       await onCapture(deviceIndex);
     } finally {
-      setIsCapturing(false);
+      if (mountedRef.current) {
+        setIsCapturing(false);
+      }
     }
   };
   
   useEffect(() => {
+    if (!mountedRef.current) return;
+    
     if (isPaused) {
       if (imgRef.current) {
         imgRef.current.src = '';
@@ -29,41 +48,49 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
 
     const maxRetries = 5;
     const retryDelay = 1000;
+    let retryTimeout;
     
     const setupStream = () => {
-      if (imgRef.current) {
-        imgRef.current.onerror = () => {
-          setError('Stream connection failed');
-          if (retryCount < maxRetries) {
-            setTimeout(() => {
-              setRetryCount(prev => prev + 1);
-              if (imgRef.current && !isPaused) {
-                const timestamp = Date.now();
-                const streamUrl = `${getStreamUrl(deviceIndex)}?t=${timestamp}`;
-                imgRef.current.src = streamUrl;
-              }
-            }, retryDelay);
-          }
-        };
+      if (!mountedRef.current || !imgRef.current) return;
+      
+      imgRef.current.onerror = () => {
+        if (!mountedRef.current) return;
         
-        imgRef.current.onload = () => {
-          setError(null);
-          setRetryCount(0);
-        };
+        setError('Stream connection failed');
+        if (retryCount < maxRetries) {
+          retryTimeout = setTimeout(() => {
+            if (!mountedRef.current) return;
+            setRetryCount(prev => prev + 1);
+            if (imgRef.current && !isPaused) {
+              const timestamp = Date.now();
+              const streamUrl = `${getStreamUrl(deviceIndex)}?t=${timestamp}`;
+              imgRef.current.src = streamUrl;
+            }
+          }, retryDelay);
+        }
+      };
+      
+      imgRef.current.onload = () => {
+        if (!mountedRef.current) return;
+        setError(null);
+        setRetryCount(0);
+      };
 
-        const timestamp = Date.now();
-        const streamUrl = `${getStreamUrl(deviceIndex)}?t=${timestamp}`;
-        imgRef.current.src = streamUrl;
-      }
+      const timestamp = Date.now();
+      const streamUrl = `${getStreamUrl(deviceIndex)}?t=${timestamp}`;
+      imgRef.current.src = streamUrl;
     };
     
     setupStream();
     
     return () => {
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
       if (imgRef.current) {
+        imgRef.current.src = '';
         imgRef.current.onerror = null;
         imgRef.current.onload = null;
-        imgRef.current.src = '';
       }
     };
   }, [deviceIndex, retryCount, isPaused]);
