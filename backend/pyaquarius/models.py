@@ -75,7 +75,7 @@ class DBAIAnalysis(BaseMixin, Base):
 
 class AIAnalysisBase(BaseModel):
     image_id: str
-    tank_id: int
+    tank_id: int = Field(default=0, description="Tank identifier (default: 0)")
     ai_model: str
     analysis: str
     response: str
@@ -101,7 +101,7 @@ class Image(ImageBase):
 class ReadingBase(BaseModel):
     temperature_f: float = Field(ge=32, le=120, description="Temperature in Fahrenheit")
     temperature_c: float = Field(ge=0, le=49, description="Temperature in Celsius")
-    tank_id: int = Field(ge=1, le=3, description="Tank identifier (1-3)")
+    tank_id: int = Field(default=0, description="Tank identifier (default: 0)")
     image_id: Optional[str] = None
 
     @validator('temperature_c', pre=True)

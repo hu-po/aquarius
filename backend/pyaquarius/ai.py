@@ -184,7 +184,7 @@ AI_MODEL_MAP: Dict[str, callable] = {
     'gemini': gemini
 }
 
-async def async_identify_life(ai_model: str, image_path: str, tank_id: int = None) -> Dict[str, str]:
+async def async_identify_life(ai_model: str, image_path: str, tank_id: int) -> Dict[str, str]:
     log.debug(f"Starting life identification with {ai_model} model")
     if not os.path.exists(image_path):
         log.error(f"Image file not found at {image_path}")

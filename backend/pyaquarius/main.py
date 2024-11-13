@@ -252,7 +252,9 @@ async def analyze(ai_models: str, analyses: str):
                 raise HTTPException(status_code=404, detail="No images available")
 
             log.debug(f"Starting inference on image {latest_image.id}")
-            ai_responses = await async_inference(ai_models_list, analyses_list, latest_image.filepath, tank_id=0)
+            tank_id = 0
+            log.debug(f"Tank ID: {tank_id}")
+            ai_responses = await async_inference(ai_models_list, analyses_list, latest_image.filepath, tank_id)
             
             log.debug("Processing AI responses")
             responses_with_errors = {
