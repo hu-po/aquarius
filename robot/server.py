@@ -23,6 +23,7 @@ SERIAL_PORT = "/dev/ttyAMA0"
 BAUD_RATE = 1000000
 DEBUG = False
 HOME_POSITION = [0, -15.11, 112.41, 92.02, 15.2, 0]
+HOME_SLEEP = 1
 
 class RobotServer:
     def __init__(self):
@@ -80,6 +81,7 @@ class RobotServer:
                 return "quit"
             elif command == "h":
                 self.mc.send_angles(self.home_position, self.home_speed)
+                time.sleep(HOME_SLEEP)
                 return "go to home"
             elif command == "H":
                 try:
