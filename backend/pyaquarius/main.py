@@ -42,9 +42,14 @@ if os.getenv('LOG_LEVEL', 'INFO').upper() == 'DEBUG':
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', '')
 CORS_MAX_AGE = int(os.getenv('CORS_MAX_AGE', '3600'))
 
+# location
+LOCATION = os.getenv('LOCATION', 'Unknown')
+log.debug(f"Current location from env: {LOCATION}")
+
 # Tank parameters
 TANK_TEMP_MIN = float(os.getenv('TANK_TEMP_MIN', '75.0'))
 TANK_TEMP_MAX = float(os.getenv('TANK_TEMP_MAX', '82.0'))
+log.debug(f"Tank temperature range: {TANK_TEMP_MIN}°F - {TANK_TEMP_MAX}°F")
 
 # Image settings
 IMAGES_DIR = os.getenv('IMAGES_DIR', 'data/images')
@@ -308,7 +313,7 @@ async def get_status(db: Session = Depends(get_db)) -> AquariumStatus:
         latest_reading=Reading.from_orm(latest_reading) if latest_reading else None,
         alerts=list(set(alerts)),
         timezone=validate_timezone(os.getenv('TIMEZONE', 'UTC')),
-        location=os.getenv('LOCATION', 'Unknown'),
+        location=LOCATION,
         scan_enabled=SCAN_ENABLED
     )
 

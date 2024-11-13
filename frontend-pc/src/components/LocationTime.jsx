@@ -10,9 +10,11 @@ const LocationTime = () => {
     const loadStatus = async () => {
       try {
         const statusData = await getStatus();
+        console.log('Status data received:', statusData);
         setStatus(statusData);
         setError(null);
       } catch (err) {
+        console.error('Error loading status:', err);
         setError(err.message);
       }
     };
@@ -29,11 +31,12 @@ const LocationTime = () => {
     };
   }, []);
 
-  if (error) return <div className="error-message">Error: {error}</div>;
-
   return (
     <div className="location-time">
-      <span className="location">📍 {status?.location || "Location not set"}</span>
+      <span className="location">
+        📍 {status?.location || "Location not set"}
+        {error && <span className="error-text"> ({error})</span>}
+      </span>
       <span className="time">🕒 {currentTime.toLocaleString('en-US', { 
         timeZone: status?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         dateStyle: 'medium',
