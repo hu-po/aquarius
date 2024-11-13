@@ -42,14 +42,23 @@ const LifeTable = () => {
   return (
     <div className="life-table">
       <table>
+        <thead>
+          <tr>
+            <th className="text-center">emoji</th>
+            <th className="text-center">name</th>
+            <th className="text-center"><i>name</i></th>
+            <th className="text-center">last seen</th>
+            <th className="text-center">sightings</th>
+          </tr>
+        </thead>
         <tbody>
           {life.map(l => (
             <tr key={l.id}>
-              <td>{l.emoji}</td>
-              <td>{l.common_name}</td>
-              <td>{l.scientific_name}</td>
-              <td>last seen {formatLastSeen(l.last_seen_at)}</td>
-              <td>{l.image_refs.length} sightings</td>
+              <td className="text-center">{l.emoji}</td>
+              <td className="text-center">{l.common_name}</td>
+              <td className="text-center"><i>{l.scientific_name}</i></td>
+              <td className="text-center">{formatLastSeen(l.last_seen_at)}</td>
+              <td className="text-center">{l.image_refs.length}</td>
             </tr>
           ))}
         </tbody>

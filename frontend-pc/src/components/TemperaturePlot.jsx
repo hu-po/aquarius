@@ -38,41 +38,39 @@ const TemperaturePlot = () => {
   const tankIds = [...new Set(history.map(r => r.tank_id))].sort();
 
   return (
-    <div className="temperature-plot">
-      <h3>Temperature History (24h)</h3>
-      <div className="plot-container" style={{ height: '300px' }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={history}>
-            <XAxis 
-              dataKey="timestamp" 
-              type="number"
-              domain={['auto', 'auto']}
-              scale="time"
-              tickFormatter={(timestamp) => new Date(timestamp).toLocaleTimeString()}
+    <div className="plot-container" style={{ height: '300px', background: '#1e293b', padding: '1rem', borderRadius: '0.75rem', border: '1px solid #334155' }}>
+      <h3 style={{ margin: '0 0 1rem 0', color: '#e2e8f0', fontSize: '1.1rem' }}>Temperature History (24h)</h3>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={history}>
+          <XAxis 
+            dataKey="timestamp" 
+            type="number"
+            domain={['auto', 'auto']}
+            scale="time"
+            tickFormatter={(timestamp) => new Date(timestamp).toLocaleTimeString()}
+          />
+          <YAxis 
+            domain={['auto', 'auto']}
+            label={{ value: 'Temperature (°F)', angle: -90, position: 'insideLeft' }}
+          />
+          <Tooltip
+            labelFormatter={(timestamp) => new Date(timestamp).toLocaleString()}
+            formatter={(value, name) => [`${value.toFixed(1)}°F`, `Tank ${name}`]}
+          />
+          <Legend />
+          {tankIds.map(tankId => (
+            <Line
+              key={tankId}
+              type="monotone"
+              dataKey="temperature_f"
+              data={history.filter(r => r.tank_id === tankId)}
+              name={`${tankId}`}
+              stroke={TANK_COLORS[tankId]}
+              dot={false}
             />
-            <YAxis 
-              domain={['auto', 'auto']}
-              label={{ value: 'Temperature (°F)', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip
-              labelFormatter={(timestamp) => new Date(timestamp).toLocaleString()}
-              formatter={(value, name) => [`${value.toFixed(1)}°F`, `Tank ${name}`]}
-            />
-            <Legend />
-            {tankIds.map(tankId => (
-              <Line
-                key={tankId}
-                type="monotone"
-                dataKey="temperature_f"
-                data={history.filter(r => r.tank_id === tankId)}
-                name={`${tankId}`}
-                stroke={TANK_COLORS[tankId]}
-                dot={false}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 };
