@@ -1,5 +1,5 @@
 import React from 'react';
-import { LifeTable, TemperaturePlot, ConfigViewer, LocationTime } from '../components';
+import { LifeTable, TemperaturePlot, LocationTime } from '../components';
 
 export const InfoPage = () => {
   return (
@@ -11,9 +11,6 @@ export const InfoPage = () => {
         </div>
         <div className="life-section">
           <LifeTable />
-        </div>
-        <div className="config-section">
-          <ConfigViewer />
         </div>
       </div>
     </div>
