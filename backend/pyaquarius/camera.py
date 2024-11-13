@@ -78,6 +78,47 @@ class CameraDevice:
             
         return frame
 
+    async def capture_image(self, device: CameraDevice, filename: str) -> Optional[tuple[str, int, int, int]]:
+        log.debug(f"Starting image capture from device {device.index}")
+        if device.is_streaming:
+            log.debug(f"Stopping stream on device {device.index} before capture")
+            await device.stop_stream()
+        
+        async with device.lock:
+            device.is_capturing = True
+            try:
+                frame = None
+                for attempt in range(3):
+                    log.debug(f"Capture attempt {attempt + 1} for device {device.index}")
+                    frame = await device.get_frame()
+                    if frame is not None:
+                        break
+                    log.warning(f"Capture attempt {attempt + 1} failed, retrying...")
+                    await asyncio.sleep(0.2)
+
+                if frame is None:
+                    log.error(f"All capture attempts failed for device {device.index}")
+                    return None
+
+                filepath = os.path.join(IMAGES_DIR, filename)
+                
+                log.debug(f"Saving captured image to {filepath}")
+                if cv2.imwrite(filepath, frame):
+                    os.chmod(filepath, 0o644)
+                    height, width = frame.shape[:2]
+                    file_size = os.path.getsize(filepath)
+                    log.debug(f"Image saved successfully - dimensions: {width}x{height}, size: {file_size} bytes")
+                    await self._cleanup_old_images()
+                    return filepath, width, height, file_size
+
+                log.error(f"Failed to write image to {filepath}")
+                return None
+            except Exception as e:
+                log.error(f"Capture error: {str(e)}", exc_info=True)
+                return None
+            finally:
+                device.is_capturing = False
+
 class CameraManager:
     def __init__(self):
         self.devices: Dict[int, CameraDevice] = {}
@@ -130,21 +171,11 @@ class CameraManager:
         async with device.lock:
             device.is_capturing = True
             try:
-                log.debug(f"Opening capture device {device.path}")
-                cap = cv2.VideoCapture(device.path)
-                if not cap.isOpened():
-                    log.error(f"Failed to open camera device {device.path}")
-                    return None
-
-                log.debug(f"Configuring camera {device.index} - width: {device.width}, height: {device.height}")
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
-                
                 frame = None
                 for attempt in range(3):
                     log.debug(f"Capture attempt {attempt + 1} for device {device.index}")
-                    ret, frame = cap.read()
-                    if ret and frame is not None:
+                    frame = await device.get_frame()
+                    if frame is not None:
                         break
                     log.warning(f"Capture attempt {attempt + 1} failed, retrying...")
                     await asyncio.sleep(0.2)
@@ -171,8 +202,6 @@ class CameraManager:
                 return None
             finally:
                 device.is_capturing = False
-                if cap:
-                    cap.release()
 
     async def generate_frames(self, device: CameraDevice) -> AsyncGenerator[bytes, None]:
         if not device:
