@@ -34,13 +34,11 @@ class CameraDevice:
         async with self.lock:
             if self.is_streaming:
                 self.is_streaming = False
-                if self.cap:
-                    was_active = self.cap.isOpened()
+                if self.cap and self.cap.isOpened():
                     self.cap.release()
                     self.cap = None
-                    if was_active:
-                        await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
-                    log.debug(f"Stream stopped for device {self.index}")
+                    await asyncio.sleep(CAMERA_STREAM_TOGGLE_DELAY)
+                log.debug(f"Stream stopped for device {self.index}")
 
     async def start_stream(self):
         """Safely start stream if not capturing."""
@@ -48,6 +46,11 @@ class CameraDevice:
             async with self.lock:
                 if not self.is_streaming:
                     self.is_streaming = True
+                    self.cap = cv2.VideoCapture(self.path)
+                    if not self.cap.isOpened():
+                        log.error(f"Failed to open camera device {self.path}")
+                        self.is_streaming = False
+                        return
                     log.debug(f"Stream started for device {self.index}")
 
 class CameraManager:

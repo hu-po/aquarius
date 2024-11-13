@@ -156,13 +156,14 @@ async def stream_camera(device_index: int, request: Request):
         log.error(f"No camera found with index {device_index}")
         raise HTTPException(status_code=404, detail=f"Camera {device_index} not found")
     
-    # Add response headers for better streaming
     headers = {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
         'Connection': 'close',
     }
+    
+    await device.start_stream()
     
     async def cleanup(generator):
         try:
