@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 CAMERA_FPS = int(os.getenv('CAMERA_FPS', '15'))
 CAMERA_IMG_TYPE = os.getenv('CAMERA_IMG_TYPE', 'jpg').lower()
-CAMERA_MAX_DIM = int(os.getenv('CAMERA_MAX_DIM', '1920'))
+CAMERA_MAX_DIM = int(os.getenv('CAMERA_MAX_DIM', '1024'))
 CAMERA_WIDTH = int(os.getenv('CAMERA_WIDTH', '1280'))
 CAMERA_HEIGHT = int(os.getenv('CAMERA_HEIGHT', '720'))
 CAMERA_MAX_IMAGES = int(os.getenv('CAMERA_MAX_IMAGES', '1000'))
@@ -162,25 +162,32 @@ class CameraManager:
                     log.error(f"Failed to open camera device {device.path}")
                     return
 
-                # Optimize camera settings
+                target_dim = min(CAMERA_MAX_DIM, device.width, device.height)
+                scale = min(target_dim/device.width, target_dim/device.height)
+                new_width = int(device.width * scale)
+                new_height = int(device.height * scale)
+                
                 cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, device.width)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, device.height)
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, new_width)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, new_height)
                 cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
                 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-                cap.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+                
+                # Verify the camera accepted our settings
+                actual_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                actual_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                if actual_width != new_width or actual_height != new_height:
+                    log.warning(f"Camera {device.index} did not accept requested dimensions. Using: {actual_width}x{actual_height}")
                 
                 device.is_streaming = True
                 device.cap = cap
-
-                # Pre-allocate buffer for better performance
                 frame_time = 1/CAMERA_FPS
                 last_frame = 0
 
             while device.is_streaming and not device.is_capturing:
                 current_time = asyncio.get_event_loop().time()
                 if current_time - last_frame < frame_time:
-                    await asyncio.sleep(0)  # Yield to other tasks but don't force delay
+                    await asyncio.sleep(0)
                     continue
 
                 ret, frame = cap.read()
@@ -191,13 +198,11 @@ class CameraManager:
                 try:
                     _, buffer = cv2.imencode(f'.{CAMERA_IMG_TYPE}', frame)
                     yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + 
-                           buffer.tobytes() + 
-                           b'\r\n')
+                           b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
                     last_frame = current_time
                 except Exception as e:
                     log.error(f"Frame encoding error: {str(e)}")
-                    break
+                    continue
 
         except Exception as e:
             log.error(f"Stream error: {str(e)}", exc_info=True)
