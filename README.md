@@ -117,3 +117,4 @@ flowchart TB
 - [ ] links and back of the envelope calculation of cost per day, api?
 - [ ] play trajectory backwards for collision avoidance
 - [ ] use megalithic corner overlap style to reduce thermometers
+- [ ] spray paint robot arm green
