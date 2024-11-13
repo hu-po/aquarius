@@ -184,7 +184,7 @@ AI_MODEL_MAP: Dict[str, callable] = {
     'gemini': gemini
 }
 
-async def async_identify_life(ai_model: str, image_path: str) -> Dict[str, str]:
+async def async_identify_life(ai_model: str, image_path: str, tank_id: int = None) -> Dict[str, str]:
     log.debug(f"Starting life identification with {ai_model} model")
     if not os.path.exists(image_path):
         log.error(f"Image file not found at {image_path}")
@@ -286,6 +286,7 @@ async def async_estimate_temperature(ai_model: str, image_path: str, tank_id: in
             analysis = DBAIAnalysis(
                 id=datetime.now(timezone.utc).isoformat(),
                 image_id=latest_image.id,
+                tank_id=tank_id,
                 ai_model=ai_model,
                 analysis='estimate_temperature',
                 response=response,
@@ -323,7 +324,7 @@ AI_ANALYSES_MAP: Dict[str, callable] = {
     'estimate_temperature': async_estimate_temperature,
 }
 
-async def async_inference(ai_models: List[str], analyses: List[str], image_path: str) -> Dict[str, str]:
+async def async_inference(ai_models: List[str], analyses: List[str], image_path: str, tank_id: int = None) -> Dict[str, str]:
     log.debug(f"Starting AI inference - models: {ai_models}, analyses: {analyses}")
     try:
         if not ENABLED_MODELS:
@@ -341,7 +342,7 @@ async def async_inference(ai_models: List[str], analyses: List[str], image_path:
                     log.error(f"Requested analysis {analysis} not found in available analyses: {list(AI_ANALYSES_MAP.keys())}")
                     raise ValueError(f"Analysis {analysis} not found in AI_ANALYSES_MAP")
                 log.debug(f"Adding task: {ai_model}.{analysis}")
-                tasks.append(AI_ANALYSES_MAP[analysis](ai_model, image_path))
+                tasks.append(AI_ANALYSES_MAP[analysis](ai_model, image_path, tank_id))
                 task_keys.append(f"{ai_model}.{analysis}")
         
         if not tasks:

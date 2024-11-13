@@ -67,6 +67,7 @@ class DBAIAnalysis(BaseMixin, Base):
     __tablename__ = "ai_responses"
     id = Column(String, primary_key=True)
     image_id = Column(String)
+    tank_id = Column(Integer)
     timestamp = Column(DateTime, default=datetime.utcnow)
     ai_model = Column(String)
     analysis = Column(String)
@@ -74,6 +75,7 @@ class DBAIAnalysis(BaseMixin, Base):
 
 class AIAnalysisBase(BaseModel):
     image_id: str
+    tank_id: int
     ai_model: str
     analysis: str
     response: str

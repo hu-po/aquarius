@@ -431,11 +431,11 @@ async def robot_scan(
                 ai_responses = await async_inference(
                     ENABLED_MODELS,
                     ['identify_life'],
-                    capture_result['filepath']
+                    capture_result['filepath'],
+                    tank_id=trajectory[0],
                 )
             results.append({
                 'trajectory': trajectory,
-                'tank_id': tank_id,
                 'filepath': capture_result['filepath'],
                 'analysis': ai_responses
             })
