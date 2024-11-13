@@ -119,3 +119,4 @@ flowchart TB
 - [ ] use megalithic corner overlap style to reduce thermometers
 - [ ] spray paint robot arm green
 - [ ] trajectories should be managed on compute node, robot just plays
+    - home position is a trajectory
