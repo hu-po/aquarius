@@ -221,6 +221,7 @@ Example row:
             analysis = DBAIAnalysis(
                 id=datetime.now(timezone.utc).isoformat(),
                 image_id=latest_image.id,
+                tank_id=tank_id,
                 ai_model=ai_model,
                 analysis='identify_life',
                 response=response,
