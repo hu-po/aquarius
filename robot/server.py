@@ -106,7 +106,7 @@ class RobotServer:
                 return _str + ", recording started"
             elif cmd == "c":
                 self.stop_record()
-                return "Recording stopped"
+                return "recording ended, returning home" + self.handle_command('h')
             elif cmd == "p":
                 if not self.playing:
                     if traj_name:
