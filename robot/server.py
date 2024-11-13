@@ -70,7 +70,7 @@ class RobotServer:
     def handle_command(self, command: str) -> str:
         """Handle incoming commands from client"""
         if not self.mc:
-            return "Robot not initialized"
+            return "robot not initialized"
             
         log.debug(f"Received command: {command}")
         try:
@@ -82,19 +82,19 @@ class RobotServer:
             elif command == "h":
                 self.mc.send_angles(self.home_position, self.home_speed)
                 time.sleep(HOME_SLEEP)
-                return "go to home and release" + self.handle_command('f')
+                return "go to home, release" + self.handle_command('f')
             elif command == "H":
                 try:
                     current_angles = self.mc.get_angles()
                     log.debug(f"Current angles: {current_angles}")
                     if not current_angles:
-                        return "Failed to get current angles"
+                        return "failed to get current angles"
                     self.home_position = current_angles
                     log.info(f"Home position set to: {current_angles}")
                     return "set home position"
                 except Exception as e:
                     log.error(f"Error setting home position: {str(e)}")
-                    return f"Failed to set home position: {str(e)}"
+                    return f"failed to set home position, {str(e)}"
                 
             # Extract trajectory name if present
             cmd = command[0]
@@ -112,45 +112,45 @@ class RobotServer:
                     if traj_name:
                         if self.load_trajectory(traj_name):
                             self.play_once()
-                            return f"Playing trajectory: {traj_name}"
-                        return f"Failed to load trajectory: {traj_name}"
-                    _str = "Playing current trajectory"
-                    return _str + " and now returning home" + self.handle_command('h')
-                return "Already playing"
+                            return f"playing trajectory, {traj_name}"
+                        return f"failed to load trajectory, {traj_name}"
+                    _str = "playing current trajectory"
+                    return _str + ", now returning home" + self.handle_command('h')
+                return "already playing"
             elif cmd == "P":
                 if not self.playing:
                     if traj_name:
                         try:
                             trajectory_list = json.loads(traj_name)  # Expect JSON array of trajectory names
                             if not isinstance(trajectory_list, list):
-                                return "Invalid trajectory list format"
+                                return "invalid trajectory list format"
                             log.debug(f"Starting playback of {len(trajectory_list)} trajectories")
                             for traj in trajectory_list:
                                 log.debug(f"Playing trajectory: {traj}")
                                 self.load_trajectory(traj)
                                 self.play_once()
-                            _str = f"Playing trajectories {', '.join(trajectory_list)}"
-                            return _str + " and now returning home" + self.handle_command('h')
+                            _str = f"playing trajectories, {', '.join(trajectory_list)}"
+                            return _str + ", now returning home" + self.handle_command('h')
                         except json.JSONDecodeError:
-                            return "Invalid trajectory list format"
+                            return "invalid trajectory list format"
                         except Exception as e:
                             log.error(f"Error playing trajectories: {e}")
-                            return f"Error: {str(e)}"
-                    return "No trajectories provided"
-                return "Already playing"
+                            return f"error, {str(e)}"
+                    return "no trajectories provided"
+                return "already playing"
             elif cmd == "s":
                 if not traj_name:
-                    return "No trajectory name provided"
+                    return "no trajectory name provided"
                 return self.save_trajectory(traj_name)
             elif cmd == "l":
                 if not traj_name:
-                    return "No trajectory name provided"
+                    return "no trajectory name provided"
                 if self.load_trajectory(traj_name):
-                    return f"Loaded trajectory: {traj_name}"
-                return f"Failed to load trajectory: {traj_name}"
+                    return f"loaded trajectory, {traj_name}"
+                return f"failed to load trajectory, {traj_name}"
             elif cmd == "d":
                 if not traj_name:
-                    return "No trajectory name provided"
+                    return "no trajectory name provided"
                 return self.delete_trajectory(traj_name)
             elif cmd == "f":
                 self.mc.release_all_servos()
@@ -159,10 +159,10 @@ class RobotServer:
                 result = self.list_trajectories()
                 return json.dumps(result)
             else:
-                return f"Unknown command: {command}"
+                return f"unknown command, {command}"
         except Exception as e:
             log.error(f"Error handling command {command}: {e}")
-            return f"Error: {str(e)}"
+            return f"error, {str(e)}"
 
     def handle_client(self, conn: socket.socket, addr: tuple):
         """Handle individual client connection"""
