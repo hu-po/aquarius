@@ -1,12 +1,12 @@
 import React from 'react';
-import { LifeTable, Stats, ConfigViewer } from '../components';
+import { LifeTable, TemperaturePlot, ConfigViewer } from '../components';
 
 export const InfoPage = () => {
   return (
     <div className="info-page">
       <div className="info-grid">
-        <div className="stats-section">
-          <Stats />
+        <div className="temperature-section">
+          <TemperaturePlot />
         </div>
         <div className="life-section">
           <LifeTable />

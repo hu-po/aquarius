@@ -272,9 +272,9 @@ Example row:
         log.error(f"Database error in identify_life: {str(e)}", exc_info=True)
         return f"Database error: {str(e)}"
 
-async def async_estimate_temperature(ai_model: str, image_path: str) -> Dict[str, str]:
+async def async_estimate_temperature(ai_model: str, image_path: str, tank_id: int) -> Dict[str, str]:
     """Estimate temperature from image and update database."""
-    prompt = "Estimate the temperature of the water in this underwater image of an aquarium. Use the red digital submersible thermometer visible in the image. Return both Fahrenheit and Celsius values.\n"
+    prompt = f"Estimate the temperature of the water in tank {tank_id} from this underwater image of an aquarium. Use the red digital submersible thermometer visible in the image. Return both Fahrenheit and Celsius values.\n"
     response = await AI_MODEL_MAP[ai_model](prompt, image_path)
     
     try:
@@ -305,11 +305,12 @@ async def async_estimate_temperature(ai_model: str, image_path: str) -> Dict[str
                     id=datetime.now(timezone.utc).isoformat(),
                     temperature_f=temp_f,
                     temperature_c=temp_c,
+                    tank_id=tank_id,
                     image_id=latest_image.id,
                     timestamp=datetime.now(timezone.utc)
                 )
                 db.add(reading)
-                log.info(f"Added temperature reading: {temp_f}°F / {temp_c}°C from {ai_model}")
+                log.info(f"Added temperature reading for tank {tank_id}: {temp_f}°F / {temp_c}°C from {ai_model}")
             
             return response
             

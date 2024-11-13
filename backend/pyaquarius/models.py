@@ -60,6 +60,7 @@ class DBReading(BaseMixin, Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     temperature_f = Column(Float)
     temperature_c = Column(Float)
+    tank_id = Column(Integer, nullable=False)
     image_id = Column(String, nullable=True)
 
 class DBAIAnalysis(BaseMixin, Base):
@@ -98,6 +99,7 @@ class Image(ImageBase):
 class ReadingBase(BaseModel):
     temperature_f: float = Field(ge=32, le=120, description="Temperature in Fahrenheit")
     temperature_c: float = Field(ge=0, le=49, description="Temperature in Celsius")
+    tank_id: int = Field(ge=1, le=3, description="Tank identifier (1-3)")
     image_id: Optional[str] = None
 
     @validator('temperature_c', pre=True)

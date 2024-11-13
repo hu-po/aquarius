@@ -138,33 +138,6 @@ body {
     object-fit: contain;
 }
 
-/* Stats */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-}
-
-.stat-item {
-    padding: 0.75rem;
-    background: #0f172a;
-    border-radius: 0.5rem;
-    border: 1px solid #334155;
-}
-
-.stat-item label {
-    display: block;
-    font-size: 0.875rem;
-    color: #94a3b8;
-    margin-bottom: 0.25rem;
-}
-
-.stat-item span {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #e2e8f0;
-}
-
 .timestamp {
     margin-top: 1rem;
     font-size: 0.875rem;
@@ -694,4 +667,32 @@ body {
   padding: 1rem;
   border-radius: 0.5rem;
   border: 1px solid #334155;
+}
+
+.chart-container {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #1e293b;
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+  height: 300px;
+}
+
+.temperature-plot {
+  background: #1e293b;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+}
+
+.temperature-plot h3 {
+  margin: 0 0 1rem 0;
+  color: #e2e8f0;
+  font-size: 1.1rem;
+}
+
+.plot-container {
+  background: #0f172a;
+  padding: 1rem;
+  border-radius: 0.5rem;
 }

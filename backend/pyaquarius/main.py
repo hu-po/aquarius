@@ -421,12 +421,13 @@ async def robot_scan(
             robot_client.send_command('p', trajectory)
             await asyncio.sleep(SCAN_SLEEP_TIME)
             capture_result = await capture_image(device_index)
-            robot_client.send_command('h') # return home
+            robot_client.send_command('h')  # return home
             if 'temp' in trajectory:
                 ai_responses = await async_inference(
                     ENABLED_MODELS,
                     ['estimate_temperature'],
-                    capture_result['filepath']
+                    capture_result['filepath'],
+                    tank_id=trajectory[0],
                 )
             else:
                 ai_responses = await async_inference(
@@ -436,17 +437,18 @@ async def robot_scan(
                 )
             results.append({
                 'trajectory': trajectory,
+                'tank_id': tank_id,
                 'filepath': capture_result['filepath'],
                 'analysis': ai_responses
             })
 
-        robot_client.send_command('h') # return home
-        robot_client.send_command('f') # release robot
+        robot_client.send_command('h')  # return home
+        robot_client.send_command('f')  # release robot
         return {"scans": results}
         
     except Exception as e:
         log.error(f"Scan error: {e}")
-        robot_client.send_command('f') # release robot
+        robot_client.send_command('f')  # release robot
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/robot/scan/toggle")
