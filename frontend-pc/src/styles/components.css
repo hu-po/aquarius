@@ -356,24 +356,30 @@ body {
     padding: 2rem;
     display: flex;
     justify-content: center;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
 }
 
 .info-content {
     width: 100%;
-    max-width: 800px;
+    max-width: 1200px;
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    align-items: center;
 }
 
+.location-time,
 .temperature-section,
-.life-section,
-.config-section {
+.life-section {
+    width: 100%;
+    max-width: 100%;
     background: #1e293b;
     padding: 1.5rem;
     border-radius: 0.75rem;
     border: 1px solid #334155;
-    width: 100%;
+    box-sizing: border-box;
 }
 
 .info-grid {
@@ -744,9 +750,14 @@ body {
   color: #ef4444;
 }
 
+.life-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .life-table table {
   width: 100%;
-  border-collapse: collapse;
+  min-width: 600px;
 }
 
 .life-table th,
