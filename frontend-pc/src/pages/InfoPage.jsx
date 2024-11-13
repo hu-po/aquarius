@@ -1,10 +1,11 @@
 import React from 'react';
-import { LifeTable, TemperaturePlot, ConfigViewer } from '../components';
+import { LifeTable, TemperaturePlot, ConfigViewer, LocationTime } from '../components';
 
 export const InfoPage = () => {
   return (
     <div className="info-page">
-      <div className="info-grid">
+      <div className="info-content">
+        <LocationTime />
         <div className="temperature-section">
           <TemperaturePlot />
         </div>

@@ -5,3 +5,4 @@ export { default as CameraStream } from './CameraStream';
 export { default as LifeTable } from './LifeTable';
 export { default as TrajectoryBrowser } from './TrajectoryBrowser';
 export { default as ConfigViewer } from './ConfigViewer';
+export { default as LocationTime } from './LocationTime';

@@ -354,6 +354,26 @@ body {
 
 .info-page {
     padding: 2rem;
+    display: flex;
+    justify-content: center;
+}
+
+.info-content {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.temperature-section,
+.life-section,
+.config-section {
+    background: #1e293b;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid #334155;
+    width: 100%;
 }
 
 .info-grid {
@@ -695,4 +715,24 @@ body {
   background: #0f172a;
   padding: 1rem;
   border-radius: 0.5rem;
+}
+
+.location-time {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #1e293b;
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+  margin-bottom: 1rem;
+}
+
+.location-time .location,
+.location-time .time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #94a3b8;
+  font-size: 1rem;
 }
