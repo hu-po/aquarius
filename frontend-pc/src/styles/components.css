@@ -743,3 +743,25 @@ body {
 .location-time .error-text {
   color: #ef4444;
 }
+
+.life-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.life-table th,
+.life-table td {
+  padding: 1rem;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid #334155;
+}
+
+.life-table th {
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.life-table tr:hover {
+  background: #1e293b;
+}

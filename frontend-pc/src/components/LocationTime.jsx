@@ -39,11 +39,17 @@ const LocationTime = () => {
         📍 {status.location || "Location not set"}
         {error && <span className="error-text"> ({error})</span>}
       </span>
-      <span className="time">
-        🕒 {currentTime.toLocaleString('en-US', { 
+      <span className="date">
+        📅 {currentTime.toLocaleString('en-US', {
           timeZone: status.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-          dateStyle: 'medium',
-          timeStyle: 'medium'
+          dateStyle: 'medium'
+        })}
+      </span>
+      <span className="time">
+        🕒 {currentTime.toLocaleString('en-US', {
+          timeZone: status.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+          timeStyle: 'medium',
+          hour12: false
         })}
       </span>
     </div>
