@@ -32,13 +32,24 @@ const ToggleScan = () => {
   };
 
   return (
-    <button
-      onClick={handleToggleScan}
-      disabled={scanLoading}
-      className={scanEnabled ? 'active' : ''}
-    >
-      {scanLoading ? '🔍 ... ⏳' : scanEnabled ? '🔍 Auto Scan On ✅' : '🔍 Auto Scan Off ❌'}
-    </button>
+    <div className="scan-toggle-container">
+      <div 
+        className={`scan-rocker ${scanLoading ? 'loading' : ''}`}
+        onClick={!scanLoading ? handleToggleScan : undefined}
+      >
+        <div className={`rocker-switch ${scanEnabled ? 'on' : 'off'}`}>
+          <div className="switch-state off">
+            <span>📡</span>
+            <span>OFF</span>
+          </div>
+          <div className="switch-state on">
+            <span>📡</span>
+            <span>ON</span>
+          </div>
+          <div className="switch-indicator" />
+        </div>
+      </div>
+    </div>
   );
 };
 
