@@ -274,7 +274,15 @@ Example row:
 
 async def async_estimate_temperature(ai_model: str, image_path: str, tank_id: int) -> Dict[str, str]:
     """Estimate temperature from image and update database."""
-    prompt = f"Estimate the temperature of the water in tank {tank_id} from this underwater image of an aquarium. Use the red digital submersible thermometer visible in the image. Return both Fahrenheit and Celsius values.\n"
+    prompt = f"""Analyze the adhesive thermometer strip in this image of aquarium tank {tank_id}.
+Return ONLY the temperature values in this EXACT format (no extra text):
+temperature_f: <value>
+temperature_c: <value>
+
+Example response:
+temperature_f: 78.6
+temperature_c: 25.9"""
+
     response = await AI_MODEL_MAP[ai_model](prompt, image_path)
     
     try:

@@ -7,6 +7,9 @@ export const Layout = () => {
       <nav className="main-nav">
         <div className="nav-links">
           <NavLink to="/" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            🏠
+          </NavLink>
+          <NavLink to="/streams" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
             📷
           </NavLink>
           <NavLink to="/analysis" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>

@@ -5,3 +5,4 @@ export { default as CameraStream } from './CameraStream';
 export { default as LifeTable } from './LifeTable';
 export { default as TrajectoryBrowser } from './TrajectoryBrowser';
 export { default as LocationTime } from './LocationTime';
+export { default as ToggleScan } from './ToggleScan';

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Analyze, getStatus, toggleScan } from '../services/api';
+import React, { useState } from 'react';
+import { Analyze } from '../services/api';
+import ToggleScan from './ToggleScan';
 
 const AI_MODELS = [
   { id: 'claude', label: '🔮 claude' },
@@ -16,22 +17,6 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
   const [selectedModels, setSelectedModels] = useState(new Set(['claude', 'gpt', 'gemini']));
   const [selectedAnalyses, setSelectedAnalyses] = useState(new Set(['identify_life']));
   const [loading, setLoading] = useState(false);
-  const [scanEnabled, setScanEnabled] = useState(false);
-  const [scanLoading, setScanLoading] = useState(false);
-
-  useEffect(() => {
-    const loadStatus = async () => {
-      try {
-        const statusData = await getStatus();
-        setScanEnabled(statusData?.scan_enabled || false);
-      } catch (err) {
-        console.error('Failed to load status:', err);
-      }
-    };
-    loadStatus();
-    const statusInterval = setInterval(loadStatus, 30000);
-    return () => clearInterval(statusInterval);
-  }, []);
 
   const handleModelToggle = (modelId) => {
     setSelectedModels(prev => {
@@ -64,18 +49,6 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
       onAnalysisComplete({ error: error.message });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleToggleScan = async () => {
-    setScanLoading(true);
-    try {
-      await toggleScan(!scanEnabled);
-      setScanEnabled(!scanEnabled);
-    } catch (err) {
-      console.error('Failed to toggle scan:', err);
-    } finally {
-      setScanLoading(false);
     }
   };
 
@@ -115,13 +88,7 @@ const AnalysisControl = ({ onAnalysisComplete }) => {
         >
           {loading ? '🧠 ... ⏳' : '🧠 Analyze'}
         </button>
-        <button
-          onClick={handleToggleScan}
-          disabled={scanLoading}
-          className={scanEnabled ? 'active' : ''}
-        >
-          {scanLoading ? '🔍 ... ⏳' : scanEnabled ? '🔍 Auto Scan On ✅' : '🔍 Auto Scan Off ❌'}
-        </button>
+        <ToggleScan />
       </div>
     </div>
   );
