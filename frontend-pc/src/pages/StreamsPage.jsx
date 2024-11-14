@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CameraStream } from '../components';
+import { CameraStream, AnalysisControl } from '../components';
 import { getDevices, getStatus, captureImage } from '../services/api';
 
 export const StreamsPage = () => {
@@ -10,6 +10,7 @@ export const StreamsPage = () => {
   const [pausedDevices, setPausedDevices] = useState(new Set());
   const [warning, setWarning] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -61,6 +62,11 @@ export const StreamsPage = () => {
     }
   };
 
+  const handleAnalysisComplete = (results) => {
+    setAnalysisComplete(true);
+    setTimeout(() => setAnalysisComplete(false), 2000);
+  };
+
   if (loading) return <div className="loading">🔄</div>;
   if (error) return <div className="error">⚠️ {error}</div>;
 
@@ -98,6 +104,9 @@ export const StreamsPage = () => {
             </div>
           </div>
         ))}
+      </div>
+      <div className="analysis-section">
+        <AnalysisControl onAnalysisComplete={handleAnalysisComplete} />
       </div>
     </div>
   );

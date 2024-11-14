@@ -92,7 +92,7 @@ SCAN_CAMERA_ID = int(os.getenv('SCAN_CAMERA_ID', '0'))
 SCAN_INTERVAL = int(os.getenv('SCAN_INTERVAL', '10'))
 SCAN_ENABLED = os.getenv('SCAN_ENABLED', 'false').lower() == 'true'
 SCAN_TRAJECTORIES = os.getenv('SCAN_TRAJECTORIES', 'a,b,c,d').split(',')
-SCAN_SLEEP_TIME = int(os.getenv('SCAN_SLEEP_TIME', '5'))
+SCAN_SLEEP_TIME = int(os.getenv('SCAN_SLEEP_TIME', '4'))
 
 scheduler: Optional[AsyncIOScheduler] = None
 

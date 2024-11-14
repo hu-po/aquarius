@@ -14,6 +14,8 @@ export const AnalysisPage = () => {
     <div className="analysis-page">
       <div className="analysis-content">
         <AnalysisControl onAnalysisComplete={handleAnalysisComplete} />
+      </div>
+      <div className="analysis-history">
         <AnalysisHistory key={analysisComplete ? 'refresh' : 'normal'} />
       </div>
     </div>
