@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { getStreamUrl } from '../services/api';
 
@@ -6,8 +6,43 @@ const CameraStream = ({ deviceIndex, isPaused, onCapture }) => {
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
   const imgRef = useRef(null);
   const mountedRef = useRef(true);
+  const retryTimeoutRef = useRef(null);
+  
+  const handleStreamError = useCallback(() => {
+    if (!mountedRef.current) return;
+    
+    setError('Stream connection failed');
+    setIsConnected(false);
+    
+    if (retryCount < 3) {
+      retryTimeoutRef.current = setTimeout(() => {
+        if (mountedRef.current && !isPaused) {
+          setRetryCount(prev => prev + 1);
+          if (imgRef.current) {
+            imgRef.current.src = `${getStreamUrl(deviceIndex)}?t=${Date.now()}`;
+          }
+        }
+      }, Math.min(1000 * Math.pow(2, retryCount), 10000)); // Exponential backoff
+    }
+  }, [deviceIndex, retryCount, isPaused]);
+
+  const handleStreamSuccess = useCallback(() => {
+    if (!mountedRef.current) return;
+    setError(null);
+    setRetryCount(0);
+    setIsConnected(true);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
   
   useEffect(() => {
     mountedRef.current = true;

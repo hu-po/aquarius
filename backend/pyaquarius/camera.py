@@ -5,6 +5,7 @@ import logging
 import cv2
 import os
 from datetime import datetime
+import time
 
 log = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ class CameraDevice:
         self.is_capturing = False
         self.is_active = False
         self.cap = None
+        self.error_count = 0
+        self.last_error_time = 0
         self._initialize()
     
     def _initialize(self) -> None:
@@ -66,18 +69,38 @@ class CameraDevice:
                     log.debug(f"Stream started for device {self.index}")
 
     async def get_frame(self):
-        """Get a single frame from the camera."""
+        """Get a single frame from the camera with error handling."""
+        current_time = time.time()
+        
         if not self.cap or not self.cap.isOpened():
-            self._initialize()
+            if current_time - self.last_error_time > 5:  # Only retry every 5 seconds
+                self._initialize()
+                self.last_error_time = current_time
+            return None
+            
         if not self.is_active:
             return None
             
-        ret, frame = self.cap.read()
-        if not ret:
-            log.error(f"Failed to read frame from camera {self.index}")
-            return None
+        try:
+            ret, frame = self.cap.read()
+            if not ret:
+                self.error_count += 1
+                if self.error_count > 3:  # After 3 consecutive errors
+                    self.is_active = False
+                    self.cap.release()
+                    self.cap = None
+                    log.error(f"Camera {self.index} deactivated after multiple failures")
+                return None
             
-        return frame
+            self.error_count = 0  # Reset error count on successful read
+            return frame
+            
+        except Exception as e:
+            self.error_count += 1
+            if current_time - self.last_error_time > 5:  # Limit error logging
+                log.error(f"Frame capture error on camera {self.index}: {str(e)}")
+                self.last_error_time = current_time
+            return None
 
     async def capture_image(self, device: CameraDevice, filename: str) -> Optional[tuple[str, int, int, int]]:
         log.debug(f"Starting image capture from device {device.index}")
@@ -208,41 +231,47 @@ class CameraManager:
         if not device:
             log.error("No camera device provided")
             return
-
+        
         if device.is_capturing:
             log.info(f"Camera {device.index} is currently capturing, waiting...")
             await asyncio.sleep(1)
-
+        
         try:
             async with device.lock:
                 if not device.is_streaming:
                     device.is_streaming = True
                     log.debug(f"Stream started for device {device.index}")
-
+                
                 target_dim = min(CAMERA_MAX_DIM, device.width, device.height)
                 scale = min(target_dim/device.width, target_dim/device.height)
                 new_width = int(device.width * scale)
                 new_height = int(device.height * scale)
-
+            
+            consecutive_failures = 0
             while device.is_streaming and not device.is_capturing:
                 frame = await device.get_frame()
                 if frame is None:
-                    log.error(f"Failed to get frame from {device.path}")
+                    consecutive_failures += 1
+                    if consecutive_failures > 5:  # After 5 consecutive failures
+                        log.error(f"Stream ended due to multiple failures on camera {device.index}")
+                        break
+                    await asyncio.sleep(1)  # Add delay between retries
                     continue
-
+                
+                consecutive_failures = 0  # Reset on successful frame
                 try:
-                    # Resize frame if needed
                     if new_width != device.width or new_height != device.height:
                         frame = cv2.resize(frame, (new_width, new_height))
-
+                    
                     _, buffer = cv2.imencode(f'.{CAMERA_IMG_TYPE}', frame)
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-                    await asyncio.sleep(1/CAMERA_FPS)  # Control frame rate
+                    await asyncio.sleep(1/CAMERA_FPS)
                 except Exception as e:
                     log.error(f"Frame encoding error: {str(e)}")
+                    await asyncio.sleep(0.1)
                     continue
-
+        
         except Exception as e:
             log.error(f"Stream error: {str(e)}", exc_info=True)
         finally:
