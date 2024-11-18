@@ -6,7 +6,7 @@ import os
 import re
 from datetime import datetime, timezone
 from functools import wraps
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 import json
 
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
@@ -184,7 +184,7 @@ AI_MODEL_MAP: Dict[str, callable] = {
     'gemini': gemini
 }
 
-async def async_identify_life(ai_model: str, image_path: str, tank_id: int) -> Dict[str, str]:
+async def async_identify_life(ai_model: str, image_path: str, tank_id: int, image_id: Optional[str] = None) -> Dict[str, str]:
     log.debug(f"Starting life identification with {ai_model} model")
     if not os.path.exists(image_path):
         log.error(f"Image file not found at {image_path}")
@@ -211,16 +211,22 @@ Example row:
     
     try:
         with get_db_session() as db:
-            log.debug("Querying latest image from database")
-            latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
-            if not latest_image:
-                log.error("No images found in database for analysis")
-                raise ValueError("No images found in database")
+            if not image_id:
+                log.debug("No image_id provided, querying latest image")
+                image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
+                if not image:
+                    raise ValueError("No images found in database")
+                image_id = image.id
+            else:
+                log.debug(f"Using provided image_id: {image_id}")
+                image = db.query(DBImage).filter(DBImage.id == image_id).first()
+                if not image:
+                    raise ValueError(f"Image {image_id} not found in database")
             
             log.debug("Creating AI analysis record")
             analysis = DBAIAnalysis(
                 id=datetime.now(timezone.utc).isoformat(),
-                image_id=latest_image.id,
+                image_id=image_id,
                 tank_id=tank_id,
                 ai_model=ai_model,
                 analysis='identify_life',
@@ -234,13 +240,12 @@ Example row:
             if not lines:
                 raise ValueError("Empty response")
                 
-            # Check if first line contains headers
+            # Process headers and data
             first_line = lines[0].lower()
             if all(h in first_line for h in expected_headers):
                 headers = lines[0].split(',')
                 data_lines = lines[1:]
             else:
-                # Use default headers if first line is data
                 headers = expected_headers
                 data_lines = lines
                 
@@ -258,8 +263,8 @@ Example row:
                         if life:
                             life.last_seen_at = datetime.now(timezone.utc)
                             current_refs = json.loads(life.image_refs)
-                            if latest_image.id not in current_refs:
-                                current_refs.append(latest_image.id)
+                            if image_id not in current_refs:
+                                current_refs.append(image_id)
                                 life.image_refs = json.dumps(current_refs)
                             updates += 1
                     except (KeyError, IndexError) as e:
@@ -273,7 +278,7 @@ Example row:
         log.error(f"Database error in identify_life: {str(e)}", exc_info=True)
         return f"Database error: {str(e)}"
 
-async def async_estimate_temperature(ai_model: str, image_path: str, tank_id: int) -> Dict[str, str]:
+async def async_estimate_temperature(ai_model: str, image_path: str, tank_id: int, image_id: Optional[str] = None) -> Dict[str, str]:
     """Estimate temperature from image and update database."""
     prompt = f"""Analyze the adhesive thermometer strip in this image of aquarium tank {tank_id}.
 Return ONLY the temperature values in this EXACT format (no extra text):
@@ -288,13 +293,21 @@ temperature_c: 25.9"""
     
     try:
         with get_db_session() as db:
-            latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
-            if not latest_image:
-                raise ValueError("No images found in database")
+            if not image_id:
+                log.debug("No image_id provided, querying latest image")
+                image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
+                if not image:
+                    raise ValueError("No images found in database")
+                image_id = image.id
+            else:
+                log.debug(f"Using provided image_id: {image_id}")
+                image = db.query(DBImage).filter(DBImage.id == image_id).first()
+                if not image:
+                    raise ValueError(f"Image {image_id} not found in database")
             
             analysis = DBAIAnalysis(
                 id=datetime.now(timezone.utc).isoformat(),
-                image_id=latest_image.id,
+                image_id=image_id,
                 tank_id=tank_id,
                 ai_model=ai_model,
                 analysis='estimate_temperature',
@@ -316,7 +329,7 @@ temperature_c: 25.9"""
                     temperature_f=temp_f,
                     temperature_c=temp_c,
                     tank_id=tank_id,
-                    image_id=latest_image.id,
+                    image_id=image_id,
                     timestamp=datetime.now(timezone.utc)
                 )
                 db.add(reading)
@@ -333,7 +346,7 @@ AI_ANALYSES_MAP: Dict[str, callable] = {
     'estimate_temperature': async_estimate_temperature,
 }
 
-async def async_inference(ai_models: List[str], analyses: List[str], image_path: str, tank_id: int = None) -> Dict[str, str]:
+async def async_inference(ai_models: List[str], analyses: List[str], image_path: str, tank_id: int = None, image_id: Optional[str] = None) -> Dict[str, str]:
     log.debug(f"Starting AI inference - models: {ai_models}, analyses: {analyses}")
     try:
         if not ENABLED_MODELS:
@@ -351,7 +364,7 @@ async def async_inference(ai_models: List[str], analyses: List[str], image_path:
                     log.error(f"Requested analysis {analysis} not found in available analyses: {list(AI_ANALYSES_MAP.keys())}")
                     raise ValueError(f"Analysis {analysis} not found in AI_ANALYSES_MAP")
                 log.debug(f"Adding task: {ai_model}.{analysis}")
-                tasks.append(AI_ANALYSES_MAP[analysis](ai_model, image_path, tank_id))
+                tasks.append(AI_ANALYSES_MAP[analysis](ai_model, image_path, tank_id, image_id))
                 task_keys.append(f"{ai_model}.{analysis}")
         
         if not tasks:
