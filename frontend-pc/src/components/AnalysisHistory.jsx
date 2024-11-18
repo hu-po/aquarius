@@ -64,6 +64,7 @@ const AnalysisHistory = () => {
             />
             <div className="image-timestamp">
               {formatTimestamp(group.timestamp)}
+              <span className="image-id">ID: {group.image_id}</span>
             </div>
           </div>
           <div className="history-results">

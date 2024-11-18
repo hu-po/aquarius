@@ -431,24 +431,40 @@ async def robot_scan(
         for trajectory in trajectories:
             robot_client.send_command('p', trajectory)
             await asyncio.sleep(SCAN_SLEEP_TIME)
+            
+            # Get tank_id from first character of trajectory name
+            tank_id = int(trajectory[0]) if trajectory[0].isdigit() else 0
+            
+            # Capture image and get image_id
             capture_result = await capture_image(device_index)
+            image_id = capture_result.get('image_id')
+            
             robot_client.send_command('h')  # return home
+            
+            if not image_id:
+                log.error(f"No image_id returned from capture for trajectory {trajectory}")
+                continue
+                
             if 'temp' in trajectory:
                 ai_responses = await async_inference(
                     ENABLED_MODELS,
                     ['estimate_temperature'],
                     capture_result['filepath'],
-                    tank_id=trajectory[0],
+                    tank_id=tank_id,
+                    image_id=image_id
                 )
             else:
                 ai_responses = await async_inference(
                     ENABLED_MODELS,
                     ['identify_life'],
                     capture_result['filepath'],
-                    tank_id=trajectory[0],
+                    tank_id=tank_id,
+                    image_id=image_id
                 )
+                
             results.append({
                 'trajectory': trajectory,
+                'image_id': image_id,
                 'filepath': capture_result['filepath'],
                 'analysis': ai_responses
             })

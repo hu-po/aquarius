@@ -898,3 +898,21 @@ body {
   border-radius: 0.75rem;
   border: 1px solid #334155;
 }
+
+.image-timestamp {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.5);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  color: white;
+}
+
+.image-id {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
