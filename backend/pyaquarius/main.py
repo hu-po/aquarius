@@ -230,7 +230,7 @@ async def capture_image(device_index: int):
             log.debug(f"Restarting stream for device {device_index}")
             await device.start_stream()
             
-        return {"filepath": filepath}
+        return {"filepath": filepath, "image_id": image_id}
         
     except Exception as e:
         log.error(f"Capture error: {str(e)}", exc_info=True)
@@ -239,12 +239,11 @@ async def capture_image(device_index: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/analyze/{ai_models}/{analyses}")
-async def analyze(ai_models: str, analyses: str):
-    # FastAPI automatically decodes URL parameters
+async def analyze(ai_models: str, analyses: str, image_id: Optional[str] = None):
     ai_models_list = ai_models.split(',')
     analyses_list = analyses.split(',')
     
-    log.debug(f"Received analysis request - models: {ai_models_list}, analyses: {analyses_list}")
+    log.debug(f"Received analysis request - models: {ai_models_list}, analyses: {analyses_list}, image_id: {image_id}")
     
     try:
         invalid_models = [m for m in ai_models_list if m not in ENABLED_MODELS]
@@ -253,17 +252,20 @@ async def analyze(ai_models: str, analyses: str):
             raise HTTPException(status_code=400, detail=f"Invalid AI models: {', '.join(invalid_models)}")
             
         with get_db_session() as db:
-            log.debug("Querying latest image for analysis")
-            latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
+            if image_id:
+                log.debug(f"Querying image with id {image_id}")
+                latest_image = db.query(DBImage).filter(DBImage.id == image_id).first()
+                if not latest_image:
+                    raise HTTPException(status_code=404, detail=f"Image {image_id} not found")
+            else:
+                log.debug("Querying latest image for analysis")
+                latest_image = db.query(DBImage).order_by(DBImage.timestamp.desc()).first()
+                if not latest_image:
+                    raise HTTPException(status_code=404, detail="No images available")
             
-            if not latest_image:
-                log.error("No images available for analysis")
-                raise HTTPException(status_code=404, detail="No images available")
-
-            log.debug(f"Starting inference on image {latest_image.id}")
-            tank_id = 0
-            log.debug(f"Tank ID: {tank_id}")
-            ai_responses = await async_inference(ai_models_list, analyses_list, latest_image.filepath, tank_id)
+            log.debug(f"Using image {latest_image.id} for analysis")
+            # TODO: pass in tank_id, as the first character of image_id
+            ai_responses = await async_inference(ai_models_list, analyses_list, latest_image.filepath, tank_id=0)
             
             log.debug("Processing AI responses")
             responses_with_errors = {

@@ -102,12 +102,15 @@ export const updateLife = async (id, life) => {
   }
 };
 
-export const Analyze = async (models, analyses) => {
+export const Analyze = async (models, analyses, imageId = null) => {
   try {
     const encodedModels = encodeURIComponent(models);
     const encodedAnalyses = encodeURIComponent(analyses);
+    const url = imageId 
+      ? `/analyze/${encodedModels}/${encodedAnalyses}?image_id=${encodeURIComponent(imageId)}`
+      : `/analyze/${encodedModels}/${encodedAnalyses}`;
     
-    const response = await api.post(`/analyze/${encodedModels}/${encodedAnalyses}`, null, {
+    const response = await api.post(url, null, {
       timeout: ANALYSIS_TIMEOUT
     });
     
@@ -117,7 +120,8 @@ export const Analyze = async (models, analyses) => {
     
     return {
       analysis: response.data.analysis || {},
-      errors: response.data.errors || {}
+      errors: response.data.errors || {},
+      image_id: imageId || response.data.image_id
     };
   } catch (error) {
     if (error.response?.status === 404) {
